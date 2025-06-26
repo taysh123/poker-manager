@@ -7,44 +7,13 @@ function CashGame() {
   const [newPlayerEntry, setNewPlayerEntry] = useState('');
   const [finalResults, setFinalResults] = useState({});
   const [debts, setDebts] = useState([]);
-
-  // --- שחקנים קבועים שמורים ב-localStorage ---
   const [savedPlayers, setSavedPlayers] = useState([]);
-  const [savedPlayerName, setSavedPlayerName] = useState('');
-  const [savedPlayerEntry, setSavedPlayerEntry] = useState('');
 
+  // טעינת שחקנים קבועים מ-localStorage בעת הטעינה
   useEffect(() => {
     const sp = JSON.parse(localStorage.getItem('savedPlayers') || '[]');
     setSavedPlayers(sp);
   }, []);
-
-  // הוספת שחקן קבוע
-  const addSavedPlayer = () => {
-    const name = savedPlayerName.trim();
-    const entry = parseFloat(savedPlayerEntry);
-    if (!name || isNaN(entry) || entry <= 0) {
-      alert('יש להזין שם וכניסה תקינה לשחקן קבוע');
-      return;
-    }
-    if (savedPlayers.find(p => p.name === name)) {
-      alert('שחקן קבוע עם שם זה כבר קיים');
-      return;
-    }
-    const updated = [...savedPlayers, { name, entry }];
-    setSavedPlayers(updated);
-    localStorage.setItem('savedPlayers', JSON.stringify(updated));
-    setSavedPlayerName('');
-    setSavedPlayerEntry('');
-  };
-
-  // הוספת שחקן קבוע למשחק הנוכחי
-  const addPlayerFromSaved = (player) => {
-    if (players.find(p => p.name === player.name)) {
-      alert('השחקן כבר קיים במשחק');
-      return;
-    }
-    setPlayers([...players, { name: player.name, entries: [player.entry] }]);
-  };
 
   const addPlayer = () => {
     const name = newPlayerName.trim();
@@ -53,13 +22,22 @@ function CashGame() {
       alert('יש להזין שם וכניסה תקינה');
       return;
     }
-    if (players.find(p => p.name === name)) {
-      alert('שחקן עם שם זה כבר קיים במשחק');
+    if (players.some(p => p.name === name)) {
+      alert('שם השחקן כבר קיים ברשימה');
       return;
     }
     setPlayers([...players, { name, entries: [entry] }]);
     setNewPlayerName('');
     setNewPlayerEntry('');
+  };
+
+  // הוספת שחקן קבוע למשחק לפי סכום כניסה שהוגדר מראש
+  const addSavedPlayerToGame = (savedPlayer) => {
+    if (players.some(p => p.name === savedPlayer.name)) {
+      alert('השחקן כבר קיים במשחק');
+      return;
+    }
+    setPlayers([...players, { name: savedPlayer.name, entries: [savedPlayer.entry] }]);
   };
 
   const addEntry = (index, amount) => {
@@ -84,22 +62,49 @@ function CashGame() {
     });
   };
 
+  // הוספת שחקן קבוע חדש ל-localStorage
+  const addSavedPlayer = () => {
+    const name = newPlayerName.trim();
+    const entry = parseFloat(newPlayerEntry);
+    if (!name || isNaN(entry) || entry <= 0) {
+      alert('יש להזין שם ושווי כניסה תקינים');
+      return;
+    }
+    if (savedPlayers.some(p => p.name === name)) {
+      alert('שם השחקן כבר קיים כשחקן קבוע');
+      return;
+    }
+    const newSP = [...savedPlayers, { name, entry }];
+    setSavedPlayers(newSP);
+    localStorage.setItem('savedPlayers', JSON.stringify(newSP));
+    setNewPlayerName('');
+    setNewPlayerEntry('');
+    alert('שחקן קבוע נשמר בהצלחה');
+  };
+
   // מחיקת שחקן קבוע
-  const deleteSavedPlayer = (name) => {
-    const filtered = savedPlayers.filter(p => p.name !== name);
-    setSavedPlayers(filtered);
-    localStorage.setItem('savedPlayers', JSON.stringify(filtered));
+  const deleteSavedPlayer = (index) => {
+    const newSP = [...savedPlayers];
+    newSP.splice(index, 1);
+    setSavedPlayers(newSP);
+    localStorage.setItem('savedPlayers', JSON.stringify(newSP));
   };
 
   const calculateAndSaveStats = (allGames) => {
     const playersSet = new Set();
+
+    // הוספת שחקנים ממשחקים
     allGames.forEach(game => {
       game.players.forEach(p => playersSet.add(p.name));
     });
-    const players = Array.from(playersSet);
+
+    // הוספת כל השחקנים הקבועים
+    savedPlayers.forEach(p => playersSet.add(p.name));
+
+    const playersArray = Array.from(playersSet);
 
     const stats = {};
-    players.forEach(playerName => {
+    playersArray.forEach(playerName => {
       let wins = 0, losses = 0, totalProfit = 0, gamesPlayed = 0;
 
       allGames.forEach(game => {
@@ -161,6 +166,7 @@ function CashGame() {
 
     setDebts(newDebts);
 
+    // שמירת המשחק ב-localStorage
     const game = {
       id: Date.now(),
       date: new Date().toLocaleString(),
@@ -169,12 +175,14 @@ function CashGame() {
       finalResults,
       debts: newDebts,
     };
+
     const existing = JSON.parse(localStorage.getItem('cashGames') || '[]');
     const updatedGames = [...existing, game];
     localStorage.setItem('cashGames', JSON.stringify(updatedGames));
-    alert('המשחק נשמר בהצלחה!');
 
     calculateAndSaveStats(updatedGames);
+
+    alert('המשחק נשמר בהצלחה!');
   };
 
   const totalPot = players.reduce((sum, p) => sum + p.entries.reduce((a, b) => a + b, 0), 0);
@@ -185,57 +193,25 @@ function CashGame() {
 
       <div>
         <label>כמה שווה צ'יפ בשקלים:
-          <input
-            type="number"
-            value={chipRatio}
-            step="0.01"
-            min="0.01"
-            onChange={e => setChipRatio(parseFloat(e.target.value) || 1)}
-          />
+          <input type="number" value={chipRatio} step="0.01" min="0.01"
+                 onChange={e => setChipRatio(parseFloat(e.target.value) || 1)} />
         </label>
       </div>
 
-      <h3>הוספת שחקן</h3>
-      <input
-        type="text"
-        placeholder="שם שחקן"
-        value={newPlayerName}
-        onChange={e => setNewPlayerName(e.target.value)}
-      />
-      <input
-        type="number"
-        placeholder="סכום כניסה ראשון"
-        value={newPlayerEntry}
-        onChange={e => setNewPlayerEntry(e.target.value)}
-      />
+      <h3>הוספת שחקן חדש למשחק</h3>
+      <input type="text" placeholder="שם שחקן" value={newPlayerName} onChange={e => setNewPlayerName(e.target.value)} />
+      <input type="number" placeholder="סכום כניסה ראשון" value={newPlayerEntry} onChange={e => setNewPlayerEntry(e.target.value)} />
       <button onClick={addPlayer}>הוסף</button>
+      <button onClick={addSavedPlayer}>שמור כשחקן קבוע</button>
 
-      <h4>שחקנים קבועים</h4>
-      <div style={{ marginBottom: 15 }}>
-        <input
-          type="text"
-          placeholder="שם שחקן קבוע"
-          value={savedPlayerName}
-          onChange={e => setSavedPlayerName(e.target.value)}
-          style={{ marginRight: 10 }}
-        />
-        <input
-          type="number"
-          placeholder="סכום כניסה"
-          value={savedPlayerEntry}
-          onChange={e => setSavedPlayerEntry(e.target.value)}
-          style={{ marginRight: 10 }}
-        />
-        <button onClick={addSavedPlayer}>שמור שחקן קבוע</button>
-      </div>
+      <h3>שחקנים קבועים</h3>
+      {savedPlayers.length === 0 && <p>אין שחקנים קבועים</p>}
       <ul>
         {savedPlayers.map((p, i) => (
-          <li key={i} style={{ marginBottom: 5 }}>
-            {p.name} - כניסה: {p.entry} ₪{' '}
-            <button onClick={() => addPlayerFromSaved(p)}>הוסף למשחק</button>{' '}
-            <button onClick={() => deleteSavedPlayer(p.name)} style={{ color: 'white', backgroundColor: 'red' }}>
-              מחק
-            </button>
+          <li key={i} style={{ marginBottom: 8 }}>
+            <b>{p.name}</b> - כניסה: {p.entry} ₪
+            <button onClick={() => addSavedPlayerToGame(p)} style={{ marginLeft: 10 }}>הוסף למשחק</button>
+            <button onClick={() => deleteSavedPlayer(i)} style={{ marginLeft: 10, color: 'white', backgroundColor: 'red' }}>מחק שחקן קבוע</button>
           </li>
         ))}
       </ul>
@@ -271,32 +247,21 @@ function CashGame() {
                 />
               </td>
               <td>
-                <button
-                  onClick={() => deletePlayer(i)}
-                  style={{ color: 'white', backgroundColor: 'red' }}
-                >
-                  X
-                </button>
+                <button onClick={() => deletePlayer(i)} style={{ color: 'white', backgroundColor: 'red' }}>X</button>
               </td>
             </tr>
           ))}
         </tbody>
       </table>
 
-      <button onClick={calculateProfits} style={{ marginTop: 20 }}>
-        חשב חובות ושמור משחק
-      </button>
+      <button onClick={calculateProfits} style={{ marginTop: 20 }}>חשב חובות ושמור משחק</button>
 
       {debts.length > 0 && (
         <div>
           <h3>חובות בין שחקנים</h3>
           <table border="1" cellPadding="8" style={{ width: '100%' }}>
             <thead>
-              <tr>
-                <th>חייב</th>
-                <th>מקבל</th>
-                <th>סכום</th>
-              </tr>
+              <tr><th>חייב</th><th>מקבל</th><th>סכום</th></tr>
             </thead>
             <tbody>
               {debts.map((d, i) => (
