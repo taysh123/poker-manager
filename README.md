@@ -79,6 +79,6 @@ Local State	UI state management (no backend yet)
 
 👨‍💻 Author
 Tay Shofer
-📧 taysh123@gmail.com
+📧 tayshofer05@gmail.com
 🎓 3rd-year Computer Science student
 🛠 Passionate about full-stack projects and user-focused design
