@@ -82,5 +82,3 @@ Tay Shofer
 📧 taysh123@gmail.com
 🎓 3rd-year Computer Science student
 🛠 Passionate about full-stack projects and user-focused design
-כדכדhgjlvv
-גכד
