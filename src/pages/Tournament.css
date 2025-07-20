@@ -1,0 +1,213 @@
+@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;700&family=Roboto:wght@400;700&display=swap');
+
+:root {
+  --bg-color: #1a1a1a;
+  --text-color: #e0e0e0;
+  --primary-color: #4CAF50; /* Green for success/actions */
+  --secondary-color: #FFC107; /* Gold/Yellow for emphasis */
+  --card-bg: #2b2b2b;
+  --border-color: #444;
+  --input-bg: #333;
+  --table-header-bg: #333;
+  --table-border: #555;
+  --button-hover-bg: #45a049;
+  --danger-color: #f44336;
+}
+
+body {
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  font-family: 'Roboto', sans-serif;
+  direction: rtl;
+  margin: 0;
+  padding: 0;
+}
+
+.tournament-container {
+  max-width: 900px;
+  margin: 40px auto;
+  padding: 30px; /* Increased padding */
+  background-color: var(--card-bg);
+  border-radius: 12px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5); /* Stronger shadow */
+  animation: fadeIn 1s ease-in-out;
+}
+
+h2 {
+  font-family: 'Oswald', sans-serif;
+  color: var(--secondary-color);
+  text-align: center;
+  margin-bottom: 25px; /* Increased spacing */
+  font-size: 2.5em;
+  letter-spacing: 1px;
+}
+
+h3 {
+  font-family: 'Oswald', sans-serif;
+  color: var(--secondary-color);
+  text-align: center;
+  margin-bottom: 20px;
+  font-size: 1.8em;
+}
+
+.section {
+  padding: 25px; /* Increased padding */
+  border-bottom: 1px solid var(--border-color);
+  margin-bottom: 20px; /* Added margin */
+}
+
+.section:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+}
+
+.controls, .prize-distribution-section, .blind-structure-section {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.controls .input-group, .prize-distribution-section .input-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.input-group label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+input[type="number"], input[type="text"], select {
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background-color: var(--input-bg);
+  color: var(--text-color);
+  font-size: 16px;
+  width: 100%;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+input:focus, select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 5px rgba(76, 175, 80, 0.5);
+}
+
+button {
+  padding: 12px 20px;
+  border: none;
+  border-radius: 8px;
+  background-color: var(--primary-color);
+  color: #fff;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+button:hover {
+  background-color: var(--button-hover-bg);
+  transform: translateY(-2px); /* Lift effect on hover */
+}
+
+.prize-table, .blind-table, .player-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+  background-color: #3b3b3b;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.prize-table th, .prize-table td,
+.blind-table th, .blind-table td,
+.player-table th, .player-table td {
+  padding: 12px;
+  border: 1px solid var(--table-border);
+  text-align: center;
+}
+
+.prize-table th, .blind-table th, .player-table th {
+  background-color: var(--table-header-bg);
+  font-weight: bold;
+  font-family: 'Oswald', sans-serif;
+  letter-spacing: 0.5px;
+}
+
+.blind-table thead tr {
+  position: sticky;
+  top: 0;
+}
+
+.blind-table tr:nth-child(even), .player-table tr:nth-child(even) {
+  background-color: #2f2f2f;
+}
+
+.remove-btn {
+  background-color: var(--danger-color);
+  transform: none;
+}
+
+.remove-btn:hover {
+  background-color: #d32f2f;
+  transform: translateY(0);
+}
+
+.button-group button {
+    flex-grow: 1;
+}
+
+/* New CSS for Player Management */
+.players-section {
+    margin-top: 20px;
+}
+
+.add-player-form {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.add-player-form input {
+    flex-grow: 1;
+}
+
+.player-list-container, .blind-table-container {
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .tournament-container {
+    margin: 20px;
+    padding: 15px;
+  }
+  .controls .input-group, 
+  .prize-distribution-section .input-group,
+  .add-player-form {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .blind-table-container, .player-list-container {
+    overflow-x: auto;
+  }
+  .blind-table, .player-table {
+    min-width: 600px;
+  }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}

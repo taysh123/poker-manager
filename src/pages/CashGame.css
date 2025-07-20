@@ -1,0 +1,228 @@
+@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;700&family=Roboto:wght@400;700&display=swap');
+
+:root {
+  --bg-color: #1a1a1a;
+  --text-color: #e0e0e0;
+  --primary-color: #4CAF50;
+  --secondary-color: #FFC107;
+  --card-bg: #2b2b2b;
+  --border-color: #444;
+  --input-bg: #333;
+  --table-header-bg: #333;
+  --table-border: #555;
+  --button-hover-bg: #45a049;
+  --danger-color: #f44336;
+}
+
+body {
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  font-family: 'Roboto', sans-serif;
+  direction: rtl;
+  margin: 0;
+  padding: 0;
+}
+
+.page-container {
+  max-width: 1000px;
+  margin: 40px auto;
+  padding: 30px;
+  background-color: var(--card-bg);
+  border-radius: 12px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
+  animation: fadeIn 1s ease-in-out;
+}
+
+h2 {
+  font-family: 'Oswald', sans-serif;
+  color: var(--secondary-color);
+  text-align: center;
+  margin-bottom: 25px;
+  font-size: 2.5em;
+  letter-spacing: 1px;
+}
+
+h3 {
+  font-family: 'Oswald', sans-serif;
+  color: var(--secondary-color);
+  text-align: center;
+  margin-bottom: 20px;
+  font-size: 1.8em;
+}
+
+.section {
+  padding: 25px;
+  border-bottom: 1px solid var(--border-color);
+  margin-bottom: 20px;
+}
+
+.section:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+}
+
+.input-group label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+input[type="number"], input[type="text"], select {
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background-color: var(--input-bg);
+  color: var(--text-color);
+  font-size: 16px;
+  width: 100%;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+input:focus, select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 5px rgba(76, 175, 80, 0.5);
+}
+
+button {
+  padding: 12px 20px;
+  border: none;
+  border-radius: 8px;
+  background-color: var(--primary-color);
+  color: #fff;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: center;
+}
+
+button:hover {
+  background-color: var(--button-hover-bg);
+  transform: translateY(-2px);
+}
+
+.remove-btn {
+    background-color: var(--danger-color);
+    transform: none;
+}
+
+.remove-btn:hover {
+    background-color: #d32f2f;
+    transform: none;
+}
+
+.add-player-form {
+    display: flex;
+    gap: 10px;
+    align-items: stretch;
+    flex-wrap: wrap;
+}
+
+.add-player-form .player-input-group {
+    display: flex;
+    gap: 10px;
+    flex-grow: 1;
+}
+
+.add-player-form select,
+.add-player-form input {
+    flex-grow: 1;
+}
+
+.standard-buy-in-section .standard-buy-in-inputs {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-grow: 1;
+}
+
+.standard-buy-in-inputs input {
+    flex-grow: 1;
+    min-width: 100px;
+}
+
+.or-separator {
+    color: #999;
+}
+
+.cash-game-table, .debts-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+  background-color: #3b3b3b;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.cash-game-table th, .cash-game-table td,
+.debts-table th, .debts-table td {
+  padding: 12px;
+  border: 1px solid var(--table-border);
+  text-align: center;
+  white-space: nowrap;
+}
+
+.cash-game-table th, .debts-table th {
+  background-color: var(--table-header-bg);
+  font-weight: bold;
+  font-family: 'Oswald', sans-serif;
+  letter-spacing: 0.5px;
+}
+
+.cash-game-table tr:nth-child(even), .debts-table tr:nth-child(even) {
+  background-color: #2f2f2f;
+}
+
+.cash-game-container {
+    max-width: 1200px; /* הגדלנו את הרוחב המקסימלי */
+    width: 90%; /* כדי שיגיב גם במסכים קטנים יותר */
+}
+
+.cash-game-table td {
+  vertical-align: middle;
+}
+
+.cash-game-table .button-group {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.cash-game-table .ending-chips-cell input {
+  width: 80px;
+  text-align: center;
+}
+
+.calculate-btn {
+    width: 100%;
+    margin-top: 20px;
+    background-color: #1a73e8; /* A different color for a main action button */
+}
+
+.calculate-btn:hover {
+    background-color: #155cb0;
+}
+
+.money-cell {
+    font-weight: bold;
+    color: var(--primary-color);
+}
+
+.debts-section {
+    margin-top: 40px;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}

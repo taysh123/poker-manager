@@ -1,0 +1,19 @@
+        .homepage-container {
+          max-width: 800px;
+          margin: 40px auto;
+          padding: 30px;
+          background-color: var(--card-bg);
+          border-radius: 12px;
+          box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
+          text-align: center;
+        }
+
+        .homepage-container h2 {
+          color: var(--secondary-color);
+          margin-bottom: 20px;
+        }
+
+        .homepage-container p {
+          color: var(--text-color);
+        }
+        

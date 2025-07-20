@@ -1,0 +1,108 @@
+:root {
+  --bg-color: #1a1a1a;
+  --text-color: #e0e0e0;
+  --primary-color: #4CAF50; /* Green for success/actions */
+  --secondary-color: #FFC107; /* Gold/Yellow for emphasis */
+  --card-bg: #2b2b2b;
+  --border-color: #444;
+  --input-bg: #333;
+  --table-header-bg: #333;
+  --table-border: #555;
+  --button-hover-bg: #45a049;
+  --danger-color: #f44336;
+}
+
+.main-header {
+  background-color: #333; /* Darker background for the header */
+  padding: 10px 20px; /* Reduced padding for a more compact look */
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3); /* Softer shadow */
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  width: 100%;
+}
+
+.header-content {
+  display: flex;
+  justify-content: space-between; /* Distribute items across the header */
+  align-items: center;
+  max-width: 1200px; /* Limit content width for better readability on large screens */
+  margin: 0 auto; /* Center the content */
+}
+
+.logo {
+  color: #fff; /* White color for the logo text */
+  font-size: 1.5rem; /* Standard font size for the logo */
+  font-weight: bold;
+}
+
+.nav-links {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  justify-content: center;
+  gap: 1.5rem; /* Slightly reduced gap between links */
+}
+
+.nav-links li a {
+  text-decoration: none;
+  color: #fff; /* White color for navigation links */
+  font-family: 'Roboto', sans-serif; /* Standard font for links */
+  font-size: 1rem; /* Standard font size */
+  padding: 5px 10px; /* Minimal padding */
+  border-radius: 4px; /* Slightly less rounded corners */
+  transition: all 0.2s ease;
+}
+
+.nav-links li a:hover {
+  background-color: rgba(255, 255, 255, 0.1); /* Subtle hover effect */
+  color: var(--secondary-color); /* Gold/Yellow on hover */
+}
+
+.nav-links li a.active {
+  background-color: var(--primary-color); /* Green for active link */
+  color: #fff;
+  box-shadow: none; /* Removed the stronger box-shadow for active links */
+}
+
+.auth-buttons {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Styling for the logout button (retained) */
+.logout-button {
+  background-color: var(--danger-color); /* Use a red color for logout */
+  color: #fff;
+  padding: 10px 15px;
+  border-radius: 6px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  border: none;
+}
+
+.logout-button:hover {
+  background-color: #d32f2f; /* Darker red on hover */
+  transform: translateY(0); /* Override general button hover effect */
+}
+
+/* Responsive adjustments for smaller screens */
+@media (max-width: 768px) {
+  .header-content {
+    flex-direction: column;
+    gap: 15px;
+  }
+
+  .nav-links {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 1rem;
+  }
+
+  .logo {
+    margin-bottom: 10px;
+  }
+}

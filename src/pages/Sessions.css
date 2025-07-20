@@ -1,0 +1,165 @@
+@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;700&family=Roboto:wght@400;700&display=swap');
+
+/* General variables for colors, consistent with the main theme */
+:root {
+  --bg-color: #1a1a1a;
+  --text-color: #e0e0e0;
+  --primary-color: #4CAF50; /* Green for success/actions */
+  --secondary-color: #FFC107; /* Gold/Yellow for emphasis */
+  --card-bg: #2b2b2b;
+  --border-color: #444;
+  --input-bg: #333;
+  --table-header-bg: #333;
+  --table-border: #555;
+  --button-hover-bg: #45a049;
+  --danger-color: #f44336;
+}
+
+/* Base styles for the page container, consistent with other pages */
+.sessions-container {
+  max-width: 1200px;
+  width: 90%;
+  margin: 40px auto;
+  padding: 30px;
+  background-color: var(--card-bg);
+  border-radius: 12px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
+  animation: fadeIn 1s ease-in-out;
+}
+
+/* Headings styling */
+.sessions-container h2 {
+  font-family: 'Oswald', sans-serif;
+  color: var(--secondary-color);
+  text-align: center;
+  margin-bottom: 25px;
+  font-size: 2.5em;
+  letter-spacing: 1px;
+}
+
+.sessions-container h3 {
+  font-family: 'Oswald', sans-serif;
+  color: var(--secondary-color);
+  text-align: right; /* Align game header to right */
+  margin-bottom: 15px;
+  font-size: 1.5em;
+}
+
+/* Messages for loading, error, and no data */
+.loading-message, .error-message, .no-data-message {
+  text-align: center;
+  margin-top: 20px;
+  font-size: 1.1em;
+  color: var(--text-color); /* This will be #e0e0e0, not pure white */
+}
+
+.error-message {
+  color: var(--danger-color);
+}
+
+/* Styling for individual game cards */
+.game-card {
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 20px;
+  margin-bottom: 30px; /* Space between game cards */
+  background-color: #3b3b3b; /* Slightly lighter than main card bg */
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+}
+
+.game-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--table-border);
+}
+
+.game-header p {
+  margin: 0;
+  font-size: 1.1em;
+  color: var(--text-color);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Table container for player details within each game */
+.players-table-container {
+  overflow-x: auto; /* Allow horizontal scrolling for wide tables */
+}
+
+.players-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+}
+
+.players-table th {
+  background-color: var(--table-header-bg);
+  font-weight: bold;
+  font-family: 'Oswald', sans-serif;
+  letter-spacing: 0.5px;
+  padding: 12px 10px;
+  text-align: center;
+  border: 1px solid var(--table-border);
+  white-space: nowrap;
+}
+
+.players-table td {
+  padding: 10px;
+  text-align: center;
+  border: 1px solid var(--table-border);
+  white-space: nowrap;
+}
+
+.players-table tbody tr:nth-child(even) {
+  background-color: #2f2f2f;
+}
+
+/* Profit/Loss styling */
+.players-table .profit {
+  color: var(--primary-color); /* Green for profit */
+  font-weight: bold;
+}
+
+.players-table .loss {
+  color: var(--danger-color); /* Red for loss */
+  font-weight: bold;
+}
+
+/* Responsive design for smaller screens */
+@media (max-width: 768px) {
+  .sessions-container {
+    margin: 20px;
+    padding: 15px;
+  }
+
+  .game-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .game-header h3, .game-header p {
+    text-align: right;
+    width: 100%;
+  }
+
+  .players-table {
+    min-width: 500px; /* Ensure table is wide enough to prevent squishing */
+  }
+}
+
+/* Fade-in animation for the page */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}

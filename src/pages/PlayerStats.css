@@ -1,0 +1,142 @@
+@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;700&family=Roboto:wght@400;700&display=swap');
+
+/* General variables for colors, consistent with the main theme */
+:root {
+  --bg-color: #1a1a1a;
+  --text-color: #e0e0e0;
+  --primary-color: #4CAF50; /* Green for success/actions */
+  --secondary-color: #FFC107; /* Gold/Yellow for emphasis */
+  --card-bg: #2b2b2b;
+  --border-color: #444;
+  --input-bg: #333;
+  --table-header-bg: #333;
+  --table-border: #555;
+  --button-hover-bg: #45a049;
+  --danger-color: #f44336;
+}
+
+/* Base styles for the page container, similar to Tournament and CashGame */
+.player-stats-container {
+  max-width: 1200px; /* Wider layout for statistics */
+  width: 90%;
+  margin: 40px auto;
+  padding: 30px;
+  background-color: var(--card-bg);
+  border-radius: 12px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
+  animation: fadeIn 1s ease-in-out;
+}
+
+/* Headings styling */
+.player-stats-container h2 {
+  font-family: 'Oswald', sans-serif;
+  color: var(--secondary-color);
+  text-align: center;
+  margin-bottom: 25px;
+  font-size: 2.5em;
+  letter-spacing: 1px;
+}
+
+.player-stats-container h3 {
+  font-family: 'Oswald', sans-serif;
+  color: var(--secondary-color);
+  text-align: center;
+  margin-bottom: 20px;
+  font-size: 1.8em;
+}
+
+/* Section styling for consistent spacing */
+.section {
+  padding: 25px;
+  border-bottom: 1px solid var(--border-color);
+  margin-bottom: 20px;
+}
+
+.section:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+}
+
+/* Table container for scrollability on smaller screens */
+.stats-table-container {
+  max-height: 600px; /* Allow scrolling for many players */
+  overflow-y: auto;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  margin-top: 20px; /* Space above the table */
+}
+
+/* Table styling for player statistics */
+.player-stats-table {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: #3b3b3b; /* Darker background for table body */
+}
+
+/* Table header styling */
+.player-stats-table th {
+  background-color: var(--table-header-bg);
+  font-weight: bold;
+  font-family: 'Oswald', sans-serif;
+  letter-spacing: 0.5px;
+  padding: 15px 10px; /* Increased padding for headers */
+  text-align: center;
+  border: 1px solid var(--table-border);
+  position: sticky; /* Make header sticky when scrolling */
+  top: 0;
+  z-index: 1; /* Ensure header stays on top */
+}
+
+/* Table cell styling */
+.player-stats-table td {
+  padding: 12px 10px; /* Increased padding for cells */
+  text-align: center;
+  border: 1px solid var(--table-border);
+  white-space: nowrap; /* Prevent text from wrapping in cells */
+}
+
+/* Alternating row colors for better readability */
+.player-stats-table tbody tr:nth-child(even) {
+  background-color: #2f2f2f;
+}
+
+/* Hover effect on table rows */
+.player-stats-table tbody tr:hover {
+  background-color: #4a4a4a;
+  transition: background-color 0.2s ease;
+}
+
+/* Specific column width adjustments if needed (example) */
+.player-stats-table th:first-child,
+.player-stats-table td:first-child {
+  text-align: right; /* Align player names to the right */
+  padding-right: 20px;
+}
+
+/* Responsive design for smaller screens */
+@media (max-width: 768px) {
+  .player-stats-container {
+    margin: 20px;
+    padding: 15px;
+  }
+
+  .stats-table-container {
+    overflow-x: auto; /* Allow horizontal scrolling for wide tables */
+  }
+
+  .player-stats-table {
+    min-width: 800px; /* Ensure table is wide enough to prevent squishing */
+  }
+}
+
+/* Fade-in animation for the page */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
