@@ -1,20 +1,24 @@
-import React, { useEffect, useState } from 'react';
-import { collection, getDocs } from 'firebase/firestore';
-import { getAuth, onAuthStateChanged } from 'firebase/auth'; // אין צורך ב-signInAnonymously כאן
-import { db } from '../firebase'; // ודא שנתיב זה נכון לקובץ ה-firebase שלך
-import { useNavigate } from 'react-router-dom'; // ייבוא useNavigate
+import React, { useState, useEffect } from 'react';
+import { collection, getDocs, doc, updateDoc, query, orderBy } from 'firebase/firestore';
+import { getAuth, onAuthStateChanged } from 'firebase/auth';
+import { db } from '../firebase';
+import { useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faHistory, faCalendarAlt, faCoins, faUsers, faMoneyBillWave, faDollarSign } from '@fortawesome/free-solid-svg-icons';
-import './Sessions.css'; // ייבוא קובץ ה-CSS החדש
+import { faHistory, faCalendarAlt, faCoins, faUsers, faCamera, faPlus, faTimes } from '@fortawesome/free-solid-svg-icons';
+import './Sessions.css';
 
 function Sessions() {
   const [user, setUser] = useState(null);
   const [loadingAuth, setLoadingAuth] = useState(true);
-  const navigate = useNavigate(); // ייבוא useNavigate
+  const navigate = useNavigate();
 
-  const [savedGames, setSavedGames] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [cashGames, setCashGames] = useState([]);
+  const [loadingGames, setLoadingGames] = useState(true);
+  const [errorGames, setErrorGames] = useState(null);
+  const [showImageModal, setShowImageModal] = useState(false);
+  const [selectedGameId, setSelectedGameId] = useState(null);
+  const [newImageFile, setNewImageFile] = useState(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   useEffect(() => {
     const auth = getAuth();
@@ -22,15 +26,13 @@ function Sessions() {
       if (currentUser) {
         setUser(currentUser);
         setLoadingAuth(false);
-        // טען משחקים שמורים רק אם המשתמש אינו אנונימי
         if (!currentUser.isAnonymous) {
-          fetchSavedGames(currentUser.uid);
+          fetchCashGames(currentUser.uid);
         } else {
-          setLoading(false);
-          setError('משחקים שמורים אינם זמינים במצב אורח. אנא התחבר כדי לצפות בהם.');
+          setLoadingGames(false);
+          setErrorGames('היסטוריית משחקים אינה זמינה במצב אורח. אנא התחבר כדי לצפות במשחקים.');
         }
       } else {
-        // אם אין משתמש מחובר, נווט לדף הכניסה הראשי
         navigate('/');
       }
     });
@@ -38,34 +40,102 @@ function Sessions() {
     return () => unsubscribe();
   }, [navigate]);
 
-  const fetchSavedGames = async (userId) => {
-    setLoading(true);
-    setError(null);
+  const fetchCashGames = async (userId) => {
+    setLoadingGames(true);
+    setErrorGames(null);
     try {
-      const cashGamesCollection = collection(db, 'users', userId, 'cashGames');
-      const querySnapshot = await getDocs(cashGamesCollection);
-      
-      const gamesList = querySnapshot.docs.map(doc => {
-        const gameData = doc.data();
-        const playersWithProfit = gameData.players.map(player => ({
-          ...player,
-          profit: player.cashOut - player.buyIn,
-        }));
-
-        return {
-          id: doc.id,
-          date: gameData.date ? new Date(gameData.date.seconds * 1000).toLocaleDateString('he-IL') : 'תאריך לא ידוע',
-          chipsPerShekel: gameData.chipsPerShekel || 'לא צוין',
-          players: playersWithProfit,
-        };
-      }).sort((a, b) => new Date(b.date) - new Date(a.date));
-
-      setSavedGames(gamesList);
-      setLoading(false);
+      const gamesCollectionRef = collection(db, 'users', userId, 'cashGames');
+      // נמיין לפי תאריך יצירה בסדר יורד
+      const q = query(gamesCollectionRef, orderBy('date', 'desc'));
+      const querySnapshot = await getDocs(q);
+      const gamesList = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        date: doc.data().date?.toDate().toLocaleString(), // המרה לתאריך קריא
+        images: doc.data().images || [], // וודא שיש מערך תמונות
+      }));
+      setCashGames(gamesList);
+      setLoadingGames(false);
     } catch (err) {
-      console.error('שגיאה בשליפת משחקים שמורים:', err);
-      setError('שגיאה בטעינת המשחקים השמורים. נסה שוב מאוחר יותר.');
-      setLoading(false);
+      console.error('שגיאה בשליפת משחקי קאש:', err);
+      setErrorGames('שגיאה בטעינת היסטוריית המשחקים. נסה שוב מאוחר יותר.');
+      setLoadingGames(false);
+    }
+  };
+
+  const handleAddImageClick = (gameId) => {
+    setSelectedGameId(gameId);
+    setShowImageModal(true);
+  };
+
+  const handleImageFileChange = (e) => {
+    setNewImageFile(e.target.files[0]);
+  };
+
+  const handleUploadImageToGame = async () => {
+    if (!user || user.isAnonymous || !selectedGameId || !newImageFile) {
+      alert('שגיאה: חסרים נתונים להעלאת תמונה.');
+      return;
+    }
+
+    setUploadingImage(true);
+    try {
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        const base64Image = reader.result;
+        const gameDocRef = doc(db, 'users', user.uid, 'cashGames', selectedGameId);
+        
+        // קבל את המסמך הנוכחי כדי לא להחליף תמונות קיימות
+        const currentDoc = cashGames.find(game => game.id === selectedGameId);
+        const existingImages = currentDoc ? currentDoc.images : [];
+
+        // וודא שהתמונה החדשה לא תחרוג ממגבלת ה-1MB
+        // בדיקה גסה: Base64 גדול בערך ב-33% מהגודל המקורי.
+        // אם תמונה אחת גדולה מדי, זה עדיין יכול להיות בעיה.
+        // פתרון מלא יותר דורש דחיסה או Cloud Storage.
+        if (base64Image.length * 0.75 > 1024 * 1024) { // הערכה גסה של גודל בייטים
+          alert('התמונה גדולה מדי. אנא העלה תמונה קטנה יותר (עד 1MB).');
+          setUploadingImage(false);
+          return;
+        }
+
+        await updateDoc(gameDocRef, {
+          images: [...existingImages, base64Image],
+        });
+        alert('התמונה הועלתה בהצלחה למשחק!');
+        setNewImageFile(null);
+        setShowImageModal(false);
+        fetchCashGames(user.uid); // רענן את רשימת המשחקים
+      };
+      reader.readAsDataURL(newImageFile);
+    } catch (error) {
+      console.error('שגיאה בהעלאת תמונה למשחק:', error);
+      alert('שגיאה בהעלאת תמונה למשחק.');
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  const handleRemoveGameImage = async (gameId, imageIndex) => {
+    if (!user || user.isAnonymous) {
+      alert('יש להתחבר כדי למחוק תמונות.');
+      return;
+    }
+    const confirmed = window.confirm('האם אתה בטוח שברצונך למחוק תמונה זו?');
+    if (!confirmed) return;
+
+    try {
+      const gameDocRef = doc(db, 'users', user.uid, 'cashGames', gameId);
+      const gameToUpdate = cashGames.find(game => game.id === gameId);
+      if (gameToUpdate) {
+        const updatedImages = gameToUpdate.images.filter((_, idx) => idx !== imageIndex);
+        await updateDoc(gameDocRef, { images: updatedImages });
+        alert('התמונה נמחקה בהצלחה!');
+        fetchCashGames(user.uid); // רענן את הרשימה
+      }
+    } catch (error) {
+      console.error('שגיאה במחיקת תמונה:', error);
+      alert('שגיאה במחיקת תמונה.');
     }
   };
 
@@ -77,34 +147,10 @@ function Sessions() {
     );
   }
 
-  // אם אין משתמש (אפילו לא אורח), או אם המשתמש הוא אורח, נציג הודעה מתאימה
-  if (!user || user.isAnonymous) {
+  if (!user) {
     return (
       <div className="page-container sessions-container">
-        <h2 style={{ textAlign: 'center', color: 'var(--secondary-color)' }}>
-          <FontAwesomeIcon icon={faHistory} /> משחקים שמורים
-        </h2>
-        <p style={{ textAlign: 'center', color: '#FFFFFF' }}>
-          משחקים שמורים זמינים רק למשתמשים רשומים. אנא התחבר כדי לצפות בהם.
-        </p>
-      </div>
-    );
-  }
-
-  if (loading) {
-    return (
-      <div className="page-container sessions-container">
-        <h2><FontAwesomeIcon icon={faHistory} /> משחקים שמורים</h2>
-        <p className="loading-message">טוען משחקים...</p>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="page-container sessions-container">
-        <h2><FontAwesomeIcon icon={faHistory} /> משחקים שמורים</h2>
-        <p className="error-message">{error}</p>
+        <p style={{ textAlign: 'center', color: 'var(--text-color)' }}>מפנה לדף הכניסה...</p>
       </div>
     );
   }
@@ -113,43 +159,94 @@ function Sessions() {
     <div className="page-container sessions-container">
       <h2><FontAwesomeIcon icon={faHistory} /> משחקים שמורים</h2>
 
-      {savedGames.length === 0 ? (
-        <p className="no-data-message">אין משחקים שמורים להצגה. התחל לשחק משחקי קאש כדי לשמור אותם!</p>
+      {loadingGames ? (
+        <p className="loading-message">טוען היסטוריית משחקים...</p>
+      ) : errorGames ? (
+        <p className="error-message">{errorGames}</p>
+      ) : cashGames.length === 0 ? (
+        <p className="no-data-message">אין משחקי קאש שמורים להצגה. התחל משחק חדש כדי לשמור!</p>
       ) : (
         <div className="games-list">
-          {savedGames.map(game => (
-            <div key={game.id} className="game-card section">
+          {cashGames.map(game => (
+            <div key={game.id} className="game-card">
               <div className="game-header">
-                <h3><FontAwesomeIcon icon={faCalendarAlt} /> תאריך: {game.date}</h3>
+                <h3>משחק מתאריך: <FontAwesomeIcon icon={faCalendarAlt} /> {game.date}</h3>
                 <p><FontAwesomeIcon icon={faCoins} /> יחס צ'יפים לשקל: {game.chipsPerShekel}</p>
               </div>
-              
               <div className="players-table-container">
                 <table className="players-table">
                   <thead>
                     <tr>
-                      <th><FontAwesomeIcon icon={faUsers} /> שם שחקן</th>
-                      <th><FontAwesomeIcon icon={faMoneyBillWave} /> סה"כ כניסות (₪)</th>
-                      <th><FontAwesomeIcon icon={faCoins} /> סה"כ יציאות (₪)</th>
-                      <th><FontAwesomeIcon icon={faDollarSign} /> רווח/הפסד (₪)</th>
+                      <th>שם שחקן</th>
+                      <th>השקעה כוללת (₪)</th>
+                      <th>סכום יציאה (₪)</th>
+                      <th>רווח/הפסד (₪)</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {game.players.map((player, idx) => (
-                      <tr key={idx}>
-                        <td>{player.name}</td>
-                        <td>{player.buyIn.toFixed(2)}</td>
-                        <td>{player.cashOut.toFixed(2)}</td>
-                        <td className={player.profit >= 0 ? 'profit' : 'loss'}>
-                          {player.profit.toFixed(2)}
-                        </td>
-                      </tr>
-                    ))}
+                    {game.players.map((player, index) => {
+                      const profitLoss = player.cashOut - player.buyIn;
+                      return (
+                        <tr key={index}>
+                          <td>{player.name}</td>
+                          <td>{player.buyIn.toFixed(2)}</td>
+                          <td>{player.cashOut.toFixed(2)}</td>
+                          <td className={profitLoss >= 0 ? 'profit' : 'loss'}>
+                            {profitLoss.toFixed(2)}
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
+              
+              {/* חדש: הצגת תמונות קיימות */}
+              {game.images && game.images.length > 0 && (
+                <div className="game-images-section">
+                  <h4><FontAwesomeIcon icon={faCamera} /> תמונות מהמשחק:</h4>
+                  <div className="game-images-grid">
+                    {game.images.map((image, index) => (
+                      <div key={index} className="game-image-item">
+                        <img src={image} alt={`Game image ${index + 1}`} />
+                        <button onClick={() => handleRemoveGameImage(game.id, index)} className="remove-image-button">
+                          <FontAwesomeIcon icon={faTimes} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* חדש: כפתור להוספת תמונה למשחק קיים */}
+              {!user.isAnonymous && (
+                <button onClick={() => handleAddImageClick(game.id)} className="add-image-to-game-button">
+                  <FontAwesomeIcon icon={faCamera} /> הוסף תמונה למשחק זה
+                </button>
+              )}
             </div>
           ))}
+        </div>
+      )}
+
+      {/* חדש: מודאל להעלאת תמונה */}
+      {showImageModal && (
+        <div className="image-upload-modal-overlay">
+          <div className="image-upload-modal">
+            <h3>הוסף תמונה למשחק</h3>
+            <input type="file" accept="image/*" onChange={handleImageFileChange} />
+            <div className="modal-buttons">
+              <button onClick={handleUploadImageToGame} disabled={!newImageFile || uploadingImage}>
+                {uploadingImage ? 'מעלה...' : 'העלה תמונה'}
+              </button>
+              <button onClick={() => { setShowImageModal(false); setNewImageFile(null); }} className="cancel-button">
+                ביטול
+              </button>
+            </div>
+            <p className="image-note-modal">
+              הערה: גודל תמונה מומלץ עד 1MB. תמונות גדולות עלולות להיכשל בשמירה.
+            </p>
+          </div>
         </div>
       )}
     </div>

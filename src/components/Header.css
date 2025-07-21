@@ -1,3 +1,6 @@
+@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;700&family=Roboto:wght@400;700&display=swap');
+
+/* General variables for colors, consistent with the main theme */
 :root {
   --bg-color: #1a1a1a;
   --text-color: #e0e0e0;
@@ -12,97 +15,120 @@
   --danger-color: #f44336;
 }
 
-.main-header {
-  background-color: #333; /* Darker background for the header */
-  padding: 10px 20px; /* Reduced padding for a more compact look */
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3); /* Softer shadow */
+.app-header {
+  background-color: #2b2b2b;
+  padding: 15px 30px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
   position: sticky;
   top: 0;
-  z-index: 100;
-  width: 100%;
+  z-index: 1000;
+  flex-wrap: wrap; /* Allow wrapping on smaller screens */
 }
 
-.header-content {
+.logo-container {
   display: flex;
-  justify-content: space-between; /* Distribute items across the header */
   align-items: center;
-  max-width: 1200px; /* Limit content width for better readability on large screens */
-  margin: 0 auto; /* Center the content */
 }
 
-.logo {
-  color: #fff; /* White color for the logo text */
-  font-size: 1.5rem; /* Standard font size for the logo */
-  font-weight: bold;
+.logo-link {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  color: var(--text-color);
+  font-family: 'Oswald', sans-serif;
+  font-size: 1.8em;
+  font-weight: 700;
+  gap: 10px;
+  transition: color 0.3s ease;
 }
 
-.nav-links {
+.logo-link:hover {
+  color: var(--secondary-color);
+}
+
+.logo-container svg {
+  fill: var(--secondary-color); /* Color for the SVG icon */
+  transition: fill 0.3s ease;
+}
+
+.logo-link:hover svg {
+  fill: var(--primary-color);
+}
+
+.main-nav ul {
   list-style: none;
   margin: 0;
   padding: 0;
   display: flex;
-  justify-content: center;
-  gap: 1.5rem; /* Slightly reduced gap between links */
+  gap: 25px;
+  flex-wrap: wrap; /* Allow navigation items to wrap */
+  justify-content: center; /* Center items when wrapped */
 }
 
-.nav-links li a {
+.main-nav li a,
+.main-nav li button {
+  color: var(--text-color);
   text-decoration: none;
-  color: #fff; /* White color for navigation links */
-  font-family: 'Roboto', sans-serif; /* Standard font for links */
-  font-size: 1rem; /* Standard font size */
-  padding: 5px 10px; /* Minimal padding */
-  border-radius: 4px; /* Slightly less rounded corners */
-  transition: all 0.2s ease;
-}
-
-.nav-links li a:hover {
-  background-color: rgba(255, 255, 255, 0.1); /* Subtle hover effect */
-  color: var(--secondary-color); /* Gold/Yellow on hover */
-}
-
-.nav-links li a.active {
-  background-color: var(--primary-color); /* Green for active link */
-  color: #fff;
-  box-shadow: none; /* Removed the stronger box-shadow for active links */
-}
-
-.auth-buttons {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-/* Styling for the logout button (retained) */
-.logout-button {
-  background-color: var(--danger-color); /* Use a red color for logout */
-  color: #fff;
-  padding: 10px 15px;
+  font-family: 'Roboto', sans-serif;
+  font-size: 1.1em;
+  padding: 8px 12px;
   border-radius: 6px;
-  font-size: 1rem;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
-  border: none;
+  transition: background-color 0.3s ease, color 0.3s ease, transform 0.2s ease;
+  white-space: nowrap; /* Prevent text wrapping in nav items */
+  border: none; /* Remove button default border */
+  background: none; /* Remove button default background */
+  cursor: pointer; /* Ensure button cursor */
 }
 
-.logout-button:hover {
-  background-color: #d32f2f; /* Darker red on hover */
-  transform: translateY(0); /* Override general button hover effect */
+.main-nav li a:hover,
+.main-nav li button:hover {
+  background-color: #3b3b3b;
+  color: var(--secondary-color);
+  transform: translateY(-2px);
 }
 
-/* Responsive adjustments for smaller screens */
-@media (max-width: 768px) {
-  .header-content {
+.main-nav li button.logout-button {
+  background-color: var(--danger-color);
+  color: #fff;
+  padding: 8px 15px;
+}
+
+.main-nav li button.logout-button:hover {
+  background-color: #d32f2f;
+  color: #fff;
+}
+
+/* Responsive adjustments */
+@media (max-width: 900px) {
+  .app-header {
     flex-direction: column;
-    gap: 15px;
+    align-items: center;
+    padding: 15px 15px;
   }
 
-  .nav-links {
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 1rem;
+  .main-nav {
+    margin-top: 15px;
+    width: 100%;
   }
 
-  .logo {
-    margin-bottom: 10px;
+  .main-nav ul {
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .main-nav li {
+    width: 100%; /* Full width for stacked items */
+    text-align: center;
+  }
+
+  .main-nav li a,
+  .main-nav li button {
+    display: block; /* Make links/buttons take full width */
+    width: 100%;
+    padding: 10px;
   }
 }

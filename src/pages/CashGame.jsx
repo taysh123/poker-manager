@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { collection, addDoc, getDocs } from 'firebase/firestore';
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import { db } from '../firebase';
 import { useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCoins, faUsers, faPlus, faTimes, faHandshake, faExchangeAlt, faPercentage, faWallet } from '@fortawesome/free-solid-svg-icons';
+import { faCoins, faUsers, faPlus, faTimes, faHandshake, faExchangeAlt, faPercentage, faWallet, faCamera } from '@fortawesome/free-solid-svg-icons';
 import './CashGame.css';
 
 // פונקציית עזר לחישוב חובות
@@ -65,6 +65,8 @@ function CashGame() {
   const [standardBuyInShekels, setStandardBuyInShekels] = useState('');
   const [standardBuyInChips, setStandardBuyInChips] = useState('');
   const [debts, setDebts] = useState([]);
+  const [gameImages, setGameImages] = useState([]); // חדש: מערך לתמונות המשחק הנוכחי
+  const fileInputRef = useRef(null); // חדש: רפרנס לקלט קובץ
 
   useEffect(() => {
     const auth = getAuth();
@@ -148,12 +150,21 @@ function CashGame() {
     }));
   };
 
-  const handleChipsPerShekelChange = (e) => {
-    let value = e.target.value;
-    // אם הערך מתחיל ב-0 ואחריו יש ספרה נוספת, הסר את ה-0 המוביל
-    if (value.length > 1 && value.startsWith('0') && value !== '0') {
-      value = String(Number(value));
+  // פונקציית עזר לטיפול בקלט מספרי והסרת אפסים מובילים
+  const handleNumericInput = (value) => {
+    // אם הערך ריק או מכיל רק נקודה עשרונית, החזר אותו כפי שהוא
+    if (value === '' || value === '.') {
+        return value;
     }
+    // אם הערך מתחיל ב-0 ואחריו יש ספרה נוספת (ולא רק "0"), הסר את ה-0 המוביל
+    if (value.length > 1 && value.startsWith('0') && value[1] !== '.' ) {
+      return String(Number(value)); // המר למספר ואז חזרה למחרוזת כדי להסיר 0 מוביל
+    }
+    return value;
+  };
+
+  const handleChipsPerShekelChange = (e) => {
+    const value = handleNumericInput(e.target.value); // השתמש בפונקציית העזר
     setChipsPerShekel(value);
     
     // עדכן CashOut עבור שחקנים קיימים
@@ -169,24 +180,38 @@ function CashGame() {
   };
 
   const handleEndingChipsChange = (name, value) => {
-    // אם הערך מתחיל ב-0 ואחריו יש ספרה נוספת, הסר את ה-0 המוביל
-    if (value.length > 1 && value.startsWith('0') && value !== '0') {
-      value = String(Number(value));
-    }
+    const cleanedValue = handleNumericInput(value); // השתמש בפונקציית העזר
 
     setPlayers(players.map(p => {
       if (p.name === name) {
-        const chipCount = Number(value); // השתמש בערך המנוקה
+        const chipCount = Number(cleanedValue); // השתמש בערך המנוקה
         const rate = Number(chipsPerShekel);
         const newCashOut = isNaN(chipCount) || rate === 0 ? 0 : chipCount / rate;
         return {
           ...p,
-          endingChips: value, // שמור מחרוזת
+          endingChips: cleanedValue, // שמור מחרוזת
           cashOut: newCashOut,
         };
       }
       return p;
     }));
+  };
+
+  const handleImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        // התמונה נשמרת כ-Base64
+        setGameImages(prevImages => [...prevImages, reader.result]);
+        alert('תמונה הועלתה בהצלחה! היא תשמר עם פרטי המשחק.');
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleRemoveImage = (indexToRemove) => {
+    setGameImages(prevImages => prevImages.filter((_, index) => index !== indexToRemove));
   };
   
   const handleCalculateAndSave = async () => {
@@ -216,6 +241,7 @@ function CashGame() {
       })),
       date: new Date(),
       chipsPerShekel: Number(chipsPerShekel),
+      images: gameImages, // שמירת התמונות כחלק מנתוני המשחק
     };
 
     try {
@@ -267,11 +293,7 @@ function CashGame() {
               type="number"
               value={standardBuyInShekels}
               onChange={(e) => {
-                let value = e.target.value;
-                if (value.length > 1 && value.startsWith('0') && value !== '0') {
-                  value = String(Number(value));
-                }
-                setStandardBuyInShekels(value);
+                setStandardBuyInShekels(handleNumericInput(e.target.value));
               }}
               placeholder="שקלים (₪)"
               min="0"
@@ -376,6 +398,36 @@ function CashGame() {
           </div>
         </div>
       )}
+
+      {/* חדש: העלאת תמונות למשחק הנוכחי */}
+      <div className="section image-upload-section">
+        <h3><FontAwesomeIcon icon={faCamera} /> תמונות מהמשחק הנוכחי</h3>
+        <input
+          type="file"
+          accept="image/*"
+          onChange={handleImageUpload}
+          ref={fileInputRef}
+          style={{ display: 'none' }} // הסתר את קלט הקובץ המקורי
+        />
+        <button onClick={() => fileInputRef.current.click()} className="upload-image-button">
+          <FontAwesomeIcon icon={faCamera} /> העלה תמונה
+        </button>
+        <div className="uploaded-images-preview">
+          {gameImages.map((image, index) => (
+            <div key={index} className="image-preview-item">
+              <img src={image} alt={`Game ${index + 1}`} />
+              <button onClick={() => handleRemoveImage(index)} className="remove-image-button">
+                <FontAwesomeIcon icon={faTimes} />
+              </button>
+            </div>
+          ))}
+        </div>
+        {gameImages.length > 0 && (
+          <p className="image-note">
+            הערה: תמונות אלו ישמרו עם המשחק. וודא שגודלן אינו עולה על 1MB למסמך.
+          </p>
+        )}
+      </div>
 
       <button onClick={handleCalculateAndSave} className="calculate-btn">
         <FontAwesomeIcon icon={faPercentage} /> חשב וסגור משחק
