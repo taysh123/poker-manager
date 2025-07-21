@@ -13,6 +13,14 @@
   --danger-color: #f44336;
 }
 
+/* --- GLOBAL INPUT TEXT COLOR OVERRIDE --- */
+/* This is a strong, general rule to ensure input text color is always visible */
+input {
+  color: var(--text-color) !important;
+}
+/* --- END GLOBAL INPUT TEXT COLOR OVERRIDE --- */
+
+
 .login-main-container {
   display: flex;
   justify-content: center;
@@ -120,16 +128,17 @@
 
 /* --- GLOBAL INPUT STYLING FOR VISIBILITY --- */
 /* Ensure all input types, selects, and textareas have explicit dark backgrounds and light text */
-input[type="text"],
-input[type="number"],
-select,
-textarea {
+/* הגדלנו את הספציפיות ונוסף !important כדי לוודא דריסה של סגנונות ברירת מחדל */
+.login-card input[type="text"],
+.login-card input[type="number"],
+.login-card select,
+.login-card textarea {
   width: 100% !important;
   padding: 12px 15px !important;
   border: 1px solid var(--border-color) !important;
   border-radius: 8px !important;
   background-color: var(--input-bg) !important; /* רקע כהה */
-  color: var(--text-color) !important; /* טקסט בהיר */
+  /* צבע הטקסט כאן יוגדר על ידי הכלל הגלובלי 'input' למעלה */
   font-size: 1em !important;
   outline: none !important;
   transition: border-color 0.3s ease, background-color 0.3s ease !important;
@@ -137,14 +146,14 @@ textarea {
 }
 
 /* Placeholder styling for better visibility */
-input::placeholder,
-textarea::placeholder {
+.login-card input::placeholder,
+.login-card textarea::placeholder {
   color: #888 !important; /* אפור כהה יותר עבור placeholder */
   opacity: 1 !important; /* וודא שקיפות מלאה */
 }
 
 /* Ensure read-only inputs maintain dark background and light text */
-input[readonly] {
+.login-card input[readonly] {
   background-color: #444 !important; /* גוון כהה מעט שונה עבור read-only */
   color: var(--text-color) !important;
   opacity: 0.9 !important; /* הפוך אותו לפחות בולט במעט */
@@ -152,10 +161,10 @@ input[readonly] {
 }
 
 /* Focus state for inputs */
-input[type="text"]:focus,
-input[type="number"]:focus,
-select:focus,
-textarea:focus {
+.login-card input[type="text"]:focus,
+.login-card input[type="number"]:focus,
+.login-card select:focus,
+.login-card textarea:focus {
   border-color: var(--secondary-color) !important; /* גבול זהוב בפוקוס */
   outline: none !important;
   box-shadow: 0 0 0 3px rgba(255, 193, 7, 0.3) !important; /* זוהר עדין */
