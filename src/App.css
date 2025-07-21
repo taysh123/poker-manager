@@ -1,5 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap'); /* לוודא ש-Roboto זמין גם כאן */
-
 :root {
   --bg-color: #1a1a1a;
   --text-color: #e0e0e0;
@@ -14,16 +12,9 @@
   --danger-color: #f44336;
 }
 
-/* Ensure html and body take up the full viewport height */
-html, body {
-  height: 100%; /* Make sure html and body fill the entire viewport */
-  margin: 0;
-  padding: 0;
-  overflow-x: hidden; /* Prevent horizontal scroll */
-}
-
-/* Base styles for the entire application */
+/* סגנונות בסיסיים לכל האפליקציה */
 body {
+  margin: 0;
   font-family: 'Roboto', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -35,15 +26,6 @@ body {
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
-}
-
-/* Assuming your main React app mounts to a div with id="root" */
-/* This ensures the root element also takes full height and uses flexbox for layout */
-#root {
-  display: flex; /* Use flexbox for layout */
-  flex-direction: column; /* Stack children vertically */
-  min-height: 100vh; /* Ensure it takes at least 100% of the viewport height */
-  background-color: var(--bg-color); /* Set background for the entire app */
 }
 
 /* Dashboard container styling - if this is your main page container */
@@ -59,11 +41,6 @@ code {
   text-align: center; /* Center content within the dashboard container */
   position: relative; /* Ensure it's above other elements if needed */
   z-index: 1; /* Give it a higher z-index than the nav bar if there's overlap */
-  flex-grow: 1; /* Allow the dashboard container to grow and fill available space */
-  display: flex; /* Use flexbox for internal layout if needed */
-  flex-direction: column; /* Stack internal content vertically */
-  justify-content: center; /* Center content vertically within the container */
-  align-items: center; /* Center content horizontally within the container */
 }
 
 /* Dashboard heading */
@@ -174,28 +151,11 @@ code {
 }
 
 /* Ensure the main content area has enough padding at the top
-   to prevent overlap with a sticky navigation bar.
+   to prevent overlap with a fixed navigation bar.
    Adjust this value based on the height of your navigation bar. */
 .main-content-area {
-  padding-top: 80px; /* Default padding for larger screens (adjust if needed) */
-  flex-grow: 1; /* Allow this area to grow and fill available space */
-  display: flex; /* Use flexbox for its children */
-  flex-direction: column; /* Stack children vertically */
-  justify-content: center; /* Center content vertically */
-  align-items: center; /* Center content horizontally */
-  width: 100%; /* Ensure it takes full width */
+  padding-top: 80px; /* Example: If your nav bar is 60px tall, add some extra space */
 }
-
-/* Responsive adjustment for main-content-area padding when header stacks */
-@media (max-width: 900px) {
-  .main-content-area {
-    /* Adjust padding-top for smaller screens where the header's height increases.
-       You might need to fine-tune this value (e.g., try 120px, 140px)
-       based on the exact height of your header on mobile. */
-    padding-top: 130px; /* Example: Increased padding for stacked header */
-  }
-}
-
 
 /* Specific styling for the login form container based on the screenshot */
 .login-form-container {
