@@ -13,7 +13,7 @@
   --danger-color: #f44336;
 }
 
-.register-container {
+.login-container {
   display: flex;
   justify-content: center;
   align-items: center;
@@ -22,7 +22,7 @@
   padding: 20px;
 }
 
-.register-card {
+.login-card {
   background-color: var(--card-bg);
   padding: 40px;
   border-radius: 12px;
@@ -33,14 +33,14 @@
   animation: fadeIn 0.8s ease-out;
 }
 
-.register-card h2 {
+.login-card h2 {
   font-family: 'Oswald', sans-serif;
   color: var(--secondary-color);
   margin-bottom: 20px;
   font-size: 2.2em;
 }
 
-.register-card p {
+.login-card p {
   color: var(--text-color);
   margin-bottom: 30px;
   font-size: 1.1em;
@@ -60,53 +60,54 @@
 
 /* --- GLOBAL INPUT STYLING FOR VISIBILITY --- */
 /* Ensure all input types, selects, and textareas have explicit dark backgrounds and light text */
-input[type="text"],
-input[type="email"], /* הוספתי סוג input חדש */
-input[type="password"], /* הוספתי סוג input חדש */
-input[type="number"],
-select,
-textarea {
-  width: 100%;
-  padding: 12px 15px;
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  background-color: var(--input-bg); /* Dark background */
-  color: var(--text-color); /* Light text */
-  font-size: 1em;
-  outline: none;
-  transition: border-color 0.3s ease, background-color 0.3s ease;
-  box-sizing: border-box; /* Include padding and border in the element's total width and height */
+/* הגדלנו את הספציפיות ונוסף !important כדי לוודא דריסה של סגנונות ברירת מחדל */
+.login-card input[type="text"],
+.login-card input[type="email"],
+.login-card input[type="password"],
+.login-card input[type="number"],
+.login-card select,
+.login-card textarea {
+  width: 100% !important;
+  padding: 12px 15px !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: 8px !important;
+  background-color: var(--input-bg) !important; /* רקע כהה */
+  color: var(--text-color) !important; /* טקסט בהיר */
+  font-size: 1em !important;
+  outline: none !important;
+  transition: border-color 0.3s ease, background-color 0.3s ease !important;
+  box-sizing: border-box !important; /* כלול padding ו-border ברוחב ובגובה הכוללים של האלמנט */
 }
 
 /* Placeholder styling for better visibility */
-input::placeholder,
-textarea::placeholder {
-  color: #888; /* A darker gray for placeholders */
-  opacity: 1; /* Ensure full opacity */
+.login-card input::placeholder,
+.login-card textarea::placeholder {
+  color: #888 !important; /* אפור כהה יותר עבור placeholder */
+  opacity: 1 !important; /* וודא שקיפות מלאה */
 }
 
 /* Ensure read-only inputs maintain dark background and light text */
-input[readonly] {
-  background-color: #444; /* Slightly different dark shade for read-only */
-  color: var(--text-color);
-  opacity: 0.9; /* Make it slightly less prominent */
-  cursor: default;
+.login-card input[readonly] {
+  background-color: #444 !important; /* גוון כהה מעט שונה עבור read-only */
+  color: var(--text-color) !important;
+  opacity: 0.9 !important; /* הפוך אותו לפחות בולט במעט */
+  cursor: default !important;
 }
 
 /* Focus state for inputs */
-input[type="text"]:focus,
-input[type="email"]:focus,
-input[type="password"]:focus,
-input[type="number"]:focus,
-select:focus,
-textarea:focus {
-  border-color: var(--secondary-color); /* Gold border on focus */
-  outline: none;
-  box-shadow: 0 0 0 3px rgba(255, 193, 7, 0.3); /* Subtle glow */
+.login-card input[type="text"]:focus,
+.login-card input[type="email"]:focus,
+.login-card input[type="password"]:focus,
+.login-card input[type="number"]:focus,
+.login-card select:focus,
+.login-card textarea:focus {
+  border-color: var(--secondary-color) !important; /* גבול זהוב בפוקוס */
+  outline: none !important;
+  box-shadow: 0 0 0 3px rgba(255, 193, 7, 0.3) !important; /* זוהר עדין */
 }
 /* --- END GLOBAL INPUT STYLING --- */
 
-.register-button {
+.login-button {
   width: 100%;
   padding: 15px;
   margin-top: 20px;
@@ -120,25 +121,25 @@ textarea:focus {
   transition: background-color 0.3s ease, transform 0.2s ease;
 }
 
-.register-button:hover {
+.login-button:hover {
   background-color: var(--button-hover-bg);
   transform: translateY(-3px);
 }
 
-.login-link {
+.register-link {
   color: var(--text-color);
   margin-top: 20px;
   font-size: 1em;
 }
 
-.login-link a {
+.register-link a {
   color: var(--secondary-color);
   text-decoration: none;
   font-weight: bold;
   transition: color 0.2s ease;
 }
 
-.login-link a:hover {
+.register-link a:hover {
   color: #e6b800;
 }
 
@@ -148,14 +149,14 @@ textarea:focus {
 }
 
 @media (max-width: 600px) {
-  .register-card {
+  .login-card {
     padding: 25px;
     margin: 15px;
   }
-  .register-card h2 {
+  .login-card h2 {
     font-size: 1.8em;
   }
-  .register-button {
+  .login-button {
     padding: 12px;
     font-size: 1.1em;
   }
