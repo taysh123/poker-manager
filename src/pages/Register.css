@@ -13,7 +13,7 @@
   --danger-color: #f44336;
 }
 
-.login-container {
+.register-container {
   display: flex;
   justify-content: center;
   align-items: center;
@@ -22,7 +22,7 @@
   padding: 20px;
 }
 
-.login-card {
+.register-card {
   background-color: var(--card-bg);
   padding: 40px;
   border-radius: 12px;
@@ -33,14 +33,14 @@
   animation: fadeIn 0.8s ease-out;
 }
 
-.login-card h2 {
+.register-card h2 {
   font-family: 'Oswald', sans-serif;
   color: var(--secondary-color);
   margin-bottom: 20px;
   font-size: 2.2em;
 }
 
-.login-card p {
+.register-card p {
   color: var(--text-color);
   margin-bottom: 30px;
   font-size: 1.1em;
@@ -61,12 +61,12 @@
 /* --- GLOBAL INPUT STYLING FOR VISIBILITY --- */
 /* Ensure all input types, selects, and textareas have explicit dark backgrounds and light text */
 /* הגדלנו את הספציפיות ונוסף !important כדי לוודא דריסה של סגנונות ברירת מחדל */
-.login-card input[type="text"],
-.login-card input[type="email"],
-.login-card input[type="password"],
-.login-card input[type="number"],
-.login-card select,
-.login-card textarea {
+.register-card input[type="text"],
+.register-card input[type="email"], /* הוספתי סוג input חדש */
+.register-card input[type="password"], /* הוספתי סוג input חדש */
+.register-card input[type="number"],
+.register-card select,
+.register-card textarea {
   width: 100% !important;
   padding: 12px 15px !important;
   border: 1px solid var(--border-color) !important;
@@ -80,14 +80,14 @@
 }
 
 /* Placeholder styling for better visibility */
-.login-card input::placeholder,
-.login-card textarea::placeholder {
+.register-card input::placeholder,
+.register-card textarea::placeholder {
   color: #888 !important; /* אפור כהה יותר עבור placeholder */
   opacity: 1 !important; /* וודא שקיפות מלאה */
 }
 
 /* Ensure read-only inputs maintain dark background and light text */
-.login-card input[readonly] {
+.register-card input[readonly] {
   background-color: #444 !important; /* גוון כהה מעט שונה עבור read-only */
   color: var(--text-color) !important;
   opacity: 0.9 !important; /* הפוך אותו לפחות בולט במעט */
@@ -95,51 +95,51 @@
 }
 
 /* Focus state for inputs */
-.login-card input[type="text"]:focus,
-.login-card input[type="email"]:focus,
-.login-card input[type="password"]:focus,
-.login-card input[type="number"]:focus,
-.login-card select:focus,
-.login-card textarea:focus {
+.register-card input[type="text"]:focus,
+.register-card input[type="email"]:focus,
+.register-card input[type="password"]:focus,
+.register-card input[type="number"]:focus,
+.register-card select:focus,
+.register-card textarea:focus {
   border-color: var(--secondary-color) !important; /* גבול זהוב בפוקוס */
   outline: none !important;
   box-shadow: 0 0 0 3px rgba(255, 193, 7, 0.3) !important; /* זוהר עדין */
 }
 /* --- END GLOBAL INPUT STYLING --- */
 
-.login-button {
+.register-button {
   width: 100%;
   padding: 15px;
   margin-top: 20px;
   border: none;
   border-radius: 8px;
-  background-color: var(--primary-color);
-  color: #fff;
+  background-color: var(--primary-color) !important;
+  color: #fff !important;
   font-size: 1.2em;
   font-weight: bold;
   cursor: pointer;
   transition: background-color 0.3s ease, transform 0.2s ease;
 }
 
-.login-button:hover {
-  background-color: var(--button-hover-bg);
+.register-button:hover {
+  background-color: var(--button-hover-bg) !important;
   transform: translateY(-3px);
 }
 
-.register-link {
+.login-link {
   color: var(--text-color);
   margin-top: 20px;
   font-size: 1em;
 }
 
-.register-link a {
+.login-link a {
   color: var(--secondary-color);
   text-decoration: none;
   font-weight: bold;
   transition: color 0.2s ease;
 }
 
-.register-link a:hover {
+.login-link a:hover {
   color: #e6b800;
 }
 
@@ -149,14 +149,14 @@
 }
 
 @media (max-width: 600px) {
-  .login-card {
+  .register-card {
     padding: 25px;
     margin: 15px;
   }
-  .login-card h2 {
+  .register-card h2 {
     font-size: 1.8em;
   }
-  .login-button {
+  .register-button {
     padding: 12px;
     font-size: 1.1em;
   }

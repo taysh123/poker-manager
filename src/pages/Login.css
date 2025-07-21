@@ -62,8 +62,8 @@
 /* Ensure all input types, selects, and textareas have explicit dark backgrounds and light text */
 /* הגדלנו את הספציפיות ונוסף !important כדי לוודא דריסה של סגנונות ברירת מחדל */
 .login-card input[type="text"],
-.login-card input[type="email"],
-.login-card input[type="password"],
+.login-card input[type="email"], /* הוספתי סוג input חדש */
+.login-card input[type="password"], /* הוספתי סוג input חדש */
 .login-card input[type="number"],
 .login-card select,
 .login-card textarea {
@@ -107,14 +107,15 @@
 }
 /* --- END GLOBAL INPUT STYLING --- */
 
+
 .login-button {
   width: 100%;
   padding: 15px;
   margin-top: 20px;
   border: none;
   border-radius: 8px;
-  background-color: var(--primary-color) !important; /* וודא רקע ירוק תמיד */
-  color: #fff !important; /* וודא טקסט לבן תמיד */
+  background-color: var(--primary-color) !important;
+  color: #fff !important;
   font-size: 1.2em;
   font-weight: bold;
   cursor: pointer;
@@ -122,7 +123,7 @@
 }
 
 .login-button:hover {
-  background-color: var(--button-hover-bg) !important; /* וודא שינוי רקע בריחוף */
+  background-color: var(--button-hover-bg) !important;
   transform: translateY(-3px);
 }
 
