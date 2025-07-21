@@ -1,128 +1,157 @@
+/* General variables for colors, consistent with the main theme */
+:root {
+  --bg-color: #1a1a1a;
+  --text-color: #e0e0e0;
+  --primary-color: #4CAF50; /* Green for success/actions */
+  --secondary-color: #FFC107; /* Gold/Yellow for emphasis */
+  --card-bg: #2b2b2b;
+  --border-color: #444;
+  --input-bg: #333;
+  --table-header-bg: #333;
+  --table-border: #555;
+  --button-hover-bg: #45a049;
+  --danger-color: #f44336;
+}
+
+/* Base styles for the entire application */
 body {
-  font-family: Arial, sans-serif;
   margin: 0;
-  padding: 0;
-  background-color: #f4f4f4;
-  color: #333;
-  direction: rtl; 
+  font-family: 'Roboto', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  direction: rtl; /* Ensure RTL for Hebrew text */
 }
 
-
-.page-container {
-  padding: 20px;
-  max-width: 900px;
-  margin: auto;
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
 }
 
-.home-page-container {
+/* Dashboard container styling - if this is your main page container */
+.dashboard-container {
+  max-width: 1200px;
+  width: 90%;
+  margin: 40px auto;
+  padding: 30px;
+  background-color: var(--card-bg);
+  border-radius: 12px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
+  animation: fadeIn 1s ease-in-out;
+  text-align: center; /* Center content within the dashboard container */
+  position: relative; /* Ensure it's above other elements if needed */
+  z-index: 1; /* Give it a higher z-index than the nav bar if there's overlap */
+}
+
+/* Dashboard heading */
+.dashboard-container h2 {
+  font-family: 'Oswald', sans-serif;
+  color: var(--secondary-color);
+  margin-bottom: 30px;
+  font-size: 2.8em;
+  letter-spacing: 1px;
+}
+
+/* Container for the main action cards */
+.dashboard-cards-container {
+  display: grid; /* Use CSS Grid for flexible layout */
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); /* Responsive columns */
+  gap: 30px; /* Space between cards */
+  justify-content: center; /* Center cards horizontally */
+  align-items: stretch; /* Make cards stretch to same height */
+  margin-top: 30px;
+}
+
+/* Individual dashboard card styling */
+.dashboard-card {
+  background-color: #3b3b3b;
+  border-radius: 12px;
+  padding: 30px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+  text-decoration: none; /* Remove underline for links */
+  color: var(--text-color);
   display: flex;
   flex-direction: column;
+  align-items: center;
   justify-content: center;
-  align-items: center;
-  height: 80vh;
-  gap: 20px;
+  text-align: center;
+  transition: transform 0.3s ease, box-shadow 0.3s ease, background-color 0.3s ease;
+  min-height: 200px; /* Ensure a minimum height for cards */
 }
 
-
-.main-nav {
-  padding: 15px;
-  background: #2a2a2a;
-  display: flex;
-  gap: 15px;
-  justify-content: flex-end; 
-  border-bottom: 3px solid #333;
+.dashboard-card:hover {
+  transform: translateY(-8px); /* Lift effect on hover */
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5);
+  background-color: #4a4a4a; /* Slightly lighter background on hover */
 }
 
-.main-nav a {
-  color: #eee;
-  text-decoration: none;
-  font-weight: bold;
+.dashboard-card svg {
+  color: var(--primary-color); /* Icon color */
+  font-size: 3.5em; /* Large icon size */
+  margin-bottom: 15px;
 }
 
-.main-nav a:hover {
-  color: #fff;
-  text-decoration: underline;
+.dashboard-card h3 {
+  font-family: 'Oswald', sans-serif;
+  font-size: 1.8em;
+  color: var(--secondary-color); /* Heading color */
+  margin-bottom: 10px;
 }
 
-
-button {
-  padding: 10px 20px;
-  font-size: 1rem;
-  cursor: pointer;
-  border: none;
-  border-radius: 5px;
-  transition: background-color 0.3s;
-  background-color: #2196f3;
-  color: #fff;
+.dashboard-card p {
+  font-family: 'Roboto', sans-serif;
+  font-size: 1em;
+  color: #ccc; /* Description text color */
+  line-height: 1.5;
 }
 
-button:hover {
-  background-color: #1a71c2;
-}
-
-input[type="text"],
-input[type="number"] {
-  padding: 8px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  margin-left: 5px;
-}
-
-.add-player-form {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  align-items: center;
-  margin-bottom: 20px;
-}
-
-
-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 20px;
-  background-color: #fff;
-  border: 1px solid #ccc;
-}
-
-th, td {
-  padding: 12px;
-  border: 1px solid #ddd;
-  text-align: right;
-}
-
-thead th {
-  background-color: #f2f2f2;
-  font-weight: bold;
-}
-
-tbody tr:nth-child(even) {
-  background-color: #f9f9f9;
-}
-
-
-.tournament-container .controls {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 15px;
-  align-items: center;
-}
-
-.tournament-container .timer-display {
-  font-size: 3rem;
-  font-weight: bold;
-  margin: 20px 0;
-  color: #4CAF50;
-}
-
-@media (max-width: 600px) {
-  .main-nav {
-    flex-direction: column;
-    align-items: flex-end;
+/* Responsive adjustments for smaller screens */
+@media (max-width: 768px) {
+  .dashboard-container {
+    padding: 20px;
+    margin: 20px auto;
   }
 
-  .home-page-container button {
-    width: 100%;
+  .dashboard-container h2 {
+    font-size: 2.2em;
+    margin-bottom: 25px;
+  }
+
+  .dashboard-cards-container {
+    grid-template-columns: 1fr; /* Stack cards on very small screens */
+    gap: 20px;
+  }
+
+  .dashboard-card {
+    padding: 25px;
+    min-height: 180px;
+  }
+
+  .dashboard-card svg {
+    font-size: 3em;
+  }
+
+  .dashboard-card h3 {
+    font-size: 1.6em;
   }
 }
 
+/* Fade-in animation */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Ensure the main content area has enough padding at the top
+   to prevent overlap with a fixed navigation bar.
+   Adjust this value based on the height of your navigation bar. */
+.main-content-area {
+  padding-top: 80px; /* Example: If your nav bar is 60px tall, add some extra space */
+}
