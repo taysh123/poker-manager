@@ -3,8 +3,8 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCoins, faUsers, faTrophy, faPlus, faMinus, faTimes } from '@fortawesome/free-solid-svg-icons';
 import TournamentTimer from './TournamentTimer';
 import './Tournament.css';
-import { getAuth, onAuthStateChanged } from 'firebase/auth'; // אין צורך ב-signInAnonymously כאן
-import { useNavigate } from 'react-router-dom'; // ייבוא useNavigate
+import { getAuth, onAuthStateChanged } from 'firebase/auth';
+import { useNavigate } from 'react-router-dom';
 
 const REALISTIC_BLIND_STRUCTURES = {
   'MTT': [
@@ -96,12 +96,12 @@ const INITIAL_CUSTOM_STRUCTURE = [
 ];
 
 function Tournament() {
-  const [user, setUser] = useState(null); // מצב לשמירת פרטי המשתמש המחובר
-  const [loadingAuth, setLoadingAuth] = useState(true); // מצב לבדיקת טעינת אימות
-  const navigate = useNavigate(); // ייבוא useNavigate
+  const [user, setUser] = useState(null);
+  const [loadingAuth, setLoadingAuth] = useState(true);
+  const navigate = useNavigate();
 
-  const [buyIn, setBuyIn] = useState(0);
-  const [numRebuys, setNumRebuys] = useState(0);
+  const [buyIn, setBuyIn] = useState('');
+  const [numRebuys, setNumRebuys] = useState('');
   const [numWinners, setNumWinners] = useState(3);
   const [prizePercentages, setPrizePercentages] = useState([50, 30, 20]);
   const [prizes, setPrizes] = useState([]);
@@ -111,9 +111,8 @@ function Tournament() {
   
   const [players, setPlayers] = useState([]);
   const [newPlayerName, setNewPlayerName] = useState('');
-  const [initialStack, setInitialStack] = useState(10000);
+  const [initialStack, setInitialStack] = useState('');
 
-  // Effect to listen for authentication state changes and redirect if not authenticated
   useEffect(() => {
     const auth = getAuth();
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -121,12 +120,11 @@ function Tournament() {
         setUser(currentUser);
         setLoadingAuth(false);
       } else {
-        // אם אין משתמש מחובר, נווט לדף הכניסה הראשי
         navigate('/');
       }
     });
     return () => unsubscribe();
-  }, [navigate]); // הוספת navigate כתלות
+  }, [navigate]);
 
   useEffect(() => {
     if (selectedStructure !== 'Custom') {
@@ -138,19 +136,19 @@ function Tournament() {
 
   const handlePercentageChange = (index, value) => {
     const newPercentages = [...prizePercentages];
-    newPercentages[index] = parseInt(value) || 0;
+    newPercentages[index] = Number(value) || 0; 
     setPrizePercentages(newPercentages);
   };
 
   const handleNumWinnersChange = (e) => {
-    const newNumWinners = parseInt(e.target.value) || 1;
-    setNumWinners(newNumWinners);
-    setPrizePercentages(Array(newNumWinners).fill(0));
+    const value = e.target.value;
+    setNumWinners(Number(value) || 1);
+    setPrizePercentages(Array(Number(value) || 1).fill(0));
   };
 
   const calculatePrizes = () => {
     const totalPlayers = players.length;
-    const totalPrizePool = (totalPlayers + numRebuys) * buyIn;
+    const totalPrizePool = (totalPlayers + Number(numRebuys)) * Number(buyIn);
     const totalPercentage = prizePercentages.reduce((sum, p) => sum + p, 0);
     if (totalPercentage !== 100) {
       alert("סך האחוזים חייב להיות 100%.");
@@ -165,7 +163,7 @@ function Tournament() {
 
   const handleLevelChange = (index, field, value) => {
     const newLevels = [...blindLevels];
-    newLevels[index][field] = parseInt(value) || 0;
+    newLevels[index][field] = Number(value) || 0;
     setBlindLevels(newLevels);
   };
 
@@ -227,7 +225,7 @@ function Tournament() {
       const newPlayer = {
           id: Date.now(),
           name: newPlayerName,
-          stack: initialStack,
+          stack: Number(initialStack),
           table: null,
       };
       setPlayers([...players, newPlayer]);
@@ -238,7 +236,16 @@ function Tournament() {
       setPlayers(players.filter(player => player.id !== id));
   };
   
-  // Conditional rendering based on authentication status
+  // פונקציית עזר לטיפול בקלט מספרי והסרת אפסים מובילים
+  const handleNumericInputChange = (setter) => (e) => {
+    let value = e.target.value;
+    // אם הערך מתחיל ב-0 ואחריו יש ספרה נוספת, הסר את ה-0 המוביל
+    if (value.length > 1 && value.startsWith('0') && value !== '0') {
+      value = String(Number(value)); // המר למספר ואז חזרה למחרוזת כדי להסיר 0 מוביל
+    }
+    setter(value);
+  };
+
   if (loadingAuth) {
     return (
       <div className="page-container tournament-container">
@@ -247,9 +254,6 @@ function Tournament() {
     );
   }
 
-  // אם אין משתמש מחובר, ה-useEffect כבר יפנה לדף הכניסה.
-  // לכן, אם הגענו לכאן ואין user, זו שגיאה בלוגיקה או שהדף נטען לפני הניתוב.
-  // למען הבטיחות, נציג הודעת טעינה או נחכה לניתוב.
   if (!user) {
     return (
       <div className="page-container tournament-container">
@@ -266,15 +270,31 @@ function Tournament() {
         <h3><FontAwesomeIcon icon={faCoins} /> הגדרות כלליות</h3>
         <div className="input-group">
           <label><FontAwesomeIcon icon={faCoins} /> סכום כניסה:</label>
-          <input type="number" value={buyIn} onChange={(e) => setBuyIn(parseInt(e.target.value) || 0)} placeholder="₪" />
+          <input 
+            type="number" 
+            value={buyIn} 
+            onChange={handleNumericInputChange(setBuyIn)} // שימוש בפונקציה החדשה
+            placeholder="₪" 
+            min="0"
+          />
         </div>
         <div className="input-group">
           <label><FontAwesomeIcon icon={faPlus} /> סך הריביים:</label>
-          <input type="number" value={numRebuys} onChange={(e) => setNumRebuys(parseInt(e.target.value) || 0)} />
+          <input 
+            type="number" 
+            value={numRebuys} 
+            onChange={handleNumericInputChange(setNumRebuys)} // שימוש בפונקציה החדשה
+            min="0"
+          />
         </div>
         <div className="input-group">
           <label><FontAwesomeIcon icon={faTrophy} /> מספר זוכים:</label>
-          <input type="number" value={numWinners} onChange={handleNumWinnersChange} min="1" />
+          <input 
+            type="number" 
+            value={numWinners} 
+            onChange={handleNumWinnersChange} 
+            min="1" 
+          />
         </div>
         <button onClick={calculatePrizes}>
           חשב פרסים
@@ -283,11 +303,17 @@ function Tournament() {
 
       <div className="section prize-distribution-section">
         <h3>חלוקת פרסים</h3>
-        <p><strong>קופת פרסים כוללת:</strong> {(players.length + numRebuys) * buyIn} ₪</p>
+        <p><strong>קופת פרסים כוללת:</strong> {(players.length + Number(numRebuys)) * Number(buyIn)} ₪</p>
         {prizePercentages.map((p, index) => (
           <div key={index} className="input-group">
             <label><FontAwesomeIcon icon={faTrophy} /> מקום {index + 1}:</label>
-            <input type="number" value={p} onChange={(e) => handlePercentageChange(index, e.target.value)} />
+            <input 
+              type="number" 
+              value={p} 
+              onChange={handleNumericInputChange((val) => handlePercentageChange(index, val))} // שימוש בפונקציה החדשה
+              min="0" 
+              max="100" 
+            />
             <span>%</span>
           </div>
         ))}
@@ -316,8 +342,9 @@ function Tournament() {
               <input 
                   type="number" 
                   value={initialStack} 
-                  onChange={(e) => setInitialStack(parseInt(e.target.value) || 0)} 
+                  onChange={handleNumericInputChange(setInitialStack)} // שימוש בפונקציה החדשה
                   placeholder="סטאק התחלתי" 
+                  min="0"
               />
               <button onClick={addPlayer}>הוסף שחקן</button>
           </div>
@@ -378,14 +405,24 @@ function Tournament() {
                   <td>{level.level}</td>
                   <td>
                     {selectedStructure === 'Custom' ? (
-                      <input type="number" value={level.smallBlind} onChange={(e) => handleLevelChange(index, 'smallBlind', e.target.value)} />
+                      <input 
+                        type="number" 
+                        value={level.smallBlind} 
+                        onChange={handleNumericInputChange((val) => handleLevelChange(index, 'smallBlind', val))} // שימוש בפונקציה החדשה
+                        min="0"
+                      />
                     ) : (
                       level.smallBlind
                     )}
                   </td>
                   <td>
                     {selectedStructure === 'Custom' ? (
-                      <input type="number" value={level.bigBlind} onChange={(e) => handleLevelChange(index, 'bigBlind', e.target.value)} />
+                      <input 
+                        type="number" 
+                        value={level.bigBlind} 
+                        onChange={handleNumericInputChange((val) => handleLevelChange(index, 'bigBlind', val))} // שימוש בפונקציה החדשה
+                        min="0"
+                      />
                     ) : (
                       level.bigBlind
                     )}
@@ -393,7 +430,12 @@ function Tournament() {
                   {anteEnabled && (
                     <td>
                       {selectedStructure === 'Custom' ? (
-                        <input type="number" value={level.ante} onChange={(e) => handleLevelChange(index, 'ante', e.target.value)} />
+                        <input 
+                          type="number" 
+                          value={level.ante} 
+                          onChange={handleNumericInputChange((val) => handleLevelChange(index, 'ante', val))} // שימוש בפונקציה החדשה
+                          min="0"
+                        />
                       ) : (
                         level.ante
                       )}
@@ -401,7 +443,12 @@ function Tournament() {
                   )}
                   <td>
                     {selectedStructure === 'Custom' ? (
-                      <input type="number" value={level.duration / 60} onChange={(e) => handleLevelChange(index, 'duration', parseInt(e.target.value) * 60)} />
+                      <input 
+                        type="number" 
+                        value={level.duration / 60} 
+                        onChange={handleNumericInputChange((val) => handleLevelChange(index, 'duration', Number(val) * 60))} // שימוש בפונקציה החדשה
+                        min="0"
+                      />
                     ) : (
                       level.duration / 60
                     )}

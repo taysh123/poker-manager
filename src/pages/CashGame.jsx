@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { collection, addDoc, getDocs } from 'firebase/firestore';
-import { getAuth, onAuthStateChanged } from 'firebase/auth'; // אין צורך ב-signInAnonymously כאן
+import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import { db } from '../firebase';
-import { useNavigate } from 'react-router-dom'; // ייבוא useNavigate
+import { useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCoins, faUsers, faPlus, faTimes, faHandshake, faExchangeAlt, faPercentage, faWallet } from '@fortawesome/free-solid-svg-icons';
 import './CashGame.css';
@@ -55,15 +55,15 @@ function calculateDebts(players) {
 function CashGame() {
   const [user, setUser] = useState(null);
   const [loadingAuth, setLoadingAuth] = useState(true);
-  const navigate = useNavigate(); // ייבוא useNavigate
+  const navigate = useNavigate();
 
   const [allPlayers, setAllPlayers] = useState([]);
   const [players, setPlayers] = useState([]);
   const [selectedPlayerName, setSelectedPlayerName] = useState('');
   const [newPlayerName, setNewPlayerName] = useState('');
-  const [chipsPerShekel, setChipsPerShekel] = useState(0); 
-  const [standardBuyInShekels, setStandardBuyInShekels] = useState(0);
-  const [standardBuyInChips, setStandardBuyInChips] = useState(0);
+  const [chipsPerShekel, setChipsPerShekel] = useState('');
+  const [standardBuyInShekels, setStandardBuyInShekels] = useState('');
+  const [standardBuyInChips, setStandardBuyInChips] = useState('');
   const [debts, setDebts] = useState([]);
 
   useEffect(() => {
@@ -72,14 +72,12 @@ function CashGame() {
       if (currentUser) {
         setUser(currentUser);
         setLoadingAuth(false);
-        // טען שחקנים רק אם המשתמש אינו אנונימי
         if (!currentUser.isAnonymous) {
           fetchAllPlayers(currentUser.uid);
         } else {
-          setAllPlayers([]); // נקה שחקנים קבועים עבור אורחים
+          setAllPlayers([]);
         }
       } else {
-        // אם אין משתמש מחובר, נווט לדף הכניסה הראשי
         navigate('/');
       }
     });
@@ -89,10 +87,12 @@ function CashGame() {
 
   // עדכון אוטומטי של כניסה סטנדרטית בצ'יפים
   useEffect(() => {
-    if (chipsPerShekel > 0 && standardBuyInShekels > 0) {
-      setStandardBuyInChips(standardBuyInShekels * chipsPerShekel);
+    const shekels = Number(standardBuyInShekels);
+    const rate = Number(chipsPerShekel);
+    if (rate > 0 && shekels > 0) {
+      setStandardBuyInChips(String(shekels * rate));
     } else {
-      setStandardBuyInChips(0);
+      setStandardBuyInChips('');
     }
   }, [chipsPerShekel, standardBuyInShekels]);
 
@@ -133,12 +133,15 @@ function CashGame() {
   };
 
   const handleAddEntry = (name, entryChips, entryShekels) => {
+    const chips = Number(entryChips) || 0;
+    const shekels = Number(entryShekels) || 0;
+
     setPlayers(players.map(p => {
       if (p.name === name) {
         return {
           ...p,
-          entries: [...p.entries, { chips: entryChips, shekels: entryShekels }],
-          totalBuyIn: p.totalBuyIn + entryShekels,
+          entries: [...p.entries, { chips: chips, shekels: shekels }],
+          totalBuyIn: p.totalBuyIn + shekels,
         };
       }
       return p;
@@ -146,31 +149,39 @@ function CashGame() {
   };
 
   const handleChipsPerShekelChange = (e) => {
-    const value = e.target.value;
-    const rate = parseFloat(value) || 0;
-    setChipsPerShekel(rate);
+    let value = e.target.value;
+    // אם הערך מתחיל ב-0 ואחריו יש ספרה נוספת, הסר את ה-0 המוביל
+    if (value.length > 1 && value.startsWith('0') && value !== '0') {
+      value = String(Number(value));
+    }
+    setChipsPerShekel(value);
     
+    // עדכן CashOut עבור שחקנים קיימים
     setPlayers(players.map(p => {
-      if (p.name === name) {
-        const newCashOut = isNaN(chipCount) || chipsPerShekel === 0 ? 0 : chipCount / chipsPerShekel;
-        return {
-          ...p,
-          endingChips: p.endingChips,
-          cashOut: newCashOut,
-        };
-      }
-      return p;
+      const chipCount = Number(p.endingChips);
+      const rate = Number(value); // השתמש בערך המנוקה
+      const newCashOut = isNaN(chipCount) || rate === 0 ? 0 : chipCount / rate;
+      return {
+        ...p,
+        cashOut: newCashOut,
+      };
     }));
   };
 
   const handleEndingChipsChange = (name, value) => {
-    const chipCount = parseInt(value, 10);
+    // אם הערך מתחיל ב-0 ואחריו יש ספרה נוספת, הסר את ה-0 המוביל
+    if (value.length > 1 && value.startsWith('0') && value !== '0') {
+      value = String(Number(value));
+    }
+
     setPlayers(players.map(p => {
       if (p.name === name) {
-        const newCashOut = isNaN(chipCount) || chipsPerShekel === 0 ? 0 : chipCount / chipsPerShekel;
+        const chipCount = Number(value); // השתמש בערך המנוקה
+        const rate = Number(chipsPerShekel);
+        const newCashOut = isNaN(chipCount) || rate === 0 ? 0 : chipCount / rate;
         return {
           ...p,
-          endingChips: value,
+          endingChips: value, // שמור מחרוזת
           cashOut: newCashOut,
         };
       }
@@ -204,7 +215,7 @@ function CashGame() {
         cashOut: p.cashOut,
       })),
       date: new Date(),
-      chipsPerShekel,
+      chipsPerShekel: Number(chipsPerShekel),
     };
 
     try {
@@ -217,7 +228,6 @@ function CashGame() {
     }
   };
 
-  // Display loading message while checking authentication
   if (loadingAuth) {
     return (
       <div className="page-container cash-game-container">
@@ -226,9 +236,6 @@ function CashGame() {
     );
   }
 
-  // אם אין משתמש מחובר, ה-useEffect כבר יפנה לדף הכניסה.
-  // לכן, אם הגענו לכאן ואין user, זו שגיאה בלוגיקה או שהדף נטען לפני הניתוב.
-  // למען הבטיחות, נציג הודעת טעינה או נחכה לניתוב.
   if (!user) {
     return (
       <div className="page-container cash-game-container">
@@ -249,6 +256,7 @@ function CashGame() {
             value={chipsPerShekel} 
             onChange={handleChipsPerShekelChange} 
             placeholder="לדוגמה: 16"
+            min="0"
           />
         </div>
 
@@ -258,8 +266,15 @@ function CashGame() {
             <input
               type="number"
               value={standardBuyInShekels}
-              onChange={(e) => setStandardBuyInShekels(parseInt(e.target.value) || 0)}
+              onChange={(e) => {
+                let value = e.target.value;
+                if (value.length > 1 && value.startsWith('0') && value !== '0') {
+                  value = String(Number(value));
+                }
+                setStandardBuyInShekels(value);
+              }}
               placeholder="שקלים (₪)"
+              min="0"
             />
             <span className="or-separator">או</span>
             <input
@@ -276,7 +291,6 @@ function CashGame() {
         <h3><FontAwesomeIcon icon={faUsers} /> הוספת שחקן</h3>
         <form onSubmit={handleAddPlayer} className="add-player-form">
           <div className="player-input-group">
-            {/* הצג שחקנים קיימים רק אם המשתמש אינו אנונימי */}
             {!user.isAnonymous && (
               <select 
                 value={selectedPlayerName} 
@@ -291,7 +305,6 @@ function CashGame() {
                 ))}
               </select>
             )}
-            {/* הצג "או" רק אם יש גם אפשרות לבחור שחקן קיים */}
             {!user.isAnonymous && <span className="or-separator">או</span>}
             <input
               type="text"
@@ -333,7 +346,7 @@ function CashGame() {
                       <div className="button-group">
                         <button 
                           onClick={() => handleAddEntry(p.name, standardBuyInChips, standardBuyInShekels)}
-                          disabled={!standardBuyInChips}
+                          disabled={!Number(standardBuyInChips)}
                         >
                           <FontAwesomeIcon icon={faPlus} /> סטנדרטית
                         </button>
@@ -347,6 +360,7 @@ function CashGame() {
                         type="number"
                         value={p.endingChips}
                         onChange={(e) => handleEndingChipsChange(p.name, e.target.value)}
+                        min="0"
                       />
                     </td>
                     <td className="money-cell">{p.cashOut.toFixed(2)} ₪</td>
