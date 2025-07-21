@@ -10,8 +10,8 @@ import Tournament from './pages/Tournament';
 import Sessions from './pages/Sessions';
 import PlayerStats from './pages/PlayerStats';
 import PlayerManagement from './pages/PlayerManagement';
-import Homepage from './pages/HomePage';
-import PokerJournal from './pages/PokerJournal'; // ייבוא יומן פוקר
+import Homepage from './pages/Homepage'; // תיקון: שינוי ל-Homepage (H גדולה, p קטנה)
+import PokerJournal from './pages/PokerJournal';
 import './App.css';
 import './firebase'; // וודא ש-Firebase מאותחל
 
@@ -43,13 +43,13 @@ function App() {
         <Route path="/" element={user ? <Navigate to="/home" /> : <LoginMainPage />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
-        <Route path="/home" element={user ? <HomePage /> : <Navigate to="/" />} />
+        <Route path="/home" element={user ? <Homepage /> : <Navigate to="/" />} /> {/* תיקון: שינוי ל-Homepage (H גדולה, p קטנה) */}
         <Route path="/cash-game" element={user ? <CashGame /> : <Navigate to="/" />} />
         <Route path="/tournament" element={user ? <Tournament /> : <Navigate to="/" />} />
         <Route path="/sessions" element={user ? <Sessions /> : <Navigate to="/" />} />
         <Route path="/player-stats" element={user ? <PlayerStats /> : <Navigate to="/" />} />
         <Route path="/player-management" element={user ? <PlayerManagement /> : <Navigate to="/" />} />
-        <Route path="/poker-journal" element={user ? <PokerJournal /> : <Navigate to="/" />} /> {/* נתיב חדש */}
+        <Route path="/poker-journal" element={user ? <PokerJournal /> : <Navigate to="/" />} />
       </Routes>
     </Router>
   );
