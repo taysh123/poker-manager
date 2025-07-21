@@ -1,4 +1,5 @@
-/* General variables for colors, consistent with the main theme */
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap'); /* לוודא ש-Roboto זמין גם כאן */
+
 :root {
   --bg-color: #1a1a1a;
   --text-color: #e0e0e0;
@@ -13,9 +14,16 @@
   --danger-color: #f44336;
 }
 
+/* Ensure html and body take up the full viewport height */
+html, body {
+  height: 100%; /* Make sure html and body fill the entire viewport */
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden; /* Prevent horizontal scroll */
+}
+
 /* Base styles for the entire application */
 body {
-  margin: 0;
   font-family: 'Roboto', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -27,6 +35,15 @@ body {
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
+}
+
+/* Assuming your main React app mounts to a div with id="root" */
+/* This ensures the root element also takes full height and uses flexbox for layout */
+#root {
+  display: flex; /* Use flexbox for layout */
+  flex-direction: column; /* Stack children vertically */
+  min-height: 100vh; /* Ensure it takes at least 100% of the viewport height */
+  background-color: var(--bg-color); /* Set background for the entire app */
 }
 
 /* Dashboard container styling - if this is your main page container */
@@ -42,6 +59,11 @@ code {
   text-align: center; /* Center content within the dashboard container */
   position: relative; /* Ensure it's above other elements if needed */
   z-index: 1; /* Give it a higher z-index than the nav bar if there's overlap */
+  flex-grow: 1; /* Allow the dashboard container to grow and fill available space */
+  display: flex; /* Use flexbox for internal layout if needed */
+  flex-direction: column; /* Stack internal content vertically */
+  justify-content: center; /* Center content vertically within the container */
+  align-items: center; /* Center content horizontally within the container */
 }
 
 /* Dashboard heading */
@@ -61,6 +83,8 @@ code {
   justify-content: center; /* Center cards horizontally */
   align-items: stretch; /* Make cards stretch to same height */
   margin-top: 30px;
+  width: 100%; /* Ensure it takes full width of its parent */
+  max-width: 900px; /* Optional: limit max width for better aesthetics on very wide screens */
 }
 
 /* Individual dashboard card styling */
@@ -150,8 +174,100 @@ code {
 }
 
 /* Ensure the main content area has enough padding at the top
-   to prevent overlap with a fixed navigation bar.
+   to prevent overlap with a sticky navigation bar.
    Adjust this value based on the height of your navigation bar. */
 .main-content-area {
-  padding-top: 80px; /* Example: If your nav bar is 60px tall, add some extra space */
+  padding-top: 80px; /* Default padding for larger screens (adjust if needed) */
+  flex-grow: 1; /* Allow this area to grow and fill available space */
+  display: flex; /* Use flexbox for its children */
+  flex-direction: column; /* Stack children vertically */
+  justify-content: center; /* Center content vertically */
+  align-items: center; /* Center content horizontally */
+  width: 100%; /* Ensure it takes full width */
+}
+
+/* Responsive adjustment for main-content-area padding when header stacks */
+@media (max-width: 900px) {
+  .main-content-area {
+    /* Adjust padding-top for smaller screens where the header's height increases.
+       You might need to fine-tune this value (e.g., try 120px, 140px)
+       based on the exact height of your header on mobile. */
+    padding-top: 130px; /* Example: Increased padding for stacked header */
+  }
+}
+
+
+/* Specific styling for the login form container based on the screenshot */
+.login-form-container {
+  background-color: var(--card-bg);
+  border-radius: 12px;
+  padding: 40px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
+  text-align: center;
+  max-width: 400px; /* Adjust as needed */
+  width: 90%;
+  margin: auto; /* Center the form horizontally */
+  display: flex;
+  flex-direction: column;
+  gap: 20px; /* Space between elements in the form */
+}
+
+.login-form-container h2 {
+  font-family: 'Oswald', sans-serif;
+  color: var(--secondary-color);
+  font-size: 2.2em;
+  margin-bottom: 15px;
+}
+
+.login-form-container p {
+  font-family: 'Roboto', sans-serif;
+  color: #ccc;
+  margin-bottom: 25px;
+}
+
+.login-form-container button {
+  padding: 15px 25px;
+  border-radius: 8px;
+  border: none;
+  font-size: 1.1em;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+  font-family: 'Roboto', sans-serif;
+  font-weight: bold;
+}
+
+.login-form-container .connect-button {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.login-form-container .connect-button:hover {
+  background-color: var(--button-hover-bg);
+  transform: translateY(-2px);
+}
+
+.login-form-container .google-button {
+  background-color: #DB4437; /* Google red */
+  color: white;
+}
+
+.login-form-container .google-button:hover {
+  background-color: #c0392b;
+  transform: translateY(-2px);
+}
+
+.login-form-container .email-button {
+  background-color: #555; /* Darker grey for email */
+  color: white;
+}
+
+.login-form-container .email-button:hover {
+  background-color: #444;
+  transform: translateY(-2px);
+}
+
+.login-form-container .divider {
+  color: #888;
+  font-size: 0.9em;
+  margin: 15px 0;
 }

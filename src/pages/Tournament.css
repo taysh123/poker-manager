@@ -330,7 +330,7 @@ button:hover {
 }
 
 .next-blinds {
-  color: #aaa; /* Slightly dimmer color for next blinds */
+  color: #ffffff; /* Slightly dimmer color for next blinds */
   font-size: 1.2em;
   margin-bottom: 25px;
 }
