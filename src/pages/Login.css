@@ -114,8 +114,8 @@
   margin-top: 20px;
   border: none;
   border-radius: 8px;
-  background-color: var(--primary-color) !important;
-  color: #fff !important;
+  background-color: #fff !important; /* שינוי: רקע לבן תמיד */
+  color: var(--bg-color) !important; /* שינוי: טקסט כהה לקריאות על רקע לבן */
   font-size: 1.2em;
   font-weight: bold;
   cursor: pointer;
@@ -123,7 +123,7 @@
 }
 
 .login-button:hover {
-  background-color: var(--button-hover-bg) !important;
+  background-color: #f0f0f0 !important; /* שינוי: צבע לבן מעט שונה בריחוף */
   transform: translateY(-3px);
 }
 
