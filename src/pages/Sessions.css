@@ -17,7 +17,7 @@
 
 /* Base styles for the page container */
 .sessions-container {
-  max-width: 1000px;
+  max-width: 1200px;
   width: 90%;
   margin: 40px auto;
   padding: 30px;
@@ -35,97 +35,65 @@
   margin-bottom: 25px;
   font-size: 2.5em;
   letter-spacing: 1px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 15px;
 }
 
 .sessions-container h3 {
   font-family: 'Oswald', sans-serif;
-  color: var(--text-color);
+  color: var(--secondary-color);
+  text-align: right; /* Align game header to right */
   margin-bottom: 15px;
   font-size: 1.5em;
-  display: flex;
-  align-items: center;
-  gap: 10px;
 }
 
-/* Messages for loading, error, or no data */
-.sessions-container p {
+/* Messages for loading, error, and no data */
+.loading-message, .error-message, .no-data-message {
   text-align: center;
   margin-top: 20px;
   font-size: 1.1em;
   color: var(--text-color);
 }
 
-.sessions-container .error-message {
+.error-message {
   color: var(--danger-color);
-  font-weight: bold;
 }
 
-.sessions-container .loading-message {
-  font-style: italic;
-}
-
-.sessions-container .no-data-message {
-  color: var(--text-color);
-}
-
-/* Game list and card styling */
-.games-list {
-  display: flex;
-  flex-direction: column;
-  gap: 25px;
-}
-
+/* Styling for individual game cards */
 .game-card {
-  background-color: #3b3b3b;
-  padding: 25px;
+  border: 1px solid var(--border-color);
   border-radius: 10px;
+  padding: 20px;
+  margin-bottom: 30px; /* Space between game cards */
+  background-color: #3b3b3b; /* Slightly lighter than main card bg */
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
 }
 
-.game-card .game-header {
-  border-bottom: 1px solid var(--border-color);
-  padding-bottom: 15px;
+.game-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--table-border);
 }
 
-.game-card .game-header h3 {
-  color: var(--secondary-color);
-  font-size: 1.8em;
-  margin-bottom: 10px;
-}
-
-.game-card .game-header p {
+.game-header p {
+  margin: 0;
+  font-size: 1.1em;
   color: var(--text-color);
-  font-size: 1em;
-  text-align: right;
-  margin-bottom: 5px;
   display: flex;
   align-items: center;
-  justify-content: flex-end;
   gap: 8px;
 }
 
-/* Players table within game card */
+/* Table container for player details within each game */
 .players-table-container {
-  overflow-x: auto;
+  overflow-x: auto; /* Allow horizontal scrolling for wide tables */
 }
 
 .players-table {
   width: 100%;
   border-collapse: collapse;
-  background-color: #2f2f2f;
-}
-
-.players-table th, .players-table td {
-  border: 1px solid var(--table-border);
-  padding: 10px 15px;
-  text-align: center;
-  color: var(--text-color);
-  white-space: nowrap; /* Prevent text wrapping */
+  margin-top: 10px;
 }
 
 .players-table th {
@@ -133,12 +101,24 @@
   font-weight: bold;
   font-family: 'Oswald', sans-serif;
   letter-spacing: 0.5px;
+  padding: 12px 10px;
+  text-align: center;
+  border: 1px solid var(--table-border);
+  white-space: nowrap;
+}
+
+.players-table td {
+  padding: 10px;
+  text-align: center;
+  border: 1px solid var(--table-border);
+  white-space: nowrap;
 }
 
 .players-table tbody tr:nth-child(even) {
-  background-color: #2b2b2b;
+  background-color: #2f2f2f;
 }
 
+/* Profit/Loss styling */
 .players-table .profit {
   color: var(--primary-color); /* Green for profit */
   font-weight: bold;
@@ -193,29 +173,206 @@ textarea:focus {
 }
 /* --- END GLOBAL INPUT STYLING --- */
 
+/* NEW: Image display and upload button for saved games */
+.game-images-section {
+  margin-top: 20px;
+  padding-top: 15px;
+  border-top: 1px solid var(--border-color);
+  text-align: center;
+}
+
+.game-images-section h4 {
+  color: var(--text-color);
+  font-size: 1.2em;
+  margin-bottom: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.game-images-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+  justify-content: center;
+  margin-top: 15px;
+}
+
+.game-image-item {
+  position: relative;
+  width: 100px;
+  height: 100px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.game-image-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.game-image-item .remove-image-button {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  background-color: var(--danger-color);
+  color: #fff;
+  border: none;
+  border-radius: 50%;
+  width: 25px;
+  height: 25px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 0.8em;
+  opacity: 0.8;
+  transition: opacity 0.2s ease;
+}
+
+.game-image-item .remove-image-button:hover {
+  opacity: 1;
+}
+
+.add-image-to-game-button {
+  background-color: var(--secondary-color);
+  color: var(--bg-color);
+  padding: 10px 18px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.9em;
+  font-weight: bold;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 20px;
+}
+
+.add-image-to-game-button:hover {
+  background-color: #e6b800;
+  transform: translateY(-2px);
+}
+
+/* NEW: Image Upload Modal */
+.image-upload-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+}
+
+.image-upload-modal {
+  background-color: var(--card-bg);
+  padding: 30px;
+  border-radius: 12px;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.6);
+  text-align: center;
+  width: 90%;
+  max-width: 450px;
+}
+
+.image-upload-modal h3 {
+  color: var(--secondary-color);
+  margin-bottom: 20px;
+  font-size: 1.8em;
+}
+
+.image-upload-modal input[type="file"] {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 20px;
+  background-color: var(--input-bg);
+  color: var(--text-color);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+}
+
+.image-upload-modal .modal-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  margin-top: 20px;
+}
+
+.image-upload-modal .modal-buttons button {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  font-size: 1em;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.image-upload-modal .modal-buttons button:first-child { /* Upload button */
+  background-color: var(--primary-color);
+  color: #fff;
+}
+
+.image-upload-modal .modal-buttons button:first-child:hover {
+  background-color: var(--button-hover-bg);
+}
+
+.image-upload-modal .modal-buttons button:first-child:disabled {
+  background-color: #555;
+  cursor: not-allowed;
+}
+
+.image-upload-modal .cancel-button {
+  background-color: #666;
+  color: #fff;
+}
+
+.image-upload-modal .cancel-button:hover {
+  background-color: #777;
+}
+
+.image-note-modal {
+  color: #aaa;
+  font-size: 0.85em;
+  margin-top: 15px;
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
   .sessions-container {
-    padding: 20px;
-    margin: 20px auto;
+    margin: 20px;
+    padding: 15px;
   }
 
-  .sessions-container h2 {
-    font-size: 2em;
+  .game-header {
     flex-direction: column;
+    align-items: flex-start;
     gap: 10px;
   }
 
-  .game-card .game-header h3 {
-    font-size: 1.5em;
+  .game-header h3, .game-header p {
+    text-align: right;
+    width: 100%;
   }
 
   .players-table {
-    min-width: 500px; /* Ensure table is readable on small screens */
+    min-width: 500px; /* Ensure table is wide enough to prevent squishing */
+  }
+
+  .image-upload-modal {
+    padding: 20px;
   }
 }
 
-/* Fade-in animation */
+/* Fade-in animation for the page */
 @keyframes fadeIn {
     from {
         opacity: 0;

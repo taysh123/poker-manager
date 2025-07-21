@@ -81,6 +81,9 @@
   border: none; /* Remove button default border */
   background: none; /* Remove button default background */
   cursor: pointer; /* Ensure button cursor */
+  display: flex; /* For icon alignment */
+  align-items: center; /* For icon alignment */
+  gap: 5px; /* Space between icon and text */
 }
 
 .main-nav li a:hover,

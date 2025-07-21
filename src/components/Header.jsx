@@ -2,6 +2,8 @@ import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { getAuth, signOut } from 'firebase/auth';
 import './Header.css';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faBook, faHandshake, faTrophy, faChartLine, faUsers, faHome, faSignOutAlt } from '@fortawesome/free-solid-svg-icons';
 
 function Header({ user }) {
   const navigate = useNavigate();
@@ -32,14 +34,14 @@ function Header({ user }) {
         <ul>
           {user ? (
             <>
-              <li><Link to="/home">בית</Link></li>
-              <li><Link to="/cash-game">ניהול משחק קאש</Link></li>
-              <li><Link to="/tournament">ניהול טורניר</Link></li>
-              <li><Link to="/sessions">משחקים שמורים</Link></li>
-              <li><Link to="/player-stats">סטטיסטיקות שחקנים</Link></li>
-              <li><Link to="/player-management">ניהול שחקנים</Link></li>
-              <li><Link to="/poker-journal">יומן פוקר</Link></li> {/* קישור חדש ליומן פוקר */}
-              <li><button onClick={handleLogout} className="logout-button">התנתק</button></li>
+              <li><Link to="/home"><FontAwesomeIcon icon={faHome} /> בית</Link></li>
+              <li><Link to="/cash-game"><FontAwesomeIcon icon={faHandshake} /> ניהול קאש</Link></li>
+              <li><Link to="/tournament"><FontAwesomeIcon icon={faTrophy} /> טורניר</Link></li>
+              <li><Link to="/sessions"><FontAwesomeIcon icon={faChartLine} /> משחקים שמורים</Link></li>
+              <li><Link to="/player-stats"><FontAwesomeIcon icon={faUsers} /> סטטיסטיקות</Link></li>
+              <li><Link to="/player-management"><FontAwesomeIcon icon={faUsers} /> ניהול שחקנים</Link></li>
+              <li><Link to="/poker-journal"><FontAwesomeIcon icon={faBook} /> יומן פוקר</Link></li> {/* קישור חדש ליומן פוקר */}
+              <li><button onClick={handleLogout} className="logout-button"><FontAwesomeIcon icon={faSignOutAlt} /> התנתק</button></li>
             </>
           ) : (
             <li><Link to="/login">התחברות</Link></li>

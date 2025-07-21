@@ -29,7 +29,11 @@ function App() {
   }, []);
 
   if (loading) {
-    return <div className="loading-screen">טוען אפליקציה...</div>;
+    return (
+      <div className="loading-screen">
+        טוען אפליקציה...
+      </div>
+    );
   }
 
   return (

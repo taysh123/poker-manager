@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faBook, faHandshake, faTrophy, faChartLine, faUsers } from '@fortawesome/free-solid-svg-icons';
-import './HomePage.css'; // נצטרך ליצור קובץ CSS עבורו
+import { faBook, faHandshake, faTrophy, faChartLine, faUsers, faHome } from '@fortawesome/free-solid-svg-icons';
+import './HomePage.css';
 
 function HomePage() {
   const [user, setUser] = useState(null);

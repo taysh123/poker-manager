@@ -28,7 +28,7 @@ function PokerJournal() {
           fetchJournalEntries(currentUser.uid);
         } else {
           setLoadingEntries(false);
-          setErrorEntries('יומן פוקר אינו זמין במצב אורח. אנא התחבר כדי להשתמש ביומן.');
+          setErrorEntries('יומן פוקר אינו זמין במצב אורח. אנא התחבר כדי להוסיף רשומות.');
         }
       } else {
         navigate('/');
