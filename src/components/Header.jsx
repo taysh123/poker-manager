@@ -1,53 +1,85 @@
-import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { getAuth, signOut } from 'firebase/auth';
-import './Header.css';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faBook, faHandshake, faTrophy, faChartLine, faUsers, faHome, faSignOutAlt } from '@fortawesome/free-solid-svg-icons';
+import './Header.css'; // ודא שקובץ ה-CSS מיובא כראוי
+
+// ייבוא תמונת הלוגו שהעלית. הנתיב חייב להיות יחסי למיקום הקובץ Header.jsx
+import logoImage from '../assets/output (5).jpg';
 
 function Header({ user }) {
+  // מצב לשליטה בפתיחה/סגירה של תפריט המובייל (כפתור המבורגר)
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  // הוק לניווט בין דפים
   const navigate = useNavigate();
+  // הוק לקבלת מידע על הנתיב הנוכחי (לדוגמה, כדי לסגור תפריט כשמנווטים)
+  const location = useLocation();
 
+  // אתחול שירות האימות של Firebase
+  const auth = getAuth();
+
+  // פונקציה לטיפול בהתנתקות משתמש
   const handleLogout = async () => {
-    const auth = getAuth();
     try {
-      await signOut(auth);
-      navigate('/'); // חזור לדף הכניסה הראשי
+      await signOut(auth); // ביצוע התנתקות
+      navigate('/'); // ניווט לדף הבית לאחר יציאה מוצלחת
     } catch (error) {
-      console.error('שגיאה בהתנתקות:', error);
-      alert('שגיאה בהתנתקות. נסה שוב.');
+      console.error('שגיאה ביציאה:', error);
+      // ניתן להציג הודעת שגיאה למשתמש במקרה של כשל בהתנתקות
     }
   };
+
+  // useEffect לטיפול בסגירת תפריט המובייל אוטומטית בעת שינוי נתיב
+  useEffect(() => {
+    setIsMobileMenuOpen(false); // סגור את התפריט
+  }, [location.pathname]); // הפעל מחדש כאשר נתיב ה-URL משתנה
 
   return (
     <header className="app-header">
       <div className="logo-container">
-        {/* לוגו פשוט - SVG */}
-        <Link to={user ? "/home" : "/"} className="logo-link">
-          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M12 2L2 7V17L12 22L22 17V7L12 2ZM12 4.14L19.74 8.27L12 12.4L4.26 8.27L12 4.14ZM4 9.33L11 13.17V20.42L4 16.58V9.33ZM13 20.42V13.17L20 9.33V16.58L13 20.42Z" fill="var(--secondary-color)"/>
-          </svg>
-          <span className="app-title">Poker App</span>
+        {/* הלוגו הוא כעת תמונה שמקושרת לדף הבית.
+            ה-Link to="/home" הופך את הלוגו לכפתור "בית". */}
+        <Link to="/home" className="logo-link">
+          {/* תגית ה-img מציגה את הלוגו. ה-className "logo-img" משמש לעיצוב ב-CSS. */}
+          <img src={logoImage} alt="Poker App Logo" className="logo-img" />
+          {/* טקסט ליד הלוגו. ניתן להסירו אם לא נחוץ. */}
+          <span>Poker App</span>
         </Link>
       </div>
-      <nav className="main-nav">
+
+      {/* תפריט הניווט הראשי. הקלאס 'open' מופעל כאשר תפריט המובייל פתוח. */}
+      <nav className={`main-nav ${isMobileMenuOpen ? 'open' : ''}`}>
         <ul>
           {user ? (
+            // אם המשתמש מחובר, הצג את פריטי התפריט עבור משתמשים מחוברים
             <>
-              <li><Link to="/home"><FontAwesomeIcon icon={faHome} /> בית</Link></li>
-              <li><Link to="/cash-game"><FontAwesomeIcon icon={faHandshake} /> ניהול קאש</Link></li>
-              <li><Link to="/tournament"><FontAwesomeIcon icon={faTrophy} /> טורניר</Link></li>
-              <li><Link to="/sessions"><FontAwesomeIcon icon={faChartLine} /> משחקים שמורים</Link></li>
-              <li><Link to="/player-stats"><FontAwesomeIcon icon={faUsers} /> סטטיסטיקות</Link></li>
-              <li><Link to="/player-management"><FontAwesomeIcon icon={faUsers} /> ניהול שחקנים</Link></li>
-              <li><Link to="/poker-journal"><FontAwesomeIcon icon={faBook} /> יומן פוקר</Link></li> {/* קישור חדש ליומן פוקר */}
-              <li><button onClick={handleLogout} className="logout-button"><FontAwesomeIcon icon={faSignOutAlt} /> התנתק</button></li>
+              {/* כפתור "דף הבית" הוסר מכאן, מכיוון שהלוגו משמש כעת למטרה זו */}
+              <li><Link to="/cash-game">משחק מזומן</Link></li>
+              <li><Link to="/tournament">טורניר</Link></li>
+              <li><Link to="/sessions">ניהול סשנים</Link></li>
+              <li><Link to="/player-stats">סטטיסטיקות שחקנים</Link></li>
+              <li><Link to="/player-management">ניהול שחקנים</Link></li>
+              <li><Link to="/poker-journal">יומן פוקר</Link></li>
+              <li>
+                {/* כפתור התנתקות */}
+                <button onClick={handleLogout} className="logout-button">
+                  התנתק
+                </button>
+              </li>
             </>
           ) : (
-            <li><Link to="/login">התחברות</Link></li>
+            // אם המשתמש אינו מחובר, הצג קישורים להתחברות והרשמה
+            <>
+              <li><Link to="/login">התחבר</Link></li>
+              <li><Link to="/register">הירשם</Link></li>
+            </>
           )}
         </ul>
       </nav>
+
+      {/* כפתור המבורגר (מוצג רק במובייל באמצעות CSS) */}
+      <button className="hamburger-menu" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
+        ☰ {/* אייקון המבורגר פשוט */}
+      </button>
     </header>
   );
 }
