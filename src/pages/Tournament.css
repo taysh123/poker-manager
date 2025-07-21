@@ -294,6 +294,89 @@ button:hover {
   justify-content: center;
 }
 
+/* Tournament Timer specific styles */
+.tournament-timer-container {
+  background-color: var(--card-bg); /* Darker background for the timer */
+  border-radius: 12px;
+  padding: 30px;
+  margin-top: 40px;
+  text-align: center;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.tournament-timer-container h3 {
+  color: var(--secondary-color); /* Gold color for timer heading */
+  font-size: 2em;
+  margin-bottom: 15px;
+}
+
+.timer-display {
+  font-family: 'Oswald', sans-serif;
+  font-size: 5em; /* Large font size for the timer */
+  font-weight: 700;
+  color: var(--primary-color); /* Green for the main timer numbers */
+  margin-bottom: 20px;
+  letter-spacing: 2px;
+}
+
+.current-blinds {
+  color: var(--text-color); /* Light text for current blinds */
+  font-size: 1.5em;
+  margin-bottom: 10px;
+}
+
+.next-blinds {
+  color: #aaa; /* Slightly dimmer color for next blinds */
+  font-size: 1.2em;
+  margin-bottom: 25px;
+}
+
+.timer-buttons {
+  display: flex;
+  gap: 15px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.timer-buttons button {
+  padding: 12px 25px;
+  font-size: 1.1em;
+  border-radius: 8px;
+  font-weight: bold;
+}
+
+.timer-buttons button.start-button {
+  background-color: var(--primary-color);
+  color: #fff;
+}
+
+.timer-buttons button.start-button:hover {
+  background-color: var(--button-hover-bg);
+}
+
+.timer-buttons button.pause-button {
+  background-color: var(--secondary-color);
+  color: var(--bg-color);
+}
+
+.timer-buttons button.pause-button:hover {
+  background-color: #e6b800;
+}
+
+.timer-buttons button.reset-button {
+  background-color: var(--danger-color);
+  color: #fff;
+}
+
+.timer-buttons button.reset-button:hover {
+  background-color: #c23321;
+}
+
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
   .tournament-container {
@@ -315,6 +398,19 @@ button:hover {
   }
 
   .button-group {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .timer-display {
+    font-size: 4em; /* Smaller font for timer on mobile */
+  }
+
+  .current-blinds, .next-blinds {
+    font-size: 1.2em;
+  }
+
+  .timer-buttons {
     flex-direction: column;
     align-items: stretch;
   }
