@@ -53,9 +53,9 @@ function Header({ user }) {
             // אם המשתמש מחובר, הצג את פריטי התפריט עבור משתמשים מחוברים
             <>
               {/* כפתור "דף הבית" הוסר מכאן, מכיוון שהלוגו משמש כעת למטרה זו */}
-              <li><Link to="/cash-game">משחק מזומן</Link></li>
+              <li><Link to="/cash-game">משחק קאש</Link></li>
               <li><Link to="/tournament">טורניר</Link></li>
-              <li><Link to="/sessions">ניהול סשנים</Link></li>
+              <li><Link to="/sessions">משחקים שמורים</Link></li>
               <li><Link to="/player-stats">סטטיסטיקות שחקנים</Link></li>
               <li><Link to="/player-management">ניהול שחקנים</Link></li>
               <li><Link to="/poker-journal">יומן פוקר</Link></li>
