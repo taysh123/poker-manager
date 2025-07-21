@@ -3,7 +3,8 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCoins, faUsers, faTrophy, faPlus, faMinus, faTimes } from '@fortawesome/free-solid-svg-icons';
 import TournamentTimer from './TournamentTimer';
 import './Tournament.css';
-import { getAuth, onAuthStateChanged, signInAnonymously } from 'firebase/auth'; // ייבוא signInAnonymously
+import { getAuth, onAuthStateChanged } from 'firebase/auth'; // אין צורך ב-signInAnonymously כאן
+import { useNavigate } from 'react-router-dom'; // ייבוא useNavigate
 
 const REALISTIC_BLIND_STRUCTURES = {
   'MTT': [
@@ -97,6 +98,7 @@ const INITIAL_CUSTOM_STRUCTURE = [
 function Tournament() {
   const [user, setUser] = useState(null); // מצב לשמירת פרטי המשתמש המחובר
   const [loadingAuth, setLoadingAuth] = useState(true); // מצב לבדיקת טעינת אימות
+  const navigate = useNavigate(); // ייבוא useNavigate
 
   const [buyIn, setBuyIn] = useState(0);
   const [numRebuys, setNumRebuys] = useState(0);
@@ -111,7 +113,7 @@ function Tournament() {
   const [newPlayerName, setNewPlayerName] = useState('');
   const [initialStack, setInitialStack] = useState(10000);
 
-  // Effect to listen for authentication state changes and handle anonymous login
+  // Effect to listen for authentication state changes and redirect if not authenticated
   useEffect(() => {
     const auth = getAuth();
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -119,23 +121,12 @@ function Tournament() {
         setUser(currentUser);
         setLoadingAuth(false);
       } else {
-        // אם אין משתמש מחובר, ננסה להתחבר כאורח (אנונימי)
-        signInAnonymously(auth)
-          .then((guestUserCredential) => {
-            setUser(guestUserCredential.user);
-            console.log("Signed in anonymously as:", guestUserCredential.user.uid);
-            setLoadingAuth(false);
-          })
-          .catch((error) => {
-            console.error("Error signing in anonymously:", error);
-            // אם יש שגיאה בהתחברות אנונימית, עדיין נציג את הודעת הגישה המוגבלת
-            setUser(null); 
-            setLoadingAuth(false);
-          });
+        // אם אין משתמש מחובר, נווט לדף הכניסה הראשי
+        navigate('/');
       }
     });
     return () => unsubscribe();
-  }, []);
+  }, [navigate]); // הוספת navigate כתלות
 
   useEffect(() => {
     if (selectedStructure !== 'Custom') {
@@ -256,15 +247,13 @@ function Tournament() {
     );
   }
 
-  // אם אין משתמש (אפילו לא אורח), נציג הודעת גישה מוגבלת.
-  // אם יש משתמש והוא אנונימי, נאפשר גישה לדף.
+  // אם אין משתמש מחובר, ה-useEffect כבר יפנה לדף הכניסה.
+  // לכן, אם הגענו לכאן ואין user, זו שגיאה בלוגיקה או שהדף נטען לפני הניתוב.
+  // למען הבטיחות, נציג הודעת טעינה או נחכה לניתוב.
   if (!user) {
     return (
       <div className="page-container tournament-container">
-        <h2 style={{ textAlign: 'center', color: 'var(--secondary-color)' }}>גישה מוגבלת</h2>
-        <p style={{ textAlign: 'center', color: 'var(--text-color)' }}>
-          אנא המתן להתחברות כאורח, או התחבר עם חשבון קיים.
-        </p>
+        <p style={{ textAlign: 'center', color: 'var(--text-color)' }}>מפנה לדף הכניסה...</p>
       </div>
     );
   }

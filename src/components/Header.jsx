@@ -22,7 +22,7 @@ function Header() {
     const auth = getAuth();
     try {
       await signOut(auth); // התנתקות מ-Firebase
-      navigate('/login'); // ניווט לעמוד ההתחברות לאחר התנתקות
+      navigate('/'); // נווט לעמוד הכניסה הראשי לאחר התנתקות
     } catch (error) {
       console.error("Error signing out: ", error);
       alert("שגיאה בהתנתקות. נסה שוב.");
@@ -33,7 +33,7 @@ function Header() {
     <header className="main-header">
       <div className="header-content">
         <div className="logo">
-          <h1>Poker App</h1>
+          <span>Poker App</span>
         </div>
         <nav>
           <ul className="nav-links">
@@ -86,7 +86,7 @@ function Header() {
             </button>
           ) : ( // אם אין משתמש מחובר
             <NavLink
-              to="/login"
+              to="/" // מפנה כעת לעמוד הכניסה הראשי החדש
               className={({ isActive }) => (isActive ? 'active' : '')}
             >
               התחברות

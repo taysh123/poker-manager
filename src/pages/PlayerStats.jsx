@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { collection, getDocs } from 'firebase/firestore';
-import { getAuth, onAuthStateChanged, signInAnonymously } from 'firebase/auth'; // ייבוא signInAnonymously
+import { getAuth, onAuthStateChanged } from 'firebase/auth'; // אין צורך ב-signInAnonymously כאן
 import { db } from '../firebase'; // ודא שנתיב זה נכון לקובץ ה-firebase שלך
+import { useNavigate } from 'react-router-dom'; // ייבוא useNavigate
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faUsers, faChartLine, faCoins, faMoneyBillWave, faHandshake, faDollarSign } from '@fortawesome/free-solid-svg-icons';
 import './PlayerStats.css'; // ייבוא קובץ ה-CSS החדש
@@ -9,6 +10,7 @@ import './PlayerStats.css'; // ייבוא קובץ ה-CSS החדש
 function PlayerStats() {
   const [user, setUser] = useState(null);
   const [loadingAuth, setLoadingAuth] = useState(true);
+  const navigate = useNavigate(); // ייבוא useNavigate
 
   const [playerStats, setPlayerStats] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -25,27 +27,16 @@ function PlayerStats() {
           fetchPlayerStats(currentUser.uid);
         } else {
           setLoading(false);
-          setError('סטטיסטיקות שחקנים אינן זמינות במצב אורח. אנא התחבר כדי לצפות בהן.'); // הודעה לאורחים
+          setError('סטטיסטיקות שחקנים אינן זמינות במצב אורח. אנא התחבר כדי לצפות בהן.');
         }
       } else {
-        // אם אין משתמש מחובר, ננסה להתחבר כאורח (אנונימי)
-        signInAnonymously(auth)
-          .then((guestUserCredential) => {
-            setUser(guestUserCredential.user);
-            console.log("Signed in anonymously as:", guestUserCredential.user.uid);
-            setLoadingAuth(false);
-            setError('סטטיסטיקות שחקנים אינן זמינות במצב אורח. אנא התחבר כדי לצפות בהן.'); // הודעה לאורחים
-          })
-          .catch((error) => {
-            console.error("Error signing in anonymously:", error);
-            setUser(null); 
-            setLoadingAuth(false);
-          });
+        // אם אין משתמש מחובר, נווט לדף הכניסה הראשי
+        navigate('/');
       }
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [navigate]);
 
   const fetchPlayerStats = async (userId) => {
     setLoading(true);

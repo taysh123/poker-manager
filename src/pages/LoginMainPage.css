@@ -1,0 +1,137 @@
+:root {
+  --bg-color: #1a1a1a;
+  --text-color: #e0e0e0;
+  --primary-color: #4CAF50; /* Green for success/actions */
+  --secondary-color: #FFC107; /* Gold/Yellow for emphasis */
+  --card-bg: #2b2b2b;
+  --border-color: #444;
+  --input-bg: #333;
+  --table-header-bg: #333;
+  --table-border: #555;
+  --button-hover-bg: #45a049;
+  --danger-color: #f44336;
+}
+
+.login-main-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: calc(100vh - 60px); /* Adjust for header height */
+  background-color: var(--bg-color);
+  padding: 20px;
+}
+
+.login-card {
+  background-color: var(--card-bg);
+  padding: 40px;
+  border-radius: 12px;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.6);
+  text-align: center;
+  width: 100%;
+  max-width: 400px;
+  animation: fadeIn 0.8s ease-out;
+}
+
+.login-card h2 {
+  font-family: 'Oswald', sans-serif;
+  color: var(--secondary-color);
+  margin-bottom: 20px;
+  font-size: 2.2em;
+}
+
+.login-card p {
+  color: var(--text-color);
+  margin-bottom: 30px;
+  font-size: 1.1em;
+}
+
+.login-button {
+  width: 100%;
+  padding: 15px;
+  margin-bottom: 15px;
+  border: none;
+  border-radius: 8px;
+  font-size: 1.1em;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+  font-family: 'Roboto', sans-serif;
+  font-weight: bold;
+}
+
+.guest-button {
+  background-color: var(--primary-color);
+  color: #fff;
+}
+
+.guest-button:hover {
+  background-color: var(--button-hover-bg);
+  transform: translateY(-3px);
+}
+
+.email-password-button {
+  background-color: #424242;
+  color: #fff;
+}
+
+.email-password-button:hover {
+  background-color: #555;
+  transform: translateY(-3px);
+}
+
+.google-button {
+  background-color: #DB4437; /* Google red */
+  color: #fff;
+}
+
+.google-button:hover {
+  background-color: #c23321;
+  transform: translateY(-3px);
+}
+
+.divider {
+  color: var(--text-color);
+  margin: 20px 0;
+  position: relative;
+  font-size: 0.9em;
+}
+
+.divider::before,
+.divider::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: 40%;
+  height: 1px;
+  background-color: var(--border-color);
+}
+
+.divider::before {
+  left: 0;
+}
+
+.divider::after {
+  right: 0;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 600px) {
+  .login-card {
+    padding: 25px;
+    margin: 15px;
+  }
+  .login-card h2 {
+    font-size: 1.8em;
+  }
+  .login-button {
+    padding: 12px;
+    font-size: 1em;
+  }
+}

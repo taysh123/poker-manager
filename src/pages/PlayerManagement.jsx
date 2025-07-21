@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { collection, addDoc, getDocs, deleteDoc, doc } from 'firebase/firestore';
-import { getAuth, onAuthStateChanged, signInAnonymously } from 'firebase/auth'; // ייבוא signInAnonymously
-import { db } from '../firebase'; // ודא שנתיב זה נכון
+import { getAuth, onAuthStateChanged } from 'firebase/auth';
+import { db } from '../firebase';
+import { useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faUserPlus, faUserMinus, faUsers, faSave, faTimes } from '@fortawesome/free-solid-svg-icons';
 import './PlayerManagement.css';
@@ -9,6 +10,7 @@ import './PlayerManagement.css';
 function PlayerManagement() {
   const [user, setUser] = useState(null);
   const [loadingAuth, setLoadingAuth] = useState(true);
+  const navigate = useNavigate();
 
   const [players, setPlayers] = useState([]);
   const [newPlayerName, setNewPlayerName] = useState('');
@@ -26,29 +28,16 @@ function PlayerManagement() {
           fetchPlayers(currentUser.uid);
         } else {
           setLoadingPlayers(false);
-          setErrorPlayers('ניהול שחקנים קבועים אינו זמין במצב אורח. אנא התחבר כדי לנהל שחקנים.'); // הודעה לאורחים
+          setErrorPlayers('ניהול שחקנים קבועים אינו זמין במצב אורח. אנא התחבר כדי לנהל שחקנים.');
         }
       } else {
-        // אם אין משתמש מחובר, ננסה להתחבר כאורח (אנונימי)
-        signInAnonymously(auth)
-          .then((guestUserCredential) => {
-            setUser(guestUserCredential.user);
-            console.log("Signed in anonymously as:", guestUserCredential.user.uid);
-            setLoadingAuth(false);
-            setLoadingPlayers(false);
-            setErrorPlayers('ניהול שחקנים קבועים אינו זמין במצב אורח. אנא התחבר כדי לנהל שחקנים.'); // הודעה לאורחים
-          })
-          .catch((error) => {
-            console.error("Error signing in anonymously:", error);
-            setUser(null); 
-            setLoadingAuth(false);
-            setLoadingPlayers(false);
-          });
+        // אם אין משתמש מחובר, נווט לדף הכניסה הראשי
+        navigate('/');
       }
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [navigate]);
 
   const fetchPlayers = async (userId) => {
     setLoadingPlayers(true);
@@ -131,14 +120,13 @@ function PlayerManagement() {
     );
   }
 
-  // אם אין משתמש (אפילו לא אורח), או אם המשתמש הוא אורח, נציג הודעה מתאימה
-  if (!user || user.isAnonymous) {
+  // אם אין משתמש מחובר, ה-useEffect כבר יפנה לדף הכניסה.
+  // לכן, אם הגענו לכאן ואין user, זו שגיאה בלוגיקה או שהדף נטען לפני הניתוב.
+  // למען הבטיחות, נציג הודעת טעינה או נחכה לניתוב.
+  if (!user) {
     return (
       <div className="page-container player-management-container">
-        <h2 style={{ textAlign: 'center', color: 'var(--secondary-color)' }}>גישה מוגבלת</h2>
-        <p style={{ textAlign: 'center', color: '#FFFFFF' }}>
-          ניהול שחקנים קבועים זמין רק למשתמשים רשומים. אנא התחבר כדי לנהל שחקנים.
-        </p>
+        <p style={{ textAlign: 'center', color: 'var(--text-color)' }}>מפנה לדף הכניסה...</p>
       </div>
     );
   }

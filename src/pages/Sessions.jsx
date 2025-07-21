@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { collection, getDocs } from 'firebase/firestore';
-import { getAuth, onAuthStateChanged, signInAnonymously } from 'firebase/auth'; // ייבוא signInAnonymously
+import { getAuth, onAuthStateChanged } from 'firebase/auth'; // אין צורך ב-signInAnonymously כאן
 import { db } from '../firebase'; // ודא שנתיב זה נכון לקובץ ה-firebase שלך
+import { useNavigate } from 'react-router-dom'; // ייבוא useNavigate
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faHistory, faCalendarAlt, faCoins, faUsers, faMoneyBillWave, faDollarSign } from '@fortawesome/free-solid-svg-icons';
 import './Sessions.css'; // ייבוא קובץ ה-CSS החדש
@@ -9,6 +10,7 @@ import './Sessions.css'; // ייבוא קובץ ה-CSS החדש
 function Sessions() {
   const [user, setUser] = useState(null);
   const [loadingAuth, setLoadingAuth] = useState(true);
+  const navigate = useNavigate(); // ייבוא useNavigate
 
   const [savedGames, setSavedGames] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -25,27 +27,16 @@ function Sessions() {
           fetchSavedGames(currentUser.uid);
         } else {
           setLoading(false);
-          setError('משחקים שמורים אינם זמינים במצב אורח. אנא התחבר כדי לצפות בהם.'); // הודעה לאורחים
+          setError('משחקים שמורים אינם זמינים במצב אורח. אנא התחבר כדי לצפות בהם.');
         }
       } else {
-        // אם אין משתמש מחובר, ננסה להתחבר כאורח (אנונימי)
-        signInAnonymously(auth)
-          .then((guestUserCredential) => {
-            setUser(guestUserCredential.user);
-            console.log("Signed in anonymously as:", guestUserCredential.user.uid);
-            setLoadingAuth(false);
-            setError('משחקים שמורים אינם זמינים במצב אורח. אנא התחבר כדי לצפות בהם.'); // הודעה לאורחים
-          })
-          .catch((error) => {
-            console.error("Error signing in anonymously:", error);
-            setUser(null); 
-            setLoadingAuth(false);
-          });
+        // אם אין משתמש מחובר, נווט לדף הכניסה הראשי
+        navigate('/');
       }
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [navigate]);
 
   const fetchSavedGames = async (userId) => {
     setLoading(true);
