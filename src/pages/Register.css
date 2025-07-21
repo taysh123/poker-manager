@@ -3,7 +3,7 @@
 /* General variables for colors, consistent with the main theme */
 :root {
   --bg-color: #1a1a1a;
-  --text-color: #e0e0e0;
+  --text-color: #000000;
   --primary-color: #4CAF50; /* Green for success/actions */
   --secondary-color: #FFC107; /* Gold/Yellow for emphasis */
   --card-bg: #2b2b2b;
