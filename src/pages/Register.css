@@ -1,0 +1,162 @@
+@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;700&family=Roboto:wght@400;700&display=swap');
+
+/* General variables for colors, consistent with the main theme */
+:root {
+  --bg-color: #1a1a1a;
+  --text-color: #e0e0e0;
+  --primary-color: #4CAF50; /* Green for success/actions */
+  --secondary-color: #FFC107; /* Gold/Yellow for emphasis */
+  --card-bg: #2b2b2b;
+  --border-color: #444;
+  --input-bg: #333;
+  --button-hover-bg: #45a049;
+  --danger-color: #f44336;
+}
+
+.register-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: calc(100vh - 60px); /* Adjust for header height */
+  background-color: var(--bg-color);
+  padding: 20px;
+}
+
+.register-card {
+  background-color: var(--card-bg);
+  padding: 40px;
+  border-radius: 12px;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.6);
+  text-align: center;
+  width: 100%;
+  max-width: 400px;
+  animation: fadeIn 0.8s ease-out;
+}
+
+.register-card h2 {
+  font-family: 'Oswald', sans-serif;
+  color: var(--secondary-color);
+  margin-bottom: 20px;
+  font-size: 2.2em;
+}
+
+.register-card p {
+  color: var(--text-color);
+  margin-bottom: 30px;
+  font-size: 1.1em;
+}
+
+.input-group {
+  margin-bottom: 20px;
+  text-align: right; /* Align label to the right */
+}
+
+.input-group label {
+  display: block;
+  color: var(--text-color);
+  margin-bottom: 8px;
+  font-size: 1.1em;
+}
+
+/* --- GLOBAL INPUT STYLING FOR VISIBILITY --- */
+/* Ensure all input types, selects, and textareas have explicit dark backgrounds and light text */
+input[type="text"],
+input[type="email"], /* הוספתי סוג input חדש */
+input[type="password"], /* הוספתי סוג input חדש */
+input[type="number"],
+select,
+textarea {
+  width: 100%;
+  padding: 12px 15px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background-color: var(--input-bg); /* Dark background */
+  color: var(--text-color); /* Light text */
+  font-size: 1em;
+  outline: none;
+  transition: border-color 0.3s ease, background-color 0.3s ease;
+  box-sizing: border-box; /* Include padding and border in the element's total width and height */
+}
+
+/* Placeholder styling for better visibility */
+input::placeholder,
+textarea::placeholder {
+  color: #888; /* A darker gray for placeholders */
+  opacity: 1; /* Ensure full opacity */
+}
+
+/* Ensure read-only inputs maintain dark background and light text */
+input[readonly] {
+  background-color: #444; /* Slightly different dark shade for read-only */
+  color: var(--text-color);
+  opacity: 0.9; /* Make it slightly less prominent */
+  cursor: default;
+}
+
+/* Focus state for inputs */
+input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="password"]:focus,
+input[type="number"]:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--secondary-color); /* Gold border on focus */
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(255, 193, 7, 0.3); /* Subtle glow */
+}
+/* --- END GLOBAL INPUT STYLING --- */
+
+.register-button {
+  width: 100%;
+  padding: 15px;
+  margin-top: 20px;
+  border: none;
+  border-radius: 8px;
+  background-color: var(--primary-color);
+  color: #fff;
+  font-size: 1.2em;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.register-button:hover {
+  background-color: var(--button-hover-bg);
+  transform: translateY(-3px);
+}
+
+.login-link {
+  color: var(--text-color);
+  margin-top: 20px;
+  font-size: 1em;
+}
+
+.login-link a {
+  color: var(--secondary-color);
+  text-decoration: none;
+  font-weight: bold;
+  transition: color 0.2s ease;
+}
+
+.login-link a:hover {
+  color: #e6b800;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 600px) {
+  .register-card {
+    padding: 25px;
+    margin: 15px;
+  }
+  .register-card h2 {
+    font-size: 1.8em;
+  }
+  .register-button {
+    padding: 12px;
+    font-size: 1.1em;
+  }
+}
