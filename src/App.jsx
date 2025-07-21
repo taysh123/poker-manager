@@ -10,7 +10,7 @@ import Tournament from './pages/Tournament';
 import Sessions from './pages/Sessions';
 import PlayerStats from './pages/PlayerStats';
 import PlayerManagement from './pages/PlayerManagement';
-import HomePage from './pages/HomePage';
+import Homepage from './pages/HomePage';
 import PokerJournal from './pages/PokerJournal'; // ייבוא יומן פוקר
 import './App.css';
 import './firebase'; // וודא ש-Firebase מאותחל
