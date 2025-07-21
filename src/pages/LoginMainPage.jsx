@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getAuth, signInAnonymously, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faUser, faEnvelope, faLock, faGoogle } from '@fortawesome/free-solid-svg-icons';
+import { faUser, faEnvelope, faLock } from '@fortawesome/free-solid-svg-icons'; // אייקונים רגילים
+import { faGoogle } from '@fortawesome/free-brands-svg-icons'; // אייקון גוגל מחבילת ה-brands
 import './LoginMainPage.css'; // נצטרך ליצור קובץ CSS עבורו
 
 function LoginMainPage() {
