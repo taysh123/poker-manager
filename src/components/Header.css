@@ -26,6 +26,7 @@
   top: 0;
   z-index: 1000;
   flex-wrap: wrap; /* Allow wrapping on smaller screens */
+  gap: 15px; /* Add some gap between logo and nav on wrap */
 }
 
 .logo-container {
@@ -58,14 +59,21 @@
   fill: var(--primary-color);
 }
 
+.main-nav {
+  flex-grow: 1; /* Allow nav to take available space */
+  display: flex;
+  justify-content: flex-end; /* Align nav items to the right */
+}
+
 .main-nav ul {
   list-style: none;
   margin: 0;
   padding: 0;
   display: flex;
-  gap: 25px;
+  gap: 20px; /* Reduced gap between nav items */
   flex-wrap: wrap; /* Allow navigation items to wrap */
-  justify-content: center; /* Center items when wrapped */
+  justify-content: flex-end; /* Align items to the right when wrapped */
+  align-items: center; /* Vertically align items */
 }
 
 .main-nav li a,
@@ -73,7 +81,7 @@
   color: var(--text-color);
   text-decoration: none;
   font-family: 'Roboto', sans-serif;
-  font-size: 1.1em;
+  font-size: 1em; /* Slightly reduced font size */
   padding: 8px 12px;
   border-radius: 6px;
   transition: background-color 0.3s ease, color 0.3s ease, transform 0.2s ease;
@@ -115,10 +123,11 @@
   .main-nav {
     margin-top: 15px;
     width: 100%;
+    justify-content: center; /* Center nav items when stacked */
   }
 
   .main-nav ul {
-    flex-direction: column;
+    flex-direction: column; /* Stack items vertically */
     align-items: center;
     gap: 10px;
   }
@@ -133,5 +142,21 @@
     display: block; /* Make links/buttons take full width */
     width: 100%;
     padding: 10px;
+  }
+}
+
+@media (max-width: 600px) {
+  .app-header {
+    padding: 10px 10px;
+  }
+
+  .logo-link {
+    font-size: 1.6em;
+  }
+
+  .main-nav li a,
+  .main-nav li button {
+    font-size: 0.9em; /* Further reduce font size on very small screens */
+    padding: 8px 10px;
   }
 }
