@@ -1,10 +1,11 @@
 @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;700&family=Roboto:wght@400;700&display=swap');
 
+/* General variables for colors, consistent with the main theme */
 :root {
   --bg-color: #1a1a1a;
   --text-color: #e0e0e0;
-  --primary-color: #4CAF50;
-  --secondary-color: #FFC107;
+  --primary-color: #4CAF50; /* Green for success/actions */
+  --secondary-color: #FFC107; /* Gold/Yellow for emphasis */
   --card-bg: #2b2b2b;
   --border-color: #444;
   --input-bg: #333;
@@ -14,17 +15,10 @@
   --danger-color: #f44336;
 }
 
-body {
-  background-color: var(--bg-color);
-  color: var(--text-color);
-  font-family: 'Roboto', sans-serif;
-  direction: rtl;
-  margin: 0;
-  padding: 0;
-}
-
-.page-container {
-  max-width: 1000px;
+/* Base styles for the page container, consistent with other pages */
+.cash-game-container {
+  max-width: 1200px;
+  width: 90%;
   margin: 40px auto;
   padding: 30px;
   background-color: var(--card-bg);
@@ -33,7 +27,8 @@ body {
   animation: fadeIn 1s ease-in-out;
 }
 
-h2 {
+/* Headings styling */
+.cash-game-container h2 {
   font-family: 'Oswald', sans-serif;
   color: var(--secondary-color);
   text-align: center;
@@ -42,14 +37,17 @@ h2 {
   letter-spacing: 1px;
 }
 
-h3 {
+.cash-game-container h3 {
   font-family: 'Oswald', sans-serif;
-  color: var(--secondary-color);
-  text-align: center;
+  color: var(--text-color);
   margin-bottom: 20px;
-  font-size: 1.8em;
+  font-size: 1.5em;
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
+/* Section styling for consistent spacing */
 .section {
   padding: 25px;
   border-bottom: 1px solid var(--border-color);
@@ -61,161 +59,315 @@ h3 {
   margin-bottom: 0;
 }
 
+/* Input group styling */
+.input-group {
+  margin-bottom: 15px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end; /* Align labels to the right */
+}
+
 .input-group label {
+  color: var(--text-color);
+  font-size: 1.1em;
+  margin-bottom: 8px;
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
-input[type="number"], input[type="text"], select {
-  padding: 12px;
-  border-radius: 8px;
-  border: 1px solid var(--border-color);
-  background-color: var(--input-bg);
-  color: var(--text-color);
-  font-size: 16px;
+/* --- GLOBAL INPUT STYLING FOR VISIBILITY --- */
+/* Ensure all input types, selects, and textareas have explicit dark backgrounds and light text */
+input[type="text"],
+input[type="number"],
+select,
+textarea {
   width: 100%;
-  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  padding: 12px 15px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background-color: var(--input-bg); /* Dark background */
+  color: var(--text-color); /* Light text */
+  font-size: 1em;
+  outline: none;
+  transition: border-color 0.3s ease, background-color 0.3s ease;
+  box-sizing: border-box; /* Include padding and border in the element's total width and height */
 }
 
-input:focus, select:focus {
-    outline: none;
-    border-color: var(--primary-color);
-    box-shadow: 0 0 5px rgba(76, 175, 80, 0.5);
+/* Placeholder styling for better visibility */
+input::placeholder,
+textarea::placeholder {
+  color: #888; /* A darker gray for placeholders */
+  opacity: 1; /* Ensure full opacity */
 }
 
-button {
+/* Ensure read-only inputs maintain dark background and light text */
+input[readonly] {
+  background-color: #444; /* Slightly different dark shade for read-only */
+  color: var(--text-color);
+  opacity: 0.9; /* Make it slightly less prominent */
+  cursor: default;
+}
+
+/* Focus state for inputs */
+input[type="text"]:focus,
+input[type="number"]:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--secondary-color); /* Gold border on focus */
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(255, 193, 7, 0.3); /* Subtle glow */
+}
+/* --- END GLOBAL INPUT STYLING --- */
+
+
+/* Specific styling for standard buy-in section */
+.standard-buy-in-section .standard-buy-in-inputs {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+  align-items: center;
+}
+
+.standard-buy-in-section .standard-buy-in-inputs input {
+  flex: 1;
+}
+
+.standard-buy-in-section .or-separator {
+  color: var(--text-color);
+  font-size: 0.9em;
+  white-space: nowrap;
+}
+
+/* Add player form */
+.add-player-form {
+  display: flex;
+  flex-wrap: wrap; /* Allow wrapping on small screens */
+  gap: 15px;
+  margin-top: 20px;
+}
+
+.add-player-form .player-input-group {
+  flex-grow: 1;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.add-player-form .player-input-group select,
+.add-player-form .player-input-group input[type="text"] {
+  flex: 1;
+}
+
+.add-player-form button {
+  background-color: var(--primary-color);
+  color: #fff;
   padding: 12px 20px;
   border: none;
   border-radius: 8px;
-  background-color: var(--primary-color);
-  color: #fff;
   cursor: pointer;
-  font-size: 16px;
+  font-size: 1em;
+  font-weight: bold;
   transition: background-color 0.3s ease, transform 0.2s ease;
   display: flex;
   align-items: center;
   gap: 8px;
-  justify-content: center;
 }
 
-button:hover {
+.add-player-form button:hover {
   background-color: var(--button-hover-bg);
   transform: translateY(-2px);
 }
 
-.remove-btn {
-    background-color: var(--danger-color);
-    transform: none;
+/* Players list table */
+.cash-game-table-container {
+  overflow-x: auto;
+  margin-top: 20px;
 }
 
-.remove-btn:hover {
-    background-color: #d32f2f;
-    transform: none;
-}
-
-.add-player-form {
-    display: flex;
-    gap: 10px;
-    align-items: stretch;
-    flex-wrap: wrap;
-}
-
-.add-player-form .player-input-group {
-    display: flex;
-    gap: 10px;
-    flex-grow: 1;
-}
-
-.add-player-form select,
-.add-player-form input {
-    flex-grow: 1;
-}
-
-.standard-buy-in-section .standard-buy-in-inputs {
-    display: flex;
-    gap: 10px;
-    align-items: center;
-    flex-grow: 1;
-}
-
-.standard-buy-in-inputs input {
-    flex-grow: 1;
-    min-width: 100px;
-}
-
-.or-separator {
-    color: #999;
-}
-
-.cash-game-table, .debts-table {
+.cash-game-table {
   width: 100%;
   border-collapse: collapse;
-  margin-top: 20px;
   background-color: #3b3b3b;
-  border-radius: 8px;
-  overflow: hidden;
 }
 
-.cash-game-table th, .cash-game-table td,
-.debts-table th, .debts-table td {
-  padding: 12px;
+.cash-game-table th, .cash-game-table td {
   border: 1px solid var(--table-border);
+  padding: 12px 15px;
   text-align: center;
-  white-space: nowrap;
+  color: var(--text-color);
+  white-space: nowrap; /* Prevent text wrapping in table cells */
 }
 
-.cash-game-table th, .debts-table th {
+.cash-game-table th {
   background-color: var(--table-header-bg);
   font-weight: bold;
   font-family: 'Oswald', sans-serif;
   letter-spacing: 0.5px;
 }
 
-.cash-game-table tr:nth-child(even), .debts-table tr:nth-child(even) {
+.cash-game-table tbody tr:nth-child(even) {
   background-color: #2f2f2f;
 }
 
-.cash-game-container {
-    max-width: 1200px; /* הגדלנו את הרוחב המקסימלי */
-    width: 90%; /* כדי שיגיב גם במסכים קטנים יותר */
+.cash-game-table .player-name-cell {
+  text-align: right; /* Align player names to the right */
+  font-weight: bold;
 }
 
-.cash-game-table td {
-  vertical-align: middle;
+.cash-game-table .money-cell {
+  font-family: 'Roboto Mono', monospace; /* Monospace font for money values */
+}
+
+.cash-game-table .ending-chips-cell input {
+  width: 80px; /* Adjust width for ending chips input */
+  text-align: center;
+  padding: 8px;
 }
 
 .cash-game-table .button-group {
   display: flex;
+  flex-direction: column; /* Stack buttons vertically */
   gap: 5px;
-  flex-wrap: wrap;
-  justify-content: center;
+  align-items: center;
 }
 
-.cash-game-table .ending-chips-cell input {
-  width: 80px;
-  text-align: center;
+.cash-game-table .button-group button {
+  padding: 6px 10px;
+  font-size: 0.85em;
+  border-radius: 6px;
+  background-color: var(--primary-color);
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 5px;
 }
 
+.cash-game-table .button-group button:hover {
+  background-color: var(--button-hover-bg);
+}
+
+.remove-btn {
+  background-color: var(--danger-color);
+  color: #fff;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9em;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.remove-btn:hover {
+  background-color: #d32f2f;
+  transform: translateY(-2px);
+}
+
+/* Calculate and Save button */
 .calculate-btn {
-    width: 100%;
-    margin-top: 20px;
-    background-color: #1a73e8; /* A different color for a main action button */
+  display: block;
+  width: fit-content;
+  margin: 30px auto;
+  padding: 15px 30px;
+  background-color: var(--secondary-color);
+  color: var(--bg-color); /* Dark text on gold button */
+  border: none;
+  border-radius: 10px;
+  font-size: 1.2em;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+  box-shadow: 0 4px 15px rgba(255, 193, 7, 0.4);
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .calculate-btn:hover {
-    background-color: #155cb0;
+  background-color: #e6b800;
+  transform: translateY(-3px);
 }
 
-.money-cell {
-    font-weight: bold;
-    color: var(--primary-color);
-}
-
+/* Debts section */
 .debts-section {
-    margin-top: 40px;
+  margin-top: 40px;
+  text-align: center;
 }
 
+.debts-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+  background-color: #3b3b3b;
+}
+
+.debts-table th, .debts-table td {
+  border: 1px solid var(--table-border);
+  padding: 12px 15px;
+  text-align: center;
+  color: var(--text-color);
+}
+
+.debts-table th {
+  background-color: var(--table-header-bg);
+  font-weight: bold;
+  font-family: 'Oswald', sans-serif;
+  letter-spacing: 0.5px;
+}
+
+.debts-table tbody tr:nth-child(even) {
+  background-color: #2f2f2f;
+}
+
+.debts-table .money-cell {
+  font-family: 'Roboto Mono', monospace;
+  font-weight: bold;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .cash-game-container {
+    padding: 20px;
+    margin: 20px auto;
+  }
+
+  .add-player-form {
+    flex-direction: column;
+  }
+
+  .add-player-form .player-input-group {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .add-player-form .player-input-group select,
+  .add-player-form .player-input-group input[type="text"] {
+    width: 100%;
+  }
+
+  .cash-game-table {
+    min-width: 700px; /* Ensure table is wide enough to prevent squishing */
+  }
+
+  .cash-game-table .button-group {
+    flex-direction: row; /* Keep buttons in a row for space */
+    justify-content: center;
+  }
+
+  .calculate-btn {
+    width: 100%;
+    font-size: 1.1em;
+    padding: 12px 20px;
+  }
+}
+
+/* Fade-in animation */
 @keyframes fadeIn {
     from {
         opacity: 0;

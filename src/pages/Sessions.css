@@ -15,9 +15,9 @@
   --danger-color: #f44336;
 }
 
-/* Base styles for the page container, consistent with other pages */
+/* Base styles for the page container */
 .sessions-container {
-  max-width: 1200px;
+  max-width: 1000px;
   width: 90%;
   margin: 40px auto;
   padding: 30px;
@@ -35,65 +35,97 @@
   margin-bottom: 25px;
   font-size: 2.5em;
   letter-spacing: 1px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 15px;
 }
 
 .sessions-container h3 {
   font-family: 'Oswald', sans-serif;
-  color: var(--secondary-color);
-  text-align: right; /* Align game header to right */
+  color: var(--text-color);
   margin-bottom: 15px;
   font-size: 1.5em;
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
-/* Messages for loading, error, and no data */
-.loading-message, .error-message, .no-data-message {
+/* Messages for loading, error, or no data */
+.sessions-container p {
   text-align: center;
   margin-top: 20px;
   font-size: 1.1em;
-  color: var(--text-color); /* This will be #e0e0e0, not pure white */
+  color: var(--text-color);
 }
 
-.error-message {
+.sessions-container .error-message {
   color: var(--danger-color);
+  font-weight: bold;
 }
 
-/* Styling for individual game cards */
+.sessions-container .loading-message {
+  font-style: italic;
+}
+
+.sessions-container .no-data-message {
+  color: var(--text-color);
+}
+
+/* Game list and card styling */
+.games-list {
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+}
+
 .game-card {
-  border: 1px solid var(--border-color);
+  background-color: #3b3b3b;
+  padding: 25px;
   border-radius: 10px;
-  padding: 20px;
-  margin-bottom: 30px; /* Space between game cards */
-  background-color: #3b3b3b; /* Slightly lighter than main card bg */
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
 }
 
-.game-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+.game-card .game-header {
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 15px;
   margin-bottom: 20px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid var(--table-border);
 }
 
-.game-header p {
-  margin: 0;
-  font-size: 1.1em;
+.game-card .game-header h3 {
+  color: var(--secondary-color);
+  font-size: 1.8em;
+  margin-bottom: 10px;
+}
+
+.game-card .game-header p {
   color: var(--text-color);
+  font-size: 1em;
+  text-align: right;
+  margin-bottom: 5px;
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 8px;
 }
 
-/* Table container for player details within each game */
+/* Players table within game card */
 .players-table-container {
-  overflow-x: auto; /* Allow horizontal scrolling for wide tables */
+  overflow-x: auto;
 }
 
 .players-table {
   width: 100%;
   border-collapse: collapse;
-  margin-top: 10px;
+  background-color: #2f2f2f;
+}
+
+.players-table th, .players-table td {
+  border: 1px solid var(--table-border);
+  padding: 10px 15px;
+  text-align: center;
+  color: var(--text-color);
+  white-space: nowrap; /* Prevent text wrapping */
 }
 
 .players-table th {
@@ -101,24 +133,12 @@
   font-weight: bold;
   font-family: 'Oswald', sans-serif;
   letter-spacing: 0.5px;
-  padding: 12px 10px;
-  text-align: center;
-  border: 1px solid var(--table-border);
-  white-space: nowrap;
-}
-
-.players-table td {
-  padding: 10px;
-  text-align: center;
-  border: 1px solid var(--table-border);
-  white-space: nowrap;
 }
 
 .players-table tbody tr:nth-child(even) {
-  background-color: #2f2f2f;
+  background-color: #2b2b2b;
 }
 
-/* Profit/Loss styling */
 .players-table .profit {
   color: var(--primary-color); /* Green for profit */
   font-weight: bold;
@@ -129,30 +149,73 @@
   font-weight: bold;
 }
 
-/* Responsive design for smaller screens */
+/* --- GLOBAL INPUT STYLING FOR VISIBILITY --- */
+/* Ensure all input types, selects, and textareas have explicit dark backgrounds and light text */
+input[type="text"],
+input[type="number"],
+select,
+textarea {
+  width: 100%;
+  padding: 12px 15px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background-color: var(--input-bg); /* Dark background */
+  color: var(--text-color); /* Light text */
+  font-size: 1em;
+  outline: none;
+  transition: border-color 0.3s ease, background-color 0.3s ease;
+  box-sizing: border-box; /* Include padding and border in the element's total width and height */
+}
+
+/* Placeholder styling for better visibility */
+input::placeholder,
+textarea::placeholder {
+  color: #888; /* A darker gray for placeholders */
+  opacity: 1; /* Ensure full opacity */
+}
+
+/* Ensure read-only inputs maintain dark background and light text */
+input[readonly] {
+  background-color: #444; /* Slightly different dark shade for read-only */
+  color: var(--text-color);
+  opacity: 0.9; /* Make it slightly less prominent */
+  cursor: default;
+}
+
+/* Focus state for inputs */
+input[type="text"]:focus,
+input[type="number"]:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--secondary-color); /* Gold border on focus */
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(255, 193, 7, 0.3); /* Subtle glow */
+}
+/* --- END GLOBAL INPUT STYLING --- */
+
+/* Responsive adjustments */
 @media (max-width: 768px) {
   .sessions-container {
-    margin: 20px;
-    padding: 15px;
+    padding: 20px;
+    margin: 20px auto;
   }
 
-  .game-header {
+  .sessions-container h2 {
+    font-size: 2em;
     flex-direction: column;
-    align-items: flex-start;
     gap: 10px;
   }
 
-  .game-header h3, .game-header p {
-    text-align: right;
-    width: 100%;
+  .game-card .game-header h3 {
+    font-size: 1.5em;
   }
 
   .players-table {
-    min-width: 500px; /* Ensure table is wide enough to prevent squishing */
+    min-width: 500px; /* Ensure table is readable on small screens */
   }
 }
 
-/* Fade-in animation for the page */
+/* Fade-in animation */
 @keyframes fadeIn {
     from {
         opacity: 0;

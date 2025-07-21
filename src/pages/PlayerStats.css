@@ -15,9 +15,9 @@
   --danger-color: #f44336;
 }
 
-/* Base styles for the page container, similar to Tournament and CashGame */
+/* Base styles for the page container */
 .player-stats-container {
-  max-width: 1200px; /* Wider layout for statistics */
+  max-width: 1200px;
   width: 90%;
   margin: 40px auto;
   padding: 30px;
@@ -35,101 +35,130 @@
   margin-bottom: 25px;
   font-size: 2.5em;
   letter-spacing: 1px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 15px;
 }
 
-.player-stats-container h3 {
-  font-family: 'Oswald', sans-serif;
-  color: var(--secondary-color);
+/* Messages for loading, error, or no data */
+.player-stats-container p {
   text-align: center;
-  margin-bottom: 20px;
-  font-size: 1.8em;
+  margin-top: 20px;
+  font-size: 1.1em;
+  color: var(--text-color);
 }
 
-/* Section styling for consistent spacing */
-.section {
-  padding: 25px;
-  border-bottom: 1px solid var(--border-color);
-  margin-bottom: 20px;
+.player-stats-container .error-message {
+  color: var(--danger-color);
+  font-weight: bold;
 }
 
-.section:last-child {
-  border-bottom: none;
-  margin-bottom: 0;
-}
-
-/* Table container for scrollability on smaller screens */
+/* Stats table styling */
 .stats-table-container {
-  max-height: 600px; /* Allow scrolling for many players */
-  overflow-y: auto;
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  margin-top: 20px; /* Space above the table */
+  overflow-x: auto;
+  margin-top: 20px;
 }
 
-/* Table styling for player statistics */
 .player-stats-table {
   width: 100%;
   border-collapse: collapse;
-  background-color: #3b3b3b; /* Darker background for table body */
+  background-color: #3b3b3b;
 }
 
-/* Table header styling */
+.player-stats-table th, .player-stats-table td {
+  border: 1px solid var(--table-border);
+  padding: 12px 15px;
+  text-align: center;
+  color: var(--text-color);
+  white-space: nowrap; /* Prevent text wrapping */
+}
+
 .player-stats-table th {
   background-color: var(--table-header-bg);
   font-weight: bold;
   font-family: 'Oswald', sans-serif;
   letter-spacing: 0.5px;
-  padding: 15px 10px; /* Increased padding for headers */
-  text-align: center;
-  border: 1px solid var(--table-border);
-  position: sticky; /* Make header sticky when scrolling */
-  top: 0;
-  z-index: 1; /* Ensure header stays on top */
 }
 
-/* Table cell styling */
-.player-stats-table td {
-  padding: 12px 10px; /* Increased padding for cells */
-  text-align: center;
-  border: 1px solid var(--table-border);
-  white-space: nowrap; /* Prevent text from wrapping in cells */
-}
-
-/* Alternating row colors for better readability */
 .player-stats-table tbody tr:nth-child(even) {
   background-color: #2f2f2f;
 }
 
-/* Hover effect on table rows */
-.player-stats-table tbody tr:hover {
-  background-color: #4a4a4a;
-  transition: background-color 0.2s ease;
+/* Colors for profit/loss */
+.player-stats-table .profit {
+  color: var(--primary-color); /* Green for profit */
+  font-weight: bold;
 }
 
-/* Specific column width adjustments if needed (example) */
-.player-stats-table th:first-child,
-.player-stats-table td:first-child {
-  text-align: right; /* Align player names to the right */
-  padding-right: 20px;
+.player-stats-table .loss {
+  color: var(--danger-color); /* Red for loss */
+  font-weight: bold;
 }
 
-/* Responsive design for smaller screens */
+/* --- GLOBAL INPUT STYLING FOR VISIBILITY --- */
+/* Ensure all input types, selects, and textareas have explicit dark backgrounds and light text */
+input[type="text"],
+input[type="number"],
+select,
+textarea {
+  width: 100%;
+  padding: 12px 15px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background-color: var(--input-bg); /* Dark background */
+  color: var(--text-color); /* Light text */
+  font-size: 1em;
+  outline: none;
+  transition: border-color 0.3s ease, background-color 0.3s ease;
+  box-sizing: border-box; /* Include padding and border in the element's total width and height */
+}
+
+/* Placeholder styling for better visibility */
+input::placeholder,
+textarea::placeholder {
+  color: #888; /* A darker gray for placeholders */
+  opacity: 1; /* Ensure full opacity */
+}
+
+/* Ensure read-only inputs maintain dark background and light text */
+input[readonly] {
+  background-color: #444; /* Slightly different dark shade for read-only */
+  color: var(--text-color);
+  opacity: 0.9; /* Make it slightly less prominent */
+  cursor: default;
+}
+
+/* Focus state for inputs */
+input[type="text"]:focus,
+input[type="number"]:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--secondary-color); /* Gold border on focus */
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(255, 193, 7, 0.3); /* Subtle glow */
+}
+/* --- END GLOBAL INPUT STYLING --- */
+
+/* Responsive adjustments */
 @media (max-width: 768px) {
   .player-stats-container {
-    margin: 20px;
-    padding: 15px;
-  }
-
-  .stats-table-container {
-    overflow-x: auto; /* Allow horizontal scrolling for wide tables */
+    padding: 20px;
+    margin: 20px auto;
   }
 
   .player-stats-table {
-    min-width: 800px; /* Ensure table is wide enough to prevent squishing */
+    min-width: 600px; /* Ensure table is readable on small screens */
+  }
+
+  .player-stats-container h2 {
+    font-size: 2em;
+    flex-direction: column;
+    gap: 10px;
   }
 }
 
-/* Fade-in animation for the page */
+/* Fade-in animation */
 @keyframes fadeIn {
     from {
         opacity: 0;
