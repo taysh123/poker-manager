@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { collection, addDoc, getDocs } from 'firebase/firestore';
-import { getAuth, onAuthStateChanged } from 'firebase/auth';
+import { getAuth, onAuthStateChanged, signInAnonymously } from 'firebase/auth'; // ייבוא signInAnonymously
 import { db } from '../firebase';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCoins, faUsers, faPlus, faTimes, faHandshake, faExchangeAlt, faPercentage, faWallet } from '@fortawesome/free-solid-svg-icons';
@@ -53,7 +53,7 @@ function calculateDebts(players) {
 
 function CashGame() {
   const [user, setUser] = useState(null);
-  const [loadingAuth, setLoadingAuth] = useState(true); // State to track auth loading
+  const [loadingAuth, setLoadingAuth] = useState(true);
 
   const [allPlayers, setAllPlayers] = useState([]);
   const [players, setPlayers] = useState([]);
@@ -67,10 +67,29 @@ function CashGame() {
   useEffect(() => {
     const auth = getAuth();
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
-      setLoadingAuth(false); // Auth state is now known
       if (currentUser) {
-        fetchAllPlayers(currentUser.uid);
+        setUser(currentUser);
+        setLoadingAuth(false);
+        // טען שחקנים רק אם המשתמש אינו אנונימי
+        if (!currentUser.isAnonymous) {
+          fetchAllPlayers(currentUser.uid);
+        } else {
+          setAllPlayers([]); // נקה שחקנים קבועים עבור אורחים
+        }
+      } else {
+        // אם אין משתמש מחובר, ננסה להתחבר כאורח (אנונימי)
+        signInAnonymously(auth)
+          .then((guestUserCredential) => {
+            setUser(guestUserCredential.user);
+            console.log("Signed in anonymously as:", guestUserCredential.user.uid);
+            setLoadingAuth(false);
+            setAllPlayers([]); // נקה שחקנים קבועים עבור אורחים
+          })
+          .catch((error) => {
+            console.error("Error signing in anonymously:", error);
+            setUser(null); 
+            setLoadingAuth(false);
+          });
       }
     });
 
@@ -167,9 +186,15 @@ function CashGame() {
   
   const handleCalculateAndSave = async () => {
     if (!user) {
-      alert('אנא התחבר כדי לשמור משחק.');
+      alert('שגיאת אימות. אנא רענן את הדף.');
       return;
     }
+
+    if (user.isAnonymous) {
+      alert('במצב אורח, משחקים אינם נשמרים. אנא התחבר כדי לשמור משחקים.');
+      return;
+    }
+
     if (players.length === 0) {
       alert('יש להוסיף שחקנים למשחק.');
       return;
@@ -207,13 +232,13 @@ function CashGame() {
     );
   }
 
-  // Display login message if user is not authenticated
+  // אם אין משתמש (אפילו לא אורח), נציג הודעת גישה מוגבלת.
   if (!user) {
     return (
       <div className="page-container cash-game-container">
         <h2 style={{ textAlign: 'center', color: 'var(--secondary-color)' }}>גישה מוגבלת</h2>
         <p style={{ textAlign: 'center', color: 'var(--text-color)' }}>
-          אנא התחבר כדי לגשת לדף ניהול משחק הקאש.
+          אנא המתן להתחברות כאורח, או התחבר עם חשבון קיים.
         </p>
       </div>
     );
@@ -258,19 +283,23 @@ function CashGame() {
         <h3><FontAwesomeIcon icon={faUsers} /> הוספת שחקן</h3>
         <form onSubmit={handleAddPlayer} className="add-player-form">
           <div className="player-input-group">
-            <select 
-              value={selectedPlayerName} 
-              onChange={(e) => {
-                setSelectedPlayerName(e.target.value);
-                setNewPlayerName('');
-              }}
-            >
-              <option value="">בחר שחקן קיים</option>
-              {allPlayers.map((name, i) => (
-                <option key={i} value={name}>{name}</option>
-              ))}
-            </select>
-            <span className="or-separator">או</span>
+            {/* הצג שחקנים קיימים רק אם המשתמש אינו אנונימי */}
+            {!user.isAnonymous && (
+              <select 
+                value={selectedPlayerName} 
+                onChange={(e) => {
+                  setSelectedPlayerName(e.target.value);
+                  setNewPlayerName('');
+                }}
+              >
+                <option value="">בחר שחקן קיים</option>
+                {allPlayers.map((name, i) => (
+                  <option key={i} value={name}>{name}</option>
+                ))}
+              </select>
+            )}
+            {/* הצג "או" רק אם יש גם אפשרות לבחור שחקן קיים */}
+            {!user.isAnonymous && <span className="or-separator">או</span>}
             <input
               type="text"
               value={newPlayerName}

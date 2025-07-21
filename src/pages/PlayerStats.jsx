@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { collection, getDocs } from 'firebase/firestore';
-import { getAuth, onAuthStateChanged } from 'firebase/auth';
+import { getAuth, onAuthStateChanged, signInAnonymously } from 'firebase/auth'; // ייבוא signInAnonymously
 import { db } from '../firebase'; // ודא שנתיב זה נכון לקובץ ה-firebase שלך
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faUsers, faChartLine, faCoins, faMoneyBillWave, faHandshake, faDollarSign } from '@fortawesome/free-solid-svg-icons';
@@ -8,22 +8,39 @@ import './PlayerStats.css'; // ייבוא קובץ ה-CSS החדש
 
 function PlayerStats() {
   const [user, setUser] = useState(null);
-  const [loadingAuth, setLoadingAuth] = useState(true); // State to track auth loading
+  const [loadingAuth, setLoadingAuth] = useState(true);
 
   const [playerStats, setPlayerStats] = useState([]);
-  const [loading, setLoading] = useState(true); // State for data loading
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
     const auth = getAuth();
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
-      setLoadingAuth(false); // Auth state is now known
       if (currentUser) {
-        fetchPlayerStats(currentUser.uid);
+        setUser(currentUser);
+        setLoadingAuth(false);
+        // טען סטטיסטיקות רק אם המשתמש אינו אנונימי
+        if (!currentUser.isAnonymous) {
+          fetchPlayerStats(currentUser.uid);
+        } else {
+          setLoading(false);
+          setError('סטטיסטיקות שחקנים אינן זמינות במצב אורח. אנא התחבר כדי לצפות בהן.'); // הודעה לאורחים
+        }
       } else {
-        setLoading(false); // Stop data loading if not authenticated
-        setError('אנא התחבר כדי לצפות בסטטיסטיקות.');
+        // אם אין משתמש מחובר, ננסה להתחבר כאורח (אנונימי)
+        signInAnonymously(auth)
+          .then((guestUserCredential) => {
+            setUser(guestUserCredential.user);
+            console.log("Signed in anonymously as:", guestUserCredential.user.uid);
+            setLoadingAuth(false);
+            setError('סטטיסטיקות שחקנים אינן זמינות במצב אורח. אנא התחבר כדי לצפות בהן.'); // הודעה לאורחים
+          })
+          .catch((error) => {
+            console.error("Error signing in anonymously:", error);
+            setUser(null); 
+            setLoadingAuth(false);
+          });
       }
     });
 
@@ -31,7 +48,7 @@ function PlayerStats() {
   }, []);
 
   const fetchPlayerStats = async (userId) => {
-    setLoading(true); // Start data loading
+    setLoading(true);
     setError(null);
     try {
       const cashGamesCollection = collection(db, 'users', userId, 'cashGames');
@@ -41,8 +58,6 @@ function PlayerStats() {
 
       querySnapshot.docs.forEach(doc => {
         const game = doc.data();
-        // const chipsPerShekel = game.chipsPerShekel || 1; // This value is not used in current stats calculation
-
         game.players.forEach(player => {
           if (!statsMap.has(player.name)) {
             statsMap.set(player.name, {
@@ -53,7 +68,7 @@ function PlayerStats() {
               gamesPlayed: 0,
               avgBuyIn: 0,
               avgCashOut: 0,
-              hourlyRate: 0, // This will require game duration data
+              hourlyRate: 0,
             });
           }
 
@@ -64,20 +79,18 @@ function PlayerStats() {
           currentStats.netProfit = currentStats.totalCashOut - currentStats.totalBuyIn;
           currentStats.avgBuyIn = currentStats.totalBuyIn / currentStats.gamesPlayed;
           currentStats.avgCashOut = currentStats.totalCashOut / currentStats.gamesPlayed;
-          // Hourly rate calculation would go here if game duration was available
         });
       });
 
       setPlayerStats(Array.from(statsMap.values()));
-      setLoading(false); // Data loading complete
+      setLoading(false);
     } catch (err) {
       console.error('שגיאה בשליפת סטטיסטיקות שחקנים:', err);
       setError('שגיאה בטעינת הסטטיסטיקות. נסה שוב מאוחר יותר.');
-      setLoading(false); // Data loading complete with error
+      setLoading(false);
     }
   };
 
-  // Display loading message while checking authentication
   if (loadingAuth) {
     return (
       <div className="page-container player-stats-container">
@@ -86,20 +99,18 @@ function PlayerStats() {
     );
   }
 
-  // Display login message if user is not authenticated
-  if (!user) {
+  // אם אין משתמש (אפילו לא אורח), או אם המשתמש הוא אורח, נציג הודעה מתאימה
+  if (!user || user.isAnonymous) {
     return (
       <div className="page-container player-stats-container">
         <h2 style={{ textAlign: 'center', color: 'var(--secondary-color)' }}>גישה מוגבלת</h2>
-        {/* Changed color to pure white for this specific message */}
         <p style={{ textAlign: 'center', color: '#FFFFFF' }}>
-          אנא התחבר כדי לגשת לדף סטטיסטיקות השחקנים.
+          סטטיסטיקות שחקנים זמינות רק למשתמשים רשומים. אנא התחבר כדי לצפות בהן.
         </p>
       </div>
     );
   }
 
-  // Display loading message while data is being fetched (after auth check)
   if (loading) {
     return (
       <div className="page-container player-stats-container">
@@ -109,7 +120,6 @@ function PlayerStats() {
     );
   }
 
-  // Display error message if data fetching failed
   if (error) {
     return (
       <div className="page-container player-stats-container">

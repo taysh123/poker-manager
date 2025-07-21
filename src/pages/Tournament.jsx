@@ -3,7 +3,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCoins, faUsers, faTrophy, faPlus, faMinus, faTimes } from '@fortawesome/free-solid-svg-icons';
 import TournamentTimer from './TournamentTimer';
 import './Tournament.css';
-import { getAuth, onAuthStateChanged } from 'firebase/auth'; // Import Firebase Auth
+import { getAuth, onAuthStateChanged, signInAnonymously } from 'firebase/auth'; // ייבוא signInAnonymously
 
 const REALISTIC_BLIND_STRUCTURES = {
   'MTT': [
@@ -95,8 +95,8 @@ const INITIAL_CUSTOM_STRUCTURE = [
 ];
 
 function Tournament() {
-  const [user, setUser] = useState(null); // State to hold user authentication status
-  const [loadingAuth, setLoadingAuth] = useState(true); // State to track auth loading
+  const [user, setUser] = useState(null); // מצב לשמירת פרטי המשתמש המחובר
+  const [loadingAuth, setLoadingAuth] = useState(true); // מצב לבדיקת טעינת אימות
 
   const [buyIn, setBuyIn] = useState(0);
   const [numRebuys, setNumRebuys] = useState(0);
@@ -111,15 +111,30 @@ function Tournament() {
   const [newPlayerName, setNewPlayerName] = useState('');
   const [initialStack, setInitialStack] = useState(10000);
 
+  // Effect to listen for authentication state changes and handle anonymous login
   useEffect(() => {
-    // Listen for authentication state changes
     const auth = getAuth();
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
-      setLoadingAuth(false); // Auth state is now known
+      if (currentUser) {
+        setUser(currentUser);
+        setLoadingAuth(false);
+      } else {
+        // אם אין משתמש מחובר, ננסה להתחבר כאורח (אנונימי)
+        signInAnonymously(auth)
+          .then((guestUserCredential) => {
+            setUser(guestUserCredential.user);
+            console.log("Signed in anonymously as:", guestUserCredential.user.uid);
+            setLoadingAuth(false);
+          })
+          .catch((error) => {
+            console.error("Error signing in anonymously:", error);
+            // אם יש שגיאה בהתחברות אנונימית, עדיין נציג את הודעת הגישה המוגבלת
+            setUser(null); 
+            setLoadingAuth(false);
+          });
+      }
     });
-
-    return () => unsubscribe(); // Cleanup the listener
+    return () => unsubscribe();
   }, []);
 
   useEffect(() => {
@@ -231,8 +246,8 @@ function Tournament() {
   const removePlayer = (id) => {
       setPlayers(players.filter(player => player.id !== id));
   };
-
-  // Display loading message while checking authentication
+  
+  // Conditional rendering based on authentication status
   if (loadingAuth) {
     return (
       <div className="page-container tournament-container">
@@ -241,18 +256,19 @@ function Tournament() {
     );
   }
 
-  // Display login message if user is not authenticated
+  // אם אין משתמש (אפילו לא אורח), נציג הודעת גישה מוגבלת.
+  // אם יש משתמש והוא אנונימי, נאפשר גישה לדף.
   if (!user) {
     return (
       <div className="page-container tournament-container">
         <h2 style={{ textAlign: 'center', color: 'var(--secondary-color)' }}>גישה מוגבלת</h2>
         <p style={{ textAlign: 'center', color: 'var(--text-color)' }}>
-          אנא התחבר כדי לגשת לדף ניהול הטורניר.
+          אנא המתן להתחברות כאורח, או התחבר עם חשבון קיים.
         </p>
       </div>
     );
   }
-  
+
   return (
     <div className="page-container tournament-container">
       <h2>ניהול טורניר פוקר</h2>

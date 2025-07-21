@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { collection, getDocs } from 'firebase/firestore';
-import { getAuth, onAuthStateChanged } from 'firebase/auth';
+import { getAuth, onAuthStateChanged, signInAnonymously } from 'firebase/auth'; // ייבוא signInAnonymously
 import { db } from '../firebase'; // ודא שנתיב זה נכון לקובץ ה-firebase שלך
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faHistory, faCalendarAlt, faCoins, faUsers, faMoneyBillWave, faDollarSign } from '@fortawesome/free-solid-svg-icons';
@@ -8,43 +8,54 @@ import './Sessions.css'; // ייבוא קובץ ה-CSS החדש
 
 function Sessions() {
   const [user, setUser] = useState(null);
-  const [loadingAuth, setLoadingAuth] = useState(true); // מצב לבדיקת טעינת אימות
+  const [loadingAuth, setLoadingAuth] = useState(true);
 
   const [savedGames, setSavedGames] = useState([]);
-  const [loading, setLoading] = useState(true); // מצב לטעינת נתוני המשחקים
-  const [error, setError] = useState(null); // מצב לשגיאות בטעינת נתונים
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const auth = getAuth();
-    // האזנה לשינויים במצב ההתחברות של המשתמש
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
-      setLoadingAuth(false); // בדיקת האימות הסתיימה
       if (currentUser) {
-        // אם המשתמש מחובר, טען את המשחקים השמורים
-        fetchSavedGames(currentUser.uid);
+        setUser(currentUser);
+        setLoadingAuth(false);
+        // טען משחקים שמורים רק אם המשתמש אינו אנונימי
+        if (!currentUser.isAnonymous) {
+          fetchSavedGames(currentUser.uid);
+        } else {
+          setLoading(false);
+          setError('משחקים שמורים אינם זמינים במצב אורח. אנא התחבר כדי לצפות בהם.'); // הודעה לאורחים
+        }
       } else {
-        // אם המשתמש לא מחובר, הפסק טעינת נתונים והצג הודעת שגיאה
-        setLoading(false);
-        // הגדרת הודעת השגיאה בעברית
-        setError('אנא התחבר כדי לצפות במשחקים השמורים.');
+        // אם אין משתמש מחובר, ננסה להתחבר כאורח (אנונימי)
+        signInAnonymously(auth)
+          .then((guestUserCredential) => {
+            setUser(guestUserCredential.user);
+            console.log("Signed in anonymously as:", guestUserCredential.user.uid);
+            setLoadingAuth(false);
+            setError('משחקים שמורים אינם זמינים במצב אורח. אנא התחבר כדי לצפות בהם.'); // הודעה לאורחים
+          })
+          .catch((error) => {
+            console.error("Error signing in anonymously:", error);
+            setUser(null); 
+            setLoadingAuth(false);
+          });
       }
     });
 
-    // ניקוי ה-listener כאשר הרכיב נעלם
     return () => unsubscribe();
-  }, []); // ריצה רק פעם אחת בטעינת הרכיב
+  }, []);
 
   const fetchSavedGames = async (userId) => {
-    setLoading(true); // התחל טעינת נתונים
-    setError(null); // אמן שאין שגיאות קודמות
+    setLoading(true);
+    setError(null);
     try {
       const cashGamesCollection = collection(db, 'users', userId, 'cashGames');
       const querySnapshot = await getDocs(cashGamesCollection);
       
       const gamesList = querySnapshot.docs.map(doc => {
         const gameData = doc.data();
-        // חישוב רווח/הפסד לכל שחקן
         const playersWithProfit = gameData.players.map(player => ({
           ...player,
           profit: player.cashOut - player.buyIn,
@@ -52,23 +63,21 @@ function Sessions() {
 
         return {
           id: doc.id,
-          // המרה של Timestamp לאובייקט Date ועיצוב לתאריך עברי
           date: gameData.date ? new Date(gameData.date.seconds * 1000).toLocaleDateString('he-IL') : 'תאריך לא ידוע',
-          chipsPerShekel: gameData.chipsPerShekel || 'לא צוין', // ברירת מחדל אם לא קיים
+          chipsPerShekel: gameData.chipsPerShekel || 'לא צוין',
           players: playersWithProfit,
         };
-      }).sort((a, b) => new Date(b.date) - new Date(a.date)); // מיון מהחדש לישן
+      }).sort((a, b) => new Date(b.date) - new Date(a.date));
 
       setSavedGames(gamesList);
-      setLoading(false); // טעינת נתונים הסתיימה
+      setLoading(false);
     } catch (err) {
       console.error('שגיאה בשליפת משחקים שמורים:', err);
       setError('שגיאה בטעינת המשחקים השמורים. נסה שוב מאוחר יותר.');
-      setLoading(false); // טעינת נתונים הסתיימה עם שגיאה
+      setLoading(false);
     }
   };
 
-  // הצגת הודעת טעינה בזמן בדיקת אימות
   if (loadingAuth) {
     return (
       <div className="page-container sessions-container">
@@ -77,23 +86,20 @@ function Sessions() {
     );
   }
 
-  // הצגת הודעת התחברות אם המשתמש אינו מאומת
-  if (!user) {
+  // אם אין משתמש (אפילו לא אורח), או אם המשתמש הוא אורח, נציג הודעה מתאימה
+  if (!user || user.isAnonymous) {
     return (
       <div className="page-container sessions-container">
-        {/* כותרת בעברית - "משחקים שמורים" */}
         <h2 style={{ textAlign: 'center', color: 'var(--secondary-color)' }}>
           <FontAwesomeIcon icon={faHistory} /> משחקים שמורים
         </h2>
-        {/* הודעה בעברית ובצבע לבן */}
         <p style={{ textAlign: 'center', color: '#FFFFFF' }}>
-          אנא התחבר כדי לגשת לדף המשחקים השמורים.
+          משחקים שמורים זמינים רק למשתמשים רשומים. אנא התחבר כדי לצפות בהם.
         </p>
       </div>
     );
   }
 
-  // הצגת הודעת טעינה בזמן שליפת הנתונים (לאחר בדיקת אימות)
   if (loading) {
     return (
       <div className="page-container sessions-container">
@@ -103,7 +109,6 @@ function Sessions() {
     );
   }
 
-  // הצגת הודעת שגיאה אם טעינת הנתונים נכשלה
   if (error) {
     return (
       <div className="page-container sessions-container">
