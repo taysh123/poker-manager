@@ -12,6 +12,8 @@ import PlayerStats from './pages/PlayerStats';
 import PlayerManagement from './pages/PlayerManagement';
 import Homepage from './pages/Homepage';
 import PokerJournal from './pages/PokerJournal';
+import PersonalTracking from './pages/PersonalTracking'; // ייבוא רכיב מעקב אישי
+import DashboardSettings from './pages/DashboardSettings'; // ייבוא רכיב הגדרות דאשבורד
 import './App.css';
 import './firebase'; // ודא ש-Firebase מאותחל
 
@@ -80,6 +82,8 @@ function App() {
           <Route path="/player-stats" element={user ? <PlayerStats /> : <Navigate to="/" />} />
           <Route path="/player-management" element={user ? <PlayerManagement /> : <Navigate to="/" />} />
           <Route path="/poker-journal" element={user ? <PokerJournal /> : <Navigate to="/" />} />
+          <Route path="/personal-tracking" element={user ? <PersonalTracking /> : <Navigate to="/" />} /> {/* נתיב חדש למעקב אישי */}
+          <Route path="/dashboard-settings" element={user ? <DashboardSettings /> : <Navigate to="/" />} /> {/* נתיב להגדרות דאשבורד */}
         </Routes>
       </main>
     </Router>
