@@ -4,7 +4,6 @@ import { getAuth, signOut } from 'firebase/auth';
 import './Header.css'; // ודא שקובץ ה-CSS מיובא כראוי
 
 // ייבוא תמונת הלוגו. הנתיב חייב להיות יחסי למיקום הקובץ Header.jsx
-// ודא שהנתיב הזה נכון עבורך. אם התמונה לא נטענת, ייתכן שצריך להתאים את הנתיב.
 import logoImage from '../assets/output (5).jpg'; 
 
 function Header({ user }) {
@@ -25,8 +24,7 @@ function Header({ user }) {
       navigate('/'); // ניווט לדף הבית לאחר יציאה מוצלחת
     } catch (error) {
       console.error('שגיאה ביציאה:', error);
-      // ניתן להציג הודעת שגיאה למשתמש כאן, במקום alert()
-      // לדוגמה, באמצעות מצב (state) ששולט בהצגת הודעת שגיאה ב-UI
+      // ניתן להציג הודעת שגיאה למשתמש כאן
     }
   };
 
@@ -40,6 +38,15 @@ function Header({ user }) {
     setIsMobileMenuOpen(!isMobileMenuOpen);
   };
 
+  // פונקציה לקבלת שם המשתמש
+  const getUserDisplayName = () => {
+    if (user) {
+      // אם למשתמש יש displayName, נשתמש בו. אחרת, ננסה להשתמש באימייל.
+      return user.displayName || user.email || 'משתמש';
+    }
+    return 'אורח'; // אם אין משתמש מחובר
+  };
+
   return (
     <header className="app-header">
       {/* אזור הלוגו והכותרת */}
@@ -51,11 +58,11 @@ function Header({ user }) {
             <span className="app-title">Poker App</span>
           </Link>
         ) : (
-          // אם לא מחובר, הלוגו לא מקשר או מקשר לדף הבית הראשי (לפני התחברות)
-          <div className="logo-link"> {/* ניתן להחליף ל-Link to="/" אם רוצים קישור לדף הכניסה */}
+          // אם לא מחובר, הלוגו יקשר לדף הכניסה הראשי
+          <Link to="/" className="logo-link">
             <img src={logoImage} alt="Poker App Logo" className="app-logo" />
             <span className="app-title">Poker App</span>
-          </div>
+          </Link>
         )}
       </div>
 
@@ -75,6 +82,11 @@ function Header({ user }) {
           {user ? (
             // אם המשתמש מחובר, הצג את פריטי התפריט עבור משתמשים מחוברים
             <>
+              {/* הצגת שם המשתמש */}
+              <li className="welcome-message">
+                שלום, {getUserDisplayName()}!
+              </li>
+              <li><Link to="/home">דף הבית</Link></li> {/* הוספנו קישור לדף הבית */}
               <li><Link to="/cash-game">משחק קאש</Link></li>
               <li><Link to="/tournament">טורניר</Link></li>
               <li><Link to="/sessions">משחקים שמורים</Link></li>
