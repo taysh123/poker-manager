@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { getFirestore, doc, getDoc, collection, query, getDocs, setDoc, onSnapshot } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-// שינוי כאן: החלפתי את faUserChart ב-faChartBar
-import { faCog, faChartBar, faCoins, faHandshake, faBook, faUsers } from '@fortawesome/free-solid-svg-icons';
+// ייבוא אייקונים: faChartBar עבור מעקב אישי
+import { faCog, faChartBar, faCoins, faHandshake, faBook, faUsers, faChartLine } from '@fortawesome/free-solid-svg-icons';
 import '../pages/Dashboard.css'; // ייבוא ה-CSS של הדאשבורד
 import '../pages/Homepage.css'; // ייבוא ה-CSS של דף הבית
 
