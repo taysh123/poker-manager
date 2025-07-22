@@ -4,8 +4,7 @@ import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import { db } from '../firebase'; // ודא שהנתיב ל-firebase.js נכון
 import { useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-// ודא ש-faChartLine מיובא מכאן
-import { faChartLine, faUserCircle, faCoins, faMoneyBillWave, faDollarSign, faHandshake, faCalendarAlt, faInfoCircle } from '@fortawesome/free-solid-svg-icons';
+import { faChartLine, faUserCircle } from '@fortawesome/free-solid-svg-icons';
 import './PersonalTracking.css'; // ייבוא קובץ ה-CSS החדש
 
 function PersonalTracking() {
@@ -16,184 +15,173 @@ function PersonalTracking() {
   const [playerNames, setPlayerNames] = useState([]);
   const [selectedPlayerName, setSelectedPlayerName] = useState('');
   const [totalProfitLoss, setTotalProfitLoss] = useState(0);
+  const [error, setError] = useState(null); // <--- הוספה: הגדרת מצב שגיאה
   const navigate = useNavigate();
-
-  // קבלת ה-appId מהמשתנה הגלובלי __app_id
-  const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
   useEffect(() => {
     const auth = getAuth();
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       if (currentUser) {
         setUser(currentUser);
-        setLoadingAuth(false);
-        // טען נתונים רק אם המשתמש אינו אנונימי
-        if (!currentUser.isAnonymous) {
-          fetchPersonalData(currentUser.uid, appId); // העבר appId לפונקציה
-        } else {
-          setLoadingGames(false);
-          // הגדר הודעת שגיאה במקרה של משתמש אנונימי
-          setError('מעקב אישי אינו זמין במצב אורח. אנא התחבר כדי לצפות בו.');
-        }
+        // אם המשתמש מחובר, טען את שמות השחקנים
+        fetchPlayerNames(currentUser.uid);
       } else {
         navigate('/');
       }
+      setLoadingAuth(false);
     });
 
     return () => unsubscribe();
-  }, [navigate, appId]); // הוסף appId לתלויות
+  }, [navigate]);
 
-  const fetchPersonalData = async (userId, currentAppId) => {
+  useEffect(() => {
+    if (user && selectedPlayerName) {
+      fetchGamesForPlayer(user.uid, selectedPlayerName);
+    } else if (user && !selectedPlayerName && playerNames.length > 0) {
+      // אם יש משתמש אבל לא נבחר שחקן, בחר את הראשון כברירת מחדל
+      setSelectedPlayerName(playerNames[0]);
+    }
+  }, [user, selectedPlayerName, playerNames]); // תלויות: user, selectedPlayerName, playerNames
+
+  const fetchPlayerNames = async (userId) => {
     setLoadingGames(true);
-    setError(null);
+    setError(null); // איפוס שגיאות
     try {
-      const cashGamesCollection = collection(db, 'artifacts', currentAppId, 'users', userId, 'cashGames');
-      const querySnapshot = await getDocs(cashGamesCollection);
-      
-      const fetchedGames = [];
-      let totalBuyIn = 0;
-      let totalCashOut = 0;
-      let gamesPlayed = 0;
-
-      const uniquePlayerNames = new Set(); // כדי לאסוף שמות שחקנים ייחודיים
-
-      querySnapshot.docs.forEach(doc => {
-        const game = doc.data();
-        fetchedGames.push({ id: doc.id, ...game });
-
-        // מצא את נתוני המשתמש הנוכחי במערך השחקנים של המשחק
-        if (game.players && Array.isArray(game.players)) {
-          // ננסה להתאים לפי UID או DisplayName
-          const currentUserPlayer = game.players.find(player => 
-            (user && player.id === user.uid) || (user && player.name === user.displayName)
-          );
-          
-          // אסוף את כל שמות השחקנים מהמשחקים
-          game.players.forEach(player => {
-            uniquePlayerNames.add(player.name);
-          });
-
-          if (currentUserPlayer) {
-            totalBuyIn += parseFloat(currentUserPlayer.buyIn) || 0;
-            totalCashOut += parseFloat(currentUserPlayer.cashOut) || 0;
-            gamesPlayed += 1;
-          }
-        }
-      });
-
-      // מיון המשחקים לפי תאריך יורד
-      setCashGames(fetchedGames.sort((a, b) => {
-        const dateA = a.date && a.date.seconds ? new Date(a.date.seconds * 1000) : new Date(0);
-        const dateB = b.date && b.date.seconds ? new Date(b.date.seconds * 1000) : new Date(0);
-        return dateB - dateA;
-      }));
-      
-      setPersonalStats({
-        totalBuyIn,
-        totalCashOut,
-        netProfit: totalCashOut - totalBuyIn,
-        gamesPlayed,
-      });
-      setPlayerNames(Array.from(uniquePlayerNames)); // הגדר את שמות השחקנים הייחודיים
-      setLoadingGames(false);
+      const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+      const playersCollectionRef = collection(db, `artifacts/${appId}/users/${userId}/players`);
+      const playerSnapshot = await getDocs(playersCollectionRef);
+      const names = playerSnapshot.docs.map(doc => doc.data().name);
+      setPlayerNames(names);
+      if (names.length > 0 && !selectedPlayerName) {
+        setSelectedPlayerName(names[0]); // בחר את השחקן הראשון כברירת מחדל
+      }
     } catch (err) {
-      console.error('שגיאה בשליפת נתוני מעקב אישי:', err);
-      setError('שגיאה בטעינת הנתונים. נסה שוב מאוחר יותר.');
+      console.error("שגיאה בטעינת שמות שחקנים:", err);
+      setError("שגיאה בטעינת שמות שחקנים. אנא נסה שוב.");
+    } finally {
       setLoadingGames(false);
     }
   };
 
-  // אפקט לחישוב רווח/הפסד כולל עבור השחקן הנבחר
-  useEffect(() => {
-    if (selectedPlayerName && games.length > 0) {
-      let sum = 0;
-      games.forEach(game => {
-        const playerInGame = game.players.find(p => p.name === selectedPlayerName);
-        if (playerInGame) {
-          const buyIn = parseFloat(playerInGame.buyIn) || 0;
-          const cashOut = parseFloat(playerInGame.cashOut) || 0;
-          sum += (cashOut - buyIn);
+  const fetchGamesForPlayer = async (userId, playerName) => {
+    setLoadingGames(true);
+    setError(null); // איפוס שגיאות
+    try {
+      const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+      const gamesCollectionRef = collection(db, `artifacts/${appId}/users/${userId}/sessions`); // נתיב לקולקציית המשחקים
+      const q = query(gamesCollectionRef); // אין צורך ב-where אם נסנן ב-JS
+      const querySnapshot = await getDocs(q);
+
+      let playerGames = [];
+      let currentTotalProfitLoss = 0;
+
+      querySnapshot.forEach((doc) => {
+        const gameData = doc.data();
+        // ודא ש-gameData.players קיים ושהוא מערך
+        if (gameData.players && Array.isArray(gameData.players)) {
+          const playerInGame = gameData.players.find(p => p.name === playerName);
+          if (playerInGame) {
+            playerGames.push({ id: doc.id, ...gameData });
+            currentTotalProfitLoss += (playerInGame.cashOut - playerInGame.buyIn);
+          }
         }
       });
-      setTotalProfitLoss(sum);
-    } else {
-      setTotalProfitLoss(0);
+      setGames(playerGames);
+      setTotalProfitLoss(currentTotalProfitLoss);
+    } catch (err) {
+      console.error("שגיאה בטעינת משחקים עבור השחקן:", err);
+      setError("שגיאה בטעינת נתוני משחקים. אנא נסה שוב.");
+    } finally {
+      setLoadingGames(false);
     }
-  }, [selectedPlayerName, games]);
+  };
 
-  if (loadingAuth || loadingGames) {
+  const handlePlayerChange = (event) => {
+    setSelectedPlayerName(event.target.value);
+  };
+
+  if (loadingAuth) {
     return (
-      <div className="page-container personal-tracking-container">
-        <p style={{ textAlign: 'center', color: 'var(--text-color)' }}>טוען נתונים...</p>
+      <div className="personal-tracking-container">
+        <h2>טוען אימות...</h2>
       </div>
     );
   }
 
-  if (!user || user.isAnonymous) {
-    return (
-      <div className="page-container personal-tracking-container">
-        <h2 style={{ textAlign: 'center', color: 'var(--secondary-color)' }}>גישה מוגבלת</h2>
-        <p style={{ textAlign: 'center', color: '#FFFFFF' }}>
-          מעקב אישי זמין רק למשתמשים רשומים. אנא התחבר כדי לצפות בו.
-        </p>
-      </div>
-    );
+  if (!user) {
+    return null; // או הפניה לדף כניסה
   }
 
   return (
-    <div className="page-container personal-tracking-container">
+    <div className="personal-tracking-container">
       <h2><FontAwesomeIcon icon={faChartLine} /> מעקב אישי</h2>
+      <p className="text-center text-gray-600 mb-8">
+        כאן תוכל לעקוב אחר הביצועים האישיים של שחקן ספציפי לאורך זמן.
+      </p>
 
-      <div className="form-section">
-        <label htmlFor="playerNameSelect">בחר את השם שלך:</label>
-        <select
-          id="playerNameSelect"
-          value={selectedPlayerName}
-          onChange={(e) => setSelectedPlayerName(e.target.value)}
-        >
-          <option value="">בחר שם...</option>
-          {playerNames.map((name, index) => (
-            <option key={index} value={name}>{name}</option>
-          ))}
-        </select>
+      <div className="section player-selection-section">
+        <h3><FontAwesomeIcon icon={faUserCircle} /> בחר שחקן</h3>
+        {loadingGames ? (
+          <p>טוען שחקנים...</p>
+        ) : error ? (
+          <p className="error-message">{error}</p> // הצגת הודעת שגיאה
+        ) : playerNames.length === 0 ? (
+          <p>אין שחקנים זמינים. אנא הוסף שחקנים דרך "ניהול שחקנים" תחילה.</p>
+        ) : (
+          <select
+            value={selectedPlayerName}
+            onChange={handlePlayerChange}
+            className="player-select"
+          >
+            {playerNames.map((name, index) => (
+              <option key={index} value={name}>
+                {name}
+              </option>
+            ))}
+          </select>
+        )}
       </div>
 
-      {selectedPlayerName && (
-        <div className="tracking-results">
-          <h3><FontAwesomeIcon icon={faUserCircle} /> סיכום עבור {selectedPlayerName}:</h3>
+      {selectedPlayerName && !loadingGames && (
+        <div className="section summary-section">
+          <h3>סיכום עבור {selectedPlayerName}</h3>
           <p className={`total-profit-loss ${totalProfitLoss >= 0 ? 'positive' : 'negative'}`}>
             סה"כ רווח/הפסד: {totalProfitLoss.toFixed(2)} ₪
           </p>
+        </div>
+      )}
 
-          <h4>היסטוריית משחקים:</h4>
-          {games.filter(game => game.players.some(p => p.name === selectedPlayerName)).length > 0 ? (
-            <ul className="game-history-list">
-              {games
-                .filter(game => game.players.some(p => p.name === selectedPlayerName))
+      <div className="section games-list-section">
+        <h3><FontAwesomeIcon icon={faChartLine} /> היסטוריית משחקים</h3>
+        {loadingGames ? (
+          <p>טוען משחקים...</p>
+        ) : error ? (
+          <p className="error-message">{error}</p> // הצגת הודעת שגיאה
+        ) : games.length > 0 ? (
+          <ul className="games-list">
+            {games
                 .sort((a, b) => {
+                  // ודא ש-date קיים ושהוא אובייקט Timestamp של Firebase
                   const dateA = a.date && a.date.seconds ? new Date(a.date.seconds * 1000) : new Date(0);
                   const dateB = b.date && b.date.seconds ? new Date(b.date.seconds * 1000) : new Date(0);
-                  return dateB - dateA;
+                  return dateB - dateA; // מיון מהחדש לישן
                 })
                 .map(game => {
                   const playerInGame = game.players.find(p => p.name === selectedPlayerName);
-                  // ודא ש-playerInGame קיים לפני גישה למאפיינים שלו
-                  if (!playerInGame) return null;
+                  if (!playerInGame) return null; // לוודא שהשחקן קיים במשחק הזה
 
-                  const buyIn = parseFloat(playerInGame.buyIn) || 0;
-                  const cashOut = parseFloat(playerInGame.cashOut) || 0;
-                  const gameProfitLoss = cashOut - buyIn;
-                  const gameDate = game.date && game.date.seconds ? new Date(game.date.seconds * 1000).toLocaleDateString('he-IL') : 'תאריך לא ידוע';
+                  const gameProfitLoss = playerInGame.cashOut - playerInGame.buyIn;
+                  const gameDate = game.date ? new Date(game.date.seconds * 1000).toLocaleDateString('he-IL') : 'תאריך לא ידוע';
 
                   return (
                     <li key={game.id} className="game-item">
                       <div className="game-info">
                         <span>תאריך: {gameDate}</span>
-                        <span>יחס צ'יפים: {game.chipsPerShekel || 'לא ידוע'}</span>
+                        <span>יחס צ'יפים: {game.chipsPerShekel}</span>
                       </div>
                       <div className="player-stats">
-                        <span>השקעה: {buyIn.toFixed(2)} ₪</span>
-                        <span>יציאה: {cashOut.toFixed(2)} ₪</span>
+                        <span>השקעה: {playerInGame.buyIn.toFixed(2)} ₪</span>
+                        <span>יציאה: {playerInGame.cashOut.toFixed(2)} ₪</span>
                         <span className={`profit-loss ${gameProfitLoss >= 0 ? 'positive' : 'negative'}`}>
                           רווח/הפסד: {gameProfitLoss.toFixed(2)} ₪
                         </span>
@@ -201,12 +189,11 @@ function PersonalTracking() {
                     </li>
                   );
                 })}
-            </ul>
-          ) : (
-            <p>לא נמצאו משחקים עבור שם השחקן שנבחר.</p>
-          )}
-        </div>
-      )}
+          </ul>
+        ) : (
+          <p>לא נמצאו משחקים עבור שם השחקן שנבחר.</p>
+        )}
+      </div>
     </div>
   );
 }
