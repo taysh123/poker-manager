@@ -1,12 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Link, NavLink, useNavigate, useLocation } from 'react-router-dom'; // ייבוא NavLink
 import { getAuth, signOut } from 'firebase/auth';
 import './Header.css'; // ודא שקובץ ה-CSS מיובא כראוי
 
 // ייבוא תמונת הלוגו שהעלית. הנתיב חייב להיות יחסי למיקום הקובץ Header.jsx
 import logoImage from '../assets/output (5).jpg';
 
-function Header({ user }) {
+// ייבוא אייקונים מ-FontAwesome
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faChartLine, faHome, faCoins, faSignInAlt, faSignOutAlt, faUsers, faBook, faUserFriends, faTrophy, faClipboardList } from '@fortawesome/free-solid-svg-icons';
+
+
+function Header({ user }) { // הסרנו את children מה-props מכיוון שאנו בונים את הניווט כאן
   // מצב לשליטה בפתיחה/סגירה של תפריט המובייל (כפתור המבורגר)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   // הוק לניווט בין דפים
@@ -52,13 +57,47 @@ function Header({ user }) {
           {user ? (
             // אם המשתמש מחובר, הצג את פריטי התפריט עבור משתמשים מחוברים
             <>
-              {/* כפתור "דף הבית" הוסר מכאן, מכיוון שהלוגו משמש כעת למטרה זו */}
-              <li><Link to="/cash-game">משחק קאש</Link></li>
-              <li><Link to="/tournament">טורניר</Link></li>
-              <li><Link to="/sessions">משחקים שמורים</Link></li>
-              <li><Link to="/player-stats">סטטיסטיקות שחקנים</Link></li>
-              <li><Link to="/player-management">ניהול שחקנים</Link></li>
-              <li><Link to="/poker-journal">יומן פוקר</Link></li>
+              <li>
+                <NavLink to="/home" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
+                  <FontAwesomeIcon icon={faHome} /> בית
+                </NavLink>
+              </li>
+              <li>
+                <NavLink to="/cash-game" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
+                  <FontAwesomeIcon icon={faCoins} /> משחק קאש
+                </NavLink>
+              </li>
+              <li>
+                <NavLink to="/tournament" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
+                  <FontAwesomeIcon icon={faTrophy} /> טורניר
+                </NavLink>
+              </li>
+              <li>
+                <NavLink to="/sessions" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
+                  <FontAwesomeIcon icon={faClipboardList} /> סשנים
+                </NavLink>
+              </li>
+              <li>
+                <NavLink to="/player-stats" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
+                  <FontAwesomeIcon icon={faUsers} /> סטטיסטיקות שחקנים
+                </NavLink>
+              </li>
+              <li>
+                <NavLink to="/player-management" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
+                  <FontAwesomeIcon icon={faUserFriends} /> ניהול שחקנים
+                </NavLink>
+              </li>
+              <li>
+                <NavLink to="/poker-journal" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
+                  <FontAwesomeIcon icon={faBook} /> יומן פוקר
+                </NavLink>
+              </li>
+              {/* הקישור החדש לעמוד מעקב אישי */}
+              <li>
+                <NavLink to="/personal-tracking" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
+                  <FontAwesomeIcon icon={faChartLine} /> מעקב אישי
+                </NavLink>
+              </li>
               <li>
                 {/* כפתור התנתקות */}
                 <button onClick={handleLogout} className="logout-button">
@@ -69,8 +108,16 @@ function Header({ user }) {
           ) : (
             // אם המשתמש אינו מחובר, הצג קישורים להתחברות והרשמה
             <>
-              <li><Link to="/login">התחבר</Link></li>
-              <li><Link to="/register">הירשם</Link></li>
+              <li>
+                <NavLink to="/login" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
+                  <FontAwesomeIcon icon={faSignInAlt} /> התחבר
+                </NavLink>
+              </li>
+              <li>
+                <NavLink to="/register" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
+                  <FontAwesomeIcon icon={faSignOutAlt} /> הירשם
+                </NavLink>
+              </li>
             </>
           )}
         </ul>

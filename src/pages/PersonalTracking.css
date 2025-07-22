@@ -1,0 +1,179 @@
+.personal-tracking-container {
+  padding: 20px;
+  max-width: 800px;
+  margin: 20px auto;
+  background-color: var(--card-background);
+  border-radius: 12px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  color: var(--text-color);
+  direction: rtl; /* תמיכה בעברית מימין לשמאל */
+  text-align: right; /* יישור טקסט לימין */
+}
+
+.personal-tracking-container h2,
+.personal-tracking-container h3,
+.personal-tracking-container h4 {
+  color: var(--primary-color);
+  text-align: center;
+  margin-bottom: 20px;
+  font-size: 1.8em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.personal-tracking-container h3 {
+  font-size: 1.5em;
+  margin-top: 30px;
+}
+
+.personal-tracking-container h4 {
+  font-size: 1.2em;
+  margin-top: 25px;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 10px;
+}
+
+.form-section {
+  margin-bottom: 25px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end; /* יישור לימין */
+}
+
+.form-section label {
+  margin-bottom: 8px;
+  font-weight: bold;
+  color: var(--text-color);
+}
+
+.form-section select {
+  width: 100%;
+  padding: 12px 15px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background-color: var(--input-background);
+  color: var(--input-text-color);
+  font-size: 1em;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  -webkit-appearance: none; /* הסרת עיצוב ברירת מחדל של דפדפן */
+  -moz-appearance: none;
+  appearance: none;
+  background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23666%22%20d%3D%22M287%2C197.3L159.9%2C69.9c-4.4-4.4-11.4-4.4-15.8%2C0L5.4%2C197.3c-4.4%2C4.4-4.4%2C11.4%2C0%2C15.8c4.4%2C4.4%2C11.4%2C4.4%2C15.8%2C0l130.4-130.4l130.4%2C130.4c4.4%2C4.4%2C11.4%2C4.4%2C15.8%2C0C291.4%2C208.7%2C291.4%2C201.7%2C287%2C197.3z%22%2F%3E%3C%2Fsvg%3E');
+  background-repeat: no-repeat;
+  background-position: left 15px center; /* מיקום החץ משמאל */
+  background-size: 12px;
+}
+
+.form-section select:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(var(--primary-color-rgb), 0.3);
+  outline: none;
+}
+
+.tracking-results {
+  margin-top: 30px;
+  border-top: 1px solid var(--border-color);
+  padding-top: 20px;
+}
+
+.total-profit-loss {
+  font-size: 1.6em;
+  font-weight: bold;
+  text-align: center;
+  margin: 20px 0;
+  padding: 10px 0;
+  border-radius: 8px;
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+.total-profit-loss.positive {
+  color: #4CAF50; /* ירוק לרווח */
+}
+
+.total-profit-loss.negative {
+  color: #F44336; /* אדום להפסד */
+}
+
+.game-history-list {
+  list-style: none;
+  padding: 0;
+}
+
+.game-item {
+  background-color: var(--input-background);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  margin-bottom: 15px;
+  padding: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s ease;
+}
+
+.game-item:hover {
+  transform: translateY(-3px);
+}
+
+.game-info,
+.player-stats {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap; /* מאפשר גלישה בשורות קטנות */
+  gap: 10px;
+}
+
+.game-info span,
+.player-stats span {
+  font-size: 0.95em;
+  color: var(--text-color);
+}
+
+.player-stats .profit-loss {
+  font-weight: bold;
+  padding: 5px 10px;
+  border-radius: 5px;
+}
+
+.player-stats .profit-loss.positive {
+  background-color: rgba(76, 175, 80, 0.2);
+  color: #4CAF50;
+}
+
+.player-stats .profit-loss.negative {
+  background-color: rgba(244, 67, 54, 0.2);
+  color: #F44336;
+}
+
+/* התאמות למסכים קטנים */
+@media (max-width: 600px) {
+  .personal-tracking-container {
+    padding: 15px;
+    margin: 10px auto;
+  }
+
+  .personal-tracking-container h2 {
+    font-size: 1.5em;
+  }
+
+  .total-profit-loss {
+    font-size: 1.3em;
+  }
+
+  .game-info,
+  .player-stats {
+    flex-direction: column;
+    align-items: flex-end; /* יישור לימין */
+  }
+
+  .game-info span,
+  .player-stats span {
+    width: 100%;
+    text-align: right;
+  }
+}
