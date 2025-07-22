@@ -1,11 +1,11 @@
-// src/pages/Homepage.jsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getFirestore, doc, getDoc, collection, query, getDocs, setDoc, onSnapshot } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCog } from '@fortawesome/free-solid-svg-icons';
+import { faCog, faUserChart, faCoins, faHandshake, faBook, faUsers } from '@fortawesome/free-solid-svg-icons'; // ייבוא אייקונים נוספים
 import '../pages/Dashboard.css'; // ייבוא ה-CSS של הדאשבורד
+import '../pages/Homepage.css'; // ייבוא ה-CSS של דף הבית
 
 // ייבוא הווידג'טים
 import TotalProfitLossWidget from '../components/widgets/TotalProfitLossWidget';
@@ -138,6 +138,43 @@ function Homepage() {
         {widgetPreferences.playerCount && (
           <PlayerCountWidget playerCount={dashboardData.playerCount} />
         )}
+      </div>
+
+      {/* קישורים מהירים */}
+      <div className="section quick-links-section">
+        <h3>קישורים מהירים</h3>
+        <div className="home-links-grid">
+          <div className="home-link-card" onClick={() => navigate('/cash-game')}>
+            <FontAwesomeIcon icon={faCoins} />
+            <h3>משחק קאש חדש</h3>
+            <p>התחל מעקב אחר משחק קאש חדש.</p>
+          </div>
+          <div className="home-link-card" onClick={() => navigate('/player-stats')}>
+            <FontAwesomeIcon icon={faChartLine} />
+            <h3>סטטיסטיקות שחקנים</h3>
+            <p>צפה בסטטיסטיקות מפורטות של כל השחקנים.</p>
+          </div>
+          <div className="home-link-card" onClick={() => navigate('/player-management')}>
+            <FontAwesomeIcon icon={faUsers} />
+            <h3>ניהול שחקנים</h3>
+            <p>הוסף, ערוך ומחק שחקנים קבועים.</p>
+          </div>
+          <div className="home-link-card" onClick={() => navigate('/poker-journal')}>
+            <FontAwesomeIcon icon={faBook} />
+            <h3>יומן פוקר</h3>
+            <p>תעד ונתח את הידיים והסשנים שלך.</p>
+          </div>
+          <div className="home-link-card" onClick={() => navigate('/personal-tracking')}>
+            <FontAwesomeIcon icon={faUserChart} />
+            <h3>מעקב אישי</h3>
+            <p>עקוב אחר הביצועים האישיים שלך במשחקים.</p>
+          </div>
+          <div className="home-link-card" onClick={() => navigate('/sessions')}>
+            <FontAwesomeIcon icon={faHandshake} />
+            <h3>היסטוריית סשנים</h3>
+            <p>צפה ונהל את כל סשני המשחק שהקלטת.</p>
+          </div>
+        </div>
       </div>
     </div>
   );

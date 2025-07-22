@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { collection, getDocs } from 'firebase/firestore';
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
-import { db } from '../firebase'; // Ensure db is correctly imported
+import { db } from '../firebase';
 import { useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faUsers, faChartLine, faCoins, faMoneyBillWave, faHandshake, faDollarSign } from '@fortawesome/free-solid-svg-icons';
-import './PlayerStats.css'; // Import the new CSS file
+import './PlayerStats.css';
 
 function PlayerStats() {
   const [user, setUser] = useState(null);
@@ -16,75 +16,82 @@ function PlayerStats() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Get the appId from the global variable __app_id
-  const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-
   useEffect(() => {
     const auth = getAuth();
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       if (currentUser) {
         setUser(currentUser);
         setLoadingAuth(false);
-        // Load statistics only if the user is not anonymous
+        // טען סטטיסטיקות רק אם המשתמש אינו אנונימי
         if (!currentUser.isAnonymous) {
-          fetchPlayerStats(currentUser.uid, appId); // Pass appId to fetchPlayerStats
+          fetchPlayerStats(currentUser.uid);
         } else {
           setLoading(false);
-          setError('סטטיסטיקות שחקנים אינן זמינות במצב אורח. אנא התחבר כדי לצפות בהן.');
+          setError('יש להתחבר כדי לצפות בסטטיסטיקות שחקנים.');
         }
       } else {
-        // If no user is logged in, navigate to the main login page
         navigate('/');
       }
+      setLoadingAuth(false);
     });
 
     return () => unsubscribe();
-  }, [navigate, appId]); // Add appId to dependencies
+  }, [navigate]);
 
-  const fetchPlayerStats = async (userId, currentAppId) => { // Accept currentAppId as parameter
+  const fetchPlayerStats = async (userId) => {
     setLoading(true);
     setError(null);
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
     try {
-      // This is the corrected path for the Firestore collection
-      const cashGamesCollection = collection(db, 'artifacts', currentAppId, 'users', userId, 'cashGames');
-      const querySnapshot = await getDocs(cashGamesCollection);
-      
+      // נתיב לטבלת המשחקים ב-Firestore
+      const cashGamesColRef = collection(db, `artifacts/${appId}/users/${userId}/cashGames`);
+      const querySnapshot = await getDocs(cashGamesColRef);
+
       const statsMap = new Map();
 
-      querySnapshot.docs.forEach(doc => {
-        const game = doc.data();
-        // Ensure game.players exists and is an array before iterating
-        if (game.players && Array.isArray(game.players)) {
-          game.players.forEach(player => {
-            if (!statsMap.has(player.name)) {
-              statsMap.set(player.name, {
-                name: player.name,
-                totalBuyIn: 0,
-                totalCashOut: 0,
-                netProfit: 0,
-                gamesPlayed: 0,
-                avgBuyIn: 0,
-                avgCashOut: 0,
-                hourlyRate: 0, // Placeholder, as it's commented out in render
-              });
-            }
+      querySnapshot.forEach((doc) => {
+        const gameData = doc.data();
+        // ודא ש-gameData.players הוא מערך וקיים
+        if (Array.isArray(gameData.players)) {
+          gameData.players.forEach(player => {
+            const playerName = player.name;
+            let currentStats = statsMap.get(playerName) || {
+              name: playerName,
+              totalBuyIn: 0,
+              totalCashOut: 0,
+              netProfit: 0,
+              gamesPlayed: 0,
+              avgBuyIn: 0,
+              avgCashOut: 0,
+            };
 
-            const currentStats = statsMap.get(player.name);
-            currentStats.totalBuyIn += player.buyIn || 0; // Add nullish coalescing to prevent NaN
-            currentStats.totalCashOut += player.cashOut || 0; // Add nullish coalescing to prevent NaN
+            // ודא ש-buyIn ו-cashOut הם מספרים
+            const buyIn = parseFloat(player.buyIn) || 0;
+            const cashOut = parseFloat(player.cashOut) || 0;
+
+            currentStats.totalBuyIn += buyIn;
+            currentStats.totalCashOut += cashOut;
+            currentStats.netProfit += (cashOut - buyIn);
             currentStats.gamesPlayed += 1;
-            currentStats.netProfit = currentStats.totalCashOut - currentStats.totalBuyIn;
-            currentStats.avgBuyIn = currentStats.gamesPlayed > 0 ? currentStats.totalBuyIn / currentStats.gamesPlayed : 0;
-            currentStats.avgCashOut = currentStats.gamesPlayed > 0 ? currentStats.totalCashOut / currentStats.gamesPlayed : 0;
+
+            statsMap.set(playerName, currentStats);
           });
         }
       });
 
-      setPlayerStats(Array.from(statsMap.values()));
-      setLoading(false);
+      // חשב ממוצעים לאחר סיום הלולאה
+      const calculatedStats = Array.from(statsMap.values()).map(stats => ({
+        ...stats,
+        avgBuyIn: stats.gamesPlayed > 0 ? stats.totalBuyIn / stats.gamesPlayed : 0,
+        avgCashOut: stats.gamesPlayed > 0 ? stats.totalCashOut / stats.gamesPlayed : 0,
+      }));
+
+      setPlayerStats(calculatedStats);
+
     } catch (err) {
-      console.error('שגיאה בשליפת סטטיסטיקות שחקנים:', err);
-      setError('שגיאה בטעינת הסטטיסטיקות. נסה שוב מאוחר יותר.');
+      console.error("שגיאה בטעינת סטטיסטיקות שחקנים:", err);
+      setError("שגיאה בטעינת סטטיסטיקות שחקנים. אנא נסה שוב מאוחר יותר.");
+    } finally {
       setLoading(false);
     }
   };
@@ -92,19 +99,15 @@ function PlayerStats() {
   if (loadingAuth) {
     return (
       <div className="page-container player-stats-container">
-        <p style={{ textAlign: 'center', color: 'var(--text-color)' }}>טוען...</p>
+        <p style={{ textAlign: 'center', color: 'var(--text-color)' }}>טוען אימות משתמש...</p>
       </div>
     );
   }
 
-  // If there is no user (not even a guest), or if the user is a guest, display an appropriate message
-  if (!user || user.isAnonymous) {
+  if (!user) {
     return (
       <div className="page-container player-stats-container">
-        <h2 style={{ textAlign: 'center', color: 'var(--secondary-color)' }}>גישה מוגבלת</h2>
-        <p style={{ textAlign: 'center', color: '#FFFFFF' }}>
-          סטטיסטיקות שחקנים זמינות רק למשתמשים רשומים. אנא התחבר כדי לצפות בהן.
-        </p>
+        <p style={{ textAlign: 'center', color: 'var(--text-color)' }}>מפנה לדף הכניסה...</p>
       </div>
     );
   }
@@ -112,8 +115,7 @@ function PlayerStats() {
   if (loading) {
     return (
       <div className="page-container player-stats-container">
-        <h2><FontAwesomeIcon icon={faChartLine} /> סטטיסטיקות שחקנים</h2>
-        <p style={{ textAlign: 'center', color: 'var(--text-color)' }}>טוען סטטיסטיקות...</p>
+        <p style={{ textAlign: 'center', color: 'var(--text-color)' }}>טוען סטטיסטיקות שחקנים...</p>
       </div>
     );
   }
@@ -121,8 +123,7 @@ function PlayerStats() {
   if (error) {
     return (
       <div className="page-container player-stats-container">
-        <h2><FontAwesomeIcon icon={faChartLine} /> סטטיסטיקות שחקנים</h2>
-        <p style={{ textAlign: 'center', color: 'var(--danger-color)' }}>{error}</p>
+        <p className="error-message" style={{ textAlign: 'center', color: 'var(--danger-color)' }}>{error}</p>
       </div>
     );
   }
@@ -132,7 +133,7 @@ function PlayerStats() {
       <h2><FontAwesomeIcon icon={faChartLine} /> סטטיסטיקות שחקנים</h2>
 
       {playerStats.length === 0 ? (
-        <p style={{ textAlign: 'center' }}>אין נתונים להצגה. התחל לשחק משחקי קאש כדי לראות סטטיסטיקות!</p>
+        <p style={{ textAlign: 'center' }}>אין נתוני משחקים זמינים להצגת סטטיסטיקות. התחל משחק חדש כדי לראות נתונים!</p>
       ) : (
         <div className="section stats-table-container">
           <table className="player-stats-table">
@@ -152,14 +153,15 @@ function PlayerStats() {
               {playerStats.map((stats, index) => (
                 <tr key={index}>
                   <td>{stats.name}</td>
-                  <td>{stats.totalBuyIn.toFixed(2)}</td>
-                  <td>{stats.totalCashOut.toFixed(2)}</td>
+                  {/* ודא שהערכים הם מספרים לפני toFixed */}
+                  <td>{isNaN(stats.totalBuyIn) ? '0.00' : stats.totalBuyIn.toFixed(2)}</td>
+                  <td>{isNaN(stats.totalCashOut) ? '0.00' : stats.totalCashOut.toFixed(2)}</td>
                   <td style={{ color: stats.netProfit >= 0 ? 'var(--primary-color)' : 'var(--danger-color)' }}>
-                    {stats.netProfit.toFixed(2)}
+                    {isNaN(stats.netProfit) ? '0.00' : stats.netProfit.toFixed(2)}
                   </td>
                   <td>{stats.gamesPlayed}</td>
-                  <td>{stats.avgBuyIn.toFixed(2)}</td>
-                  <td>{stats.avgCashOut.toFixed(2)}</td>
+                  <td>{isNaN(stats.avgBuyIn) ? '0.00' : stats.avgBuyIn.toFixed(2)}</td>
+                  <td>{isNaN(stats.avgCashOut) ? '0.00' : stats.avgCashOut.toFixed(2)}</td>
                   {/* <td>{stats.hourlyRate.toFixed(2)}</td> */}
                 </tr>
               ))}

@@ -1,4 +1,3 @@
-// src/pages/PersonalTracking.jsx
 import React, { useState, useEffect } from 'react';
 import { collection, query, getDocs } from 'firebase/firestore';
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
@@ -49,9 +48,12 @@ function PersonalTracking() {
 
           const names = new Set();
           fetchedGames.forEach(game => {
-            game.players.forEach(player => {
-              names.add(player.name);
-            });
+            // ודא ש-game.players קיים ושהוא מערך
+            if (Array.isArray(game.players)) {
+              game.players.forEach(player => {
+                names.add(player.name);
+              });
+            }
           });
           setPlayerNames(Array.from(names));
 
@@ -72,7 +74,10 @@ function PersonalTracking() {
       games.forEach(game => {
         const playerInGame = game.players.find(p => p.name === selectedPlayerName);
         if (playerInGame) {
-          sum += (playerInGame.cashOut - playerInGame.buyIn);
+          // ודא ש-buyIn ו-cashOut הם מספרים
+          const buyIn = parseFloat(playerInGame.buyIn) || 0;
+          const cashOut = parseFloat(playerInGame.cashOut) || 0;
+          sum += (cashOut - buyIn);
         }
       });
       setTotalProfitLoss(sum);
@@ -134,18 +139,23 @@ function PersonalTracking() {
                 })
                 .map(game => {
                   const playerInGame = game.players.find(p => p.name === selectedPlayerName);
-                  const gameProfitLoss = playerInGame.cashOut - playerInGame.buyIn;
-                  const gameDate = game.date ? new Date(game.date.seconds * 1000).toLocaleDateString('he-IL') : 'תאריך לא ידוע';
+                  // ודא ש-playerInGame קיים לפני גישה למאפיינים שלו
+                  if (!playerInGame) return null;
+
+                  const buyIn = parseFloat(playerInGame.buyIn) || 0;
+                  const cashOut = parseFloat(playerInGame.cashOut) || 0;
+                  const gameProfitLoss = cashOut - buyIn;
+                  const gameDate = game.date && game.date.seconds ? new Date(game.date.seconds * 1000).toLocaleDateString('he-IL') : 'תאריך לא ידוע';
 
                   return (
                     <li key={game.id} className="game-item">
                       <div className="game-info">
                         <span>תאריך: {gameDate}</span>
-                        <span>יחס צ'יפים: {game.chipsPerShekel}</span>
+                        <span>יחס צ'יפים: {game.chipsPerShekel || 'לא ידוע'}</span>
                       </div>
                       <div className="player-stats">
-                        <span>השקעה: {playerInGame.buyIn.toFixed(2)} ₪</span>
-                        <span>יציאה: {playerInGame.cashOut.toFixed(2)} ₪</span>
+                        <span>השקעה: {buyIn.toFixed(2)} ₪</span>
+                        <span>יציאה: {cashOut.toFixed(2)} ₪</span>
                         <span className={`profit-loss ${gameProfitLoss >= 0 ? 'positive' : 'negative'}`}>
                           רווח/הפסד: {gameProfitLoss.toFixed(2)} ₪
                         </span>
