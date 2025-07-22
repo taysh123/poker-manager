@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom'; // NavLink לא נחוץ כאן יותר כי הוא ב-App.jsx
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { getAuth, signOut } from 'firebase/auth';
 import './Header.css'; // ודא שקובץ ה-CSS מיובא כראוי
-import logoImage from '../assets/output (5).jpg';
 
-function Header({ user, children }) { // הוספנו 'children' ל-props
+// ייבוא תמונת הלוגו. הנתיב חייב להיות יחסי למיקום הקובץ Header.jsx
+// ודא שהנתיב הזה נכון עבורך. אם התמונה לא נטענת, ייתכן שצריך להתאים את הנתיב.
+import logoImage from '../assets/output (5).jpg'; 
+
+function Header({ user }) {
   // מצב לשליטה בפתיחה/סגירה של תפריט המובייל (כפתור המבורגר)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   // הוק לניווט בין דפים
@@ -22,45 +25,78 @@ function Header({ user, children }) { // הוספנו 'children' ל-props
       navigate('/'); // ניווט לדף הבית לאחר יציאה מוצלחת
     } catch (error) {
       console.error('שגיאה ביציאה:', error);
-      // ניתן להציג הודעת שגיאה למשתמש במקרה של כשל בהתנתקות
+      // ניתן להציג הודעת שגיאה למשתמש כאן, במקום alert()
+      // לדוגמה, באמצעות מצב (state) ששולט בהצגת הודעת שגיאה ב-UI
     }
   };
 
-  // useEffect לטיפול בסגירת תפריט המובייל אוטומטית בעת שינוי נתיב
+  // אפקט לסגירת תפריט המובייל אוטומטית כאשר הנתיב משתנה
   useEffect(() => {
-    setIsMobileMenuOpen(false); // סגור את התפריט
-  }, [location.pathname]); // הפעל מחדש כאשר נתיב ה-URL משתנה
+    setIsMobileMenuOpen(false); // סגור את התפריט בכל ניווט
+  }, [location.pathname]); // תלוי בשינויי הנתיב
+
+  // פונקציה לשינוי מצב תפריט המובייל (פתוח/סגור)
+  const toggleMobileMenu = () => {
+    setIsMobileMenuOpen(!isMobileMenuOpen);
+  };
 
   return (
     <header className="app-header">
-      <div className="logo-container">
-        {/* הלוגו הוא כעת תמונה שמקושרת לדף הבית. */}
-        <Link to="/home" className="logo-link">
-          <img src={logoImage} alt="Poker App Logo" className="logo-img" />
-          <span>Poker App</span>
-        </Link>
+      {/* אזור הלוגו והכותרת */}
+      <div className="header-left">
+        {/* הלוגו מקשר לדף הבית רק אם המשתמש מחובר */}
+        {user ? (
+          <Link to="/home" className="logo-link">
+            <img src={logoImage} alt="Poker App Logo" className="app-logo" />
+            <span className="app-title">Poker App</span>
+          </Link>
+        ) : (
+          // אם לא מחובר, הלוגו לא מקשר או מקשר לדף הבית הראשי (לפני התחברות)
+          <div className="logo-link"> {/* ניתן להחליף ל-Link to="/" אם רוצים קישור לדף הכניסה */}
+            <img src={logoImage} alt="Poker App Logo" className="app-logo" />
+            <span className="app-title">Poker App</span>
+          </div>
+        )}
       </div>
 
-      {/* תפריט הניווט הראשי. הקלאס 'open' מופעל כאשר תפריט המובייל פתוח. */}
-      {/* במקום לבנות את ה-ul/li כאן, נציג את ה-children שמועברים מ-App.jsx */}
-      <nav className={`main-nav ${isMobileMenuOpen ? 'open' : ''}`}>
-        {/* כאן נציג את ה-children - שהם ה-NavLink's מ-App.jsx */}
-        {children}
-        {user && ( // הוספת כפתור התנתקות כאן, כי הוא ספציפי ל-Header
-          <ul className="logout-nav-item"> {/* קלאס חדש לעיצוב */}
-            <li>
-              <button onClick={handleLogout} className="logout-button">
-                התנתק
-              </button>
-            </li>
-          </ul>
-        )}
-      </nav>
-
-      {/* כפתור המבורגר (מוצג רק במובייל באמצעות CSS) */}
-      <button className="hamburger-menu" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
-        ☰ {/* אייקון המבורגר פשוט */}
+      {/* כפתור המבורגר - גלוי רק במובייל */}
+      <button className="hamburger-menu" onClick={toggleMobileMenu} aria-label="פתח/סגור תפריט ניווט">
+        {/* אייקון המבורגר פשוט באמצעות SVG או CSS */}
+        <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round">
+          <line x1="3" y1="12" x2="21" y2="12"></line>
+          <line x1="3" y1="6" x2="21" y2="6"></line>
+          <line x1="3" y1="18" x2="21" y2="18"></line>
+        </svg>
       </button>
+
+      {/* אלמנט הניווט הראשי. הקלאס 'open' מופעל כאשר תפריט המובייל פתוח. */}
+      <nav className={`main-nav ${isMobileMenuOpen ? 'open' : ''}`}>
+        <ul>
+          {user ? (
+            // אם המשתמש מחובר, הצג את פריטי התפריט עבור משתמשים מחוברים
+            <>
+              <li><Link to="/cash-game">משחק קאש</Link></li>
+              <li><Link to="/tournament">טורניר</Link></li>
+              <li><Link to="/sessions">משחקים שמורים</Link></li>
+              <li><Link to="/player-stats">סטטיסטיקות שחקנים</Link></li>
+              <li><Link to="/player-management">ניהול שחקנים</Link></li>
+              <li><Link to="/poker-journal">יומן פוקר</Link></li>
+              <li>
+                {/* כפתור התנתקות */}
+                <button onClick={handleLogout} className="logout-button">
+                  התנתק
+                </button>
+              </li>
+            </>
+          ) : (
+            // אם המשתמש אינו מחובר, הצג קישורים להתחברות והרשמה
+            <>
+              <li><Link to="/login">התחבר</Link></li>
+              <li><Link to="/register">הירשם</Link></li>
+            </>
+          )}
+        </ul>
+      </nav>
     </header>
   );
 }
