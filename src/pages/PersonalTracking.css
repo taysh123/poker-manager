@@ -1,11 +1,22 @@
+:root {
+  --personal-tracking-bg: #ffffff; /* רקע לבן לדף */
+  --personal-tracking-text: #333333; /* טקסט שחור/כהה */
+  --personal-tracking-input-bg: #f0f0f0; /* רקע אפור בהיר לשדות קלט */
+  --personal-tracking-border: #cccccc; /* גבולות אפורים */
+  --personal-tracking-header-color: #0056b3; /* כחול כהה לכותרות */
+  --personal-tracking-positive: #28a745; /* ירוק לרווח */
+  --personal-tracking-negative: #dc3545; /* אדום להפסד */
+}
+
+
 .personal-tracking-container {
   padding: 20px;
   max-width: 800px;
   margin: 20px auto;
-  background-color: var(--card-background);
+  background-color: var(--personal-tracking-bg); /* שימוש ברקע לבן */
   border-radius: 12px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-  color: var(--text-color);
+  color: var(--personal-tracking-text); /* שימוש בטקסט כהה */
   direction: rtl; /* תמיכה בעברית מימין לשמאל */
   text-align: right; /* יישור טקסט לימין */
 }
@@ -13,7 +24,7 @@
 .personal-tracking-container h2,
 .personal-tracking-container h3,
 .personal-tracking-container h4 {
-  color: var(--primary-color);
+  color: var(--personal-tracking-header-color); /* כותרות בצבע כהה יותר */
   text-align: center;
   margin-bottom: 20px;
   font-size: 1.8em;
@@ -31,7 +42,7 @@
 .personal-tracking-container h4 {
   font-size: 1.2em;
   margin-top: 25px;
-  border-bottom: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--personal-tracking-border); /* גבול כהה יותר */
   padding-bottom: 10px;
 }
 
@@ -45,37 +56,37 @@
 .form-section label {
   margin-bottom: 8px;
   font-weight: bold;
-  color: var(--text-color);
+  color: var(--personal-tracking-text); /* טקסט כהה */
 }
 
 .form-section select {
   width: 100%;
   padding: 12px 15px;
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--personal-tracking-border); /* גבול כהה יותר */
   border-radius: 8px;
-  background-color: var(--input-background);
-  color: var(--input-text-color);
+  background-color: var(--personal-tracking-input-bg); /* רקע בהיר לשדה קלט */
+  color: var(--personal-tracking-text); /* טקסט כהה */
   font-size: 1em;
   box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
   transition: border-color 0.3s ease, box-shadow 0.3s ease;
-  -webkit-appearance: none; /* הסרת עיצוב ברירת מחדל של דפדפן */
+  -webkit-appearance: none;
   -moz-appearance: none;
   appearance: none;
-  background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23666%22%20d%3D%22M287%2C197.3L159.9%2C69.9c-4.4-4.4-11.4-4.4-15.8%2C0L5.4%2C197.3c-4.4%2C4.4-4.4%2C11.4%2C0%2C15.8c4.4%2C4.4%2C11.4%2C4.4%2C15.8%2C0l130.4-130.4l130.4%2C130.4c4.4%2C4.4%2C11.4%2C4.4%2C15.8%2C0C291.4%2C208.7%2C291.4%2C201.7%2C287%2C197.3z%22%2F%3E%3C%2Fsvg%3E');
+  background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23333%22%20d%3D%22M287%2C197.3L159.9%2C69.9c-4.4-4.4-11.4-4.4-15.8%2C0L5.4%2C197.3c-4.4%2C4.4-4.4%2C11.4%2C0%2C15.8c4.4%2C4.4%2C11.4%2C4.4%2C15.8%2C0l130.4-130.4l130.4%2C130.4c4.4%2C4.4%2C11.4%2C4.4%2C15.8%2C0C291.4%2C208.7%2C291.4%2C201.7%2C287%2C197.3z%22%2F%3E%3C%2Fsvg%3E'); /* חץ שחור יותר */
   background-repeat: no-repeat;
-  background-position: left 15px center; /* מיקום החץ משמאל */
+  background-position: left 15px center;
   background-size: 12px;
 }
 
 .form-section select:focus {
-  border-color: var(--primary-color);
-  box-shadow: 0 0 0 3px rgba(var(--primary-color-rgb), 0.3);
+  border-color: var(--personal-tracking-header-color); /* צבע כהה יותר בפוקוס */
+  box-shadow: 0 0 0 3px rgba(0, 86, 179, 0.3); /* צל כחול בפוקוס */
   outline: none;
 }
 
 .tracking-results {
   margin-top: 30px;
-  border-top: 1px solid var(--border-color);
+  border-top: 1px solid var(--personal-tracking-border); /* גבול כהה יותר */
   padding-top: 20px;
 }
 
@@ -86,15 +97,15 @@
   margin: 20px 0;
   padding: 10px 0;
   border-radius: 8px;
-  background-color: rgba(0, 0, 0, 0.1);
+  background-color: var(--personal-tracking-input-bg); /* רקע בהיר יותר */
 }
 
 .total-profit-loss.positive {
-  color: #4CAF50; /* ירוק לרווח */
+  color: var(--personal-tracking-positive); /* ירוק לרווח */
 }
 
 .total-profit-loss.negative {
-  color: #F44336; /* אדום להפסד */
+  color: var(--personal-tracking-negative); /* אדום להפסד */
 }
 
 .game-history-list {
@@ -103,8 +114,8 @@
 }
 
 .game-item {
-  background-color: var(--input-background);
-  border: 1px solid var(--border-color);
+  background-color: var(--personal-tracking-input-bg); /* רקע בהיר יותר */
+  border: 1px solid var(--personal-tracking-border); /* גבול כהה יותר */
   border-radius: 10px;
   margin-bottom: 15px;
   padding: 15px;
@@ -124,14 +135,14 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  flex-wrap: wrap; /* מאפשר גלישה בשורות קטנות */
+  flex-wrap: wrap;
   gap: 10px;
 }
 
 .game-info span,
 .player-stats span {
   font-size: 0.95em;
-  color: var(--text-color);
+  color: var(--personal-tracking-text); /* טקסט כהה */
 }
 
 .player-stats .profit-loss {
@@ -141,13 +152,13 @@
 }
 
 .player-stats .profit-loss.positive {
-  background-color: rgba(76, 175, 80, 0.2);
-  color: #4CAF50;
+  background-color: rgba(40, 167, 69, 0.2); /* ירוק בהיר יותר */
+  color: var(--personal-tracking-positive);
 }
 
 .player-stats .profit-loss.negative {
-  background-color: rgba(244, 67, 54, 0.2);
-  color: #F44336;
+  background-color: rgba(220, 53, 69, 0.2); /* אדום בהיר יותר */
+  color: var(--personal-tracking-negative);
 }
 
 /* התאמות למסכים קטנים */
@@ -168,7 +179,7 @@
   .game-info,
   .player-stats {
     flex-direction: column;
-    align-items: flex-end; /* יישור לימין */
+    align-items: flex-end;
   }
 
   .game-info span,

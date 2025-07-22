@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, NavLink, useNavigate, useLocation } from 'react-router-dom'; // ייבוא NavLink
+import { Link, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { getAuth, signOut } from 'firebase/auth';
 import './Header.css'; // ודא שקובץ ה-CSS מיובא כראוי
 
@@ -11,57 +11,41 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faChartLine, faHome, faCoins, faSignInAlt, faSignOutAlt, faUsers, faBook, faUserFriends, faTrophy, faClipboardList } from '@fortawesome/free-solid-svg-icons';
 
 
-function Header({ user }) { // הסרנו את children מה-props מכיוון שאנו בונים את הניווט כאן
-  // מצב לשליטה בפתיחה/סגירה של תפריט המובייל (כפתור המבורגר)
+function Header({ user }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  // הוק לניווט בין דפים
   const navigate = useNavigate();
-  // הוק לקבלת מידע על הנתיב הנוכחי (לדוגמה, כדי לסגור תפריט כשמנווטים)
   const location = useLocation();
 
-  // אתחול שירות האימות של Firebase
   const auth = getAuth();
 
-  // פונקציה לטיפול בהתנתקות משתמש
   const handleLogout = async () => {
     try {
-      await signOut(auth); // ביצוע התנתקות
-      navigate('/'); // ניווט לדף הבית לאחר יציאה מוצלחת
+      await signOut(auth);
+      navigate('/');
     } catch (error) {
       console.error('שגיאה ביציאה:', error);
-      // ניתן להציג הודעת שגיאה למשתמש במקרה של כשל בהתנתקות
     }
   };
 
-  // useEffect לטיפול בסגירת תפריט המובייל אוטומטית בעת שינוי נתיב
   useEffect(() => {
-    setIsMobileMenuOpen(false); // סגור את התפריט
-  }, [location.pathname]); // הפעל מחדש כאשר נתיב ה-URL משתנה
+    setIsMobileMenuOpen(false);
+  }, [location.pathname]);
 
   return (
     <header className="app-header">
       <div className="logo-container">
-        {/* הלוגו הוא כעת תמונה שמקושרת לדף הבית.
-            ה-Link to="/home" הופך את הלוגו לכפתור "בית". */}
+        {/* הלוגו הוא כעת תמונה שמקושרת לדף הבית. */}
         <Link to="/home" className="logo-link">
-          {/* תגית ה-img מציגה את הלוגו. ה-className "logo-img" משמש לעיצוב ב-CSS. */}
           <img src={logoImage} alt="Poker App Logo" className="logo-img" />
-          {/* טקסט ליד הלוגו. ניתן להסירו אם לא נחוץ. */}
           <span>Poker App</span>
         </Link>
       </div>
 
-      {/* תפריט הניווט הראשי. הקלאס 'open' מופעל כאשר תפריט המובייל פתוח. */}
       <nav className={`main-nav ${isMobileMenuOpen ? 'open' : ''}`}>
         <ul>
           {user ? (
-            // אם המשתמש מחובר, הצג את פריטי התפריט עבור משתמשים מחוברים
             <>
-              <li>
-                <NavLink to="/home" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
-                  <FontAwesomeIcon icon={faHome} /> בית
-                </NavLink>
-              </li>
+              {/* כפתור "בית" הוסר מכאן, מכיוון שהלוגו משמש כעת למטרה זו */}
               <li>
                 <NavLink to="/cash-game" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
                   <FontAwesomeIcon icon={faCoins} /> משחק קאש
@@ -92,21 +76,19 @@ function Header({ user }) { // הסרנו את children מה-props מכיוון 
                   <FontAwesomeIcon icon={faBook} /> יומן פוקר
                 </NavLink>
               </li>
-              {/* הקישור החדש לעמוד מעקב אישי */}
+              {/* הקישור לעמוד מעקב אישי */}
               <li>
                 <NavLink to="/personal-tracking" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
                   <FontAwesomeIcon icon={faChartLine} /> מעקב אישי
                 </NavLink>
               </li>
               <li>
-                {/* כפתור התנתקות */}
                 <button onClick={handleLogout} className="logout-button">
                   התנתק
                 </button>
               </li>
             </>
           ) : (
-            // אם המשתמש אינו מחובר, הצג קישורים להתחברות והרשמה
             <>
               <li>
                 <NavLink to="/login" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
@@ -123,9 +105,8 @@ function Header({ user }) { // הסרנו את children מה-props מכיוון 
         </ul>
       </nav>
 
-      {/* כפתור המבורגר (מוצג רק במובייל באמצעות CSS) */}
       <button className="hamburger-menu" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
-        ☰ {/* אייקון המבורגר פשוט */}
+        ☰
       </button>
     </header>
   );
