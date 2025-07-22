@@ -86,13 +86,14 @@ function Header({ user }) {
               <li className="welcome-message">
                 שלום, {getUserDisplayName()}!
               </li>
-              <li><Link to="/home">דף הבית</Link></li> {/* הוספנו קישור לדף הבית */}
+              <li><Link to="/home">דף הבית</Link></li>
               <li><Link to="/cash-game">משחק קאש</Link></li>
               <li><Link to="/tournament">טורניר</Link></li>
               <li><Link to="/sessions">משחקים שמורים</Link></li>
               <li><Link to="/player-stats">סטטיסטיקות שחקנים</Link></li>
               <li><Link to="/player-management">ניהול שחקנים</Link></li>
               <li><Link to="/poker-journal">יומן פוקר</Link></li>
+              <li><Link to="/personal-tracking">מעקב אישי</Link></li> {/* הוספנו את הקישור הזה! */}
               <li>
                 {/* כפתור התנתקות */}
                 <button onClick={handleLogout} className="logout-button">
