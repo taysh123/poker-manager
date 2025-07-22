@@ -1,96 +1,86 @@
+// src/pages/PersonalTracking.jsx
 import React, { useState, useEffect } from 'react';
 import { collection, query, getDocs } from 'firebase/firestore';
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
-import { db } from '../firebase';
+import { db } from '../firebase'; // ודא שהנתיב ל-firebase.js נכון
 import { useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faChartLine, faUserCircle } from '@fortawesome/free-solid-svg-icons';
 import './PersonalTracking.css'; // ייבוא קובץ ה-CSS החדש
 
 function PersonalTracking() {
-  const [user, setUser] = useState(null); // מצב עבור פרטי המשתמש המחובר
-  const [loadingAuth, setLoadingAuth] = useState(true); // מצב לטעינת אימות
-  const [games, setGames] = useState([]); // מצב לאחסון כל המשחקים שאוחזרו
-  const [loadingGames, setLoadingGames] = useState(true); // מצב לטעינת המשחקים
-  const [playerNames, setPlayerNames] = useState([]); // רשימה ייחודית של שמות שחקנים מכל המשחקים
-  const [selectedPlayerName, setSelectedPlayerName] = useState(''); // שם השחקן שנבחר על ידי המשתמש
-  const [totalProfitLoss, setTotalProfitLoss] = useState(0); // סך הרווח/הפסד עבור השחקן הנבחר
-  const navigate = useNavigate(); // הוק לניווט בין דפים
+  const [user, setUser] = useState(null);
+  const [loadingAuth, setLoadingAuth] = useState(true);
+  const [games, setGames] = useState([]);
+  const [loadingGames, setLoadingGames] = useState(true);
+  const [playerNames, setPlayerNames] = useState([]);
+  const [selectedPlayerName, setSelectedPlayerName] = useState('');
+  const [totalProfitLoss, setTotalProfitLoss] = useState(0);
+  const navigate = useNavigate();
 
-  // useEffect לטיפול באימות המשתמש
   useEffect(() => {
     const auth = getAuth();
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       if (currentUser) {
-        // אם המשתמש מחובר, שמור את פרטיו
         setUser(currentUser);
       } else {
-        // אם המשתמש לא מחובר, הפנה לדף הבית/התחברות
         navigate('/');
       }
-      setLoadingAuth(false); // סיים טעינת אימות
+      setLoadingAuth(false);
     });
 
-    // פונקציית ניקוי לביטול ההאזנה בעת הסרת הקומפוננטה
     return () => unsubscribe();
-  }, [navigate]); // התלות ב-navigate מבטיחה שהאפקט יופעל מחדש רק אם navigate משתנה (נדיר)
+  }, [navigate]);
 
-  // useEffect לאחזור משחקים מ-Firestore וחלץ שמות שחקנים
   useEffect(() => {
     const fetchGames = async () => {
-      // ודא שהמשתמש מחובר לפני ניסיון לאחזר נתונים
       if (user) {
-        setLoadingGames(true); // התחל טעינת משחקים
+        setLoadingGames(true);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id'; // קבלת appId
         try {
-          // צור שאילתה לאחזור כל המשחקים בקולקציית 'cashGames' של המשתמש הנוכחי
-          const q = query(collection(db, 'users', user.uid, 'cashGames'));
-          const querySnapshot = await getDocs(q); // בצע את השאילתה
+          // הנתיב תוקן: artifacts/${appId}/users/${user.uid}/cashGames
+          const q = query(collection(db, `artifacts/${appId}/users/${user.uid}/cashGames`));
+          const querySnapshot = await getDocs(q);
           const fetchedGames = querySnapshot.docs.map(doc => ({
-            id: doc.id, // הוסף את ה-ID של המסמך
-            ...doc.data() // הוסף את שאר נתוני המסמך
+            id: doc.id,
+            ...doc.data()
           }));
-          setGames(fetchedGames); // שמור את המשחקים שאוחזרו במצב
+          setGames(fetchedGames);
 
-          // חלץ שמות שחקנים ייחודיים מכל המשחקים
-          const names = new Set(); // השתמש ב-Set כדי להבטיח ייחודיות
+          const names = new Set();
           fetchedGames.forEach(game => {
             game.players.forEach(player => {
-              names.add(player.name); // הוסף את שם השחקן ל-Set
+              names.add(player.name);
             });
           });
-          setPlayerNames(Array.from(names)); // המר את ה-Set למערך ושמור במצב
+          setPlayerNames(Array.from(names));
 
         } catch (error) {
-          console.error('שגיאה באחזור משחקים:', error); // הדפס שגיאה אם האחזור נכשל
+          console.error('שגיאה באחזור משחקים:', error);
         } finally {
-          setLoadingGames(false); // סיים טעינת משחקים
+          setLoadingGames(false);
         }
       }
     };
 
-    fetchGames(); // קרא לפונקציית אחזור המשחקים
-  }, [user]); // אפקט זה יופעל מחדש כאשר אובייקט המשתמש משתנה (כלומר, כאשר המשתמש מתחבר)
+    fetchGames();
+  }, [user]);
 
-  // useEffect לחישוב סך הרווח/הפסד כאשר שם השחקן הנבחר או רשימת המשחקים משתנים
   useEffect(() => {
     if (selectedPlayerName && games.length > 0) {
       let sum = 0;
-      // עבור על כל המשחקים
       games.forEach(game => {
-        // מצא את אובייקט השחקן התואם לשם השחקן הנבחר במשחק הנוכחי
         const playerInGame = game.players.find(p => p.name === selectedPlayerName);
         if (playerInGame) {
-          // אם השחקן נמצא במשחק, חשב את הרווח/הפסד שלו והוסף לסכום הכולל
           sum += (playerInGame.cashOut - playerInGame.buyIn);
         }
       });
-      setTotalProfitLoss(sum); // עדכן את סך הרווח/הפסד במצב
+      setTotalProfitLoss(sum);
     } else {
-      setTotalProfitLoss(0); // אפס את הסכום אם אין שחקן נבחר או אין משחקים
+      setTotalProfitLoss(0);
     }
-  }, [selectedPlayerName, games]); // אפקט זה יופעל מחדש כאשר selectedPlayerName או games משתנים
+  }, [selectedPlayerName, games]);
 
-  // הצג מצב טעינה בזמן אימות או אחזור משחקים
   if (loadingAuth || loadingGames) {
     return (
       <div className="page-container personal-tracking-container">
@@ -99,7 +89,6 @@ function PersonalTracking() {
     );
   }
 
-  // הצג הודעת הפניה אם המשתמש לא מחובר
   if (!user) {
     return (
       <div className="page-container personal-tracking-container">
@@ -108,12 +97,10 @@ function PersonalTracking() {
     );
   }
 
-  // רכיב ה-UI של עמוד המעקב האישי
   return (
     <div className="page-container personal-tracking-container">
       <h2><FontAwesomeIcon icon={faChartLine} /> מעקב אישי</h2>
 
-      {/* קטע לבחירת שם השחקן */}
       <div className="form-section">
         <label htmlFor="playerNameSelect">בחר את השם שלך:</label>
         <select
@@ -121,42 +108,33 @@ function PersonalTracking() {
           value={selectedPlayerName}
           onChange={(e) => setSelectedPlayerName(e.target.value)}
         >
-          <option value="">בחר שם...</option> {/* אפשרות ברירת מחדל */}
+          <option value="">בחר שם...</option>
           {playerNames.map((name, index) => (
-            <option key={index} value={name}>{name}</option> // רשימת שמות השחקנים
+            <option key={index} value={name}>{name}</option>
           ))}
         </select>
       </div>
 
-      {/* הצג את התוצאות רק אם נבחר שם שחקן */}
       {selectedPlayerName && (
         <div className="tracking-results">
           <h3><FontAwesomeIcon icon={faUserCircle} /> סיכום עבור {selectedPlayerName}:</h3>
-          {/* הצג את סך הרווח/הפסד עם עיצוב מתאים (חיובי/שלילי) */}
           <p className={`total-profit-loss ${totalProfitLoss >= 0 ? 'positive' : 'negative'}`}>
             סה"כ רווח/הפסד: {totalProfitLoss.toFixed(2)} ₪
           </p>
 
           <h4>היסטוריית משחקים:</h4>
-          {/* ודא שיש משחקים עבור השחקן הנבחר לפני ההצגה */}
           {games.filter(game => game.players.some(p => p.name === selectedPlayerName)).length > 0 ? (
             <ul className="game-history-list">
               {games
-                // סנן רק את המשחקים בהם השחקן הנבחר השתתף
                 .filter(game => game.players.some(p => p.name === selectedPlayerName))
-                // מיין את המשחקים לפי תאריך יורד (החדש ביותר ראשון)
                 .sort((a, b) => {
-                  // ודא ששדות התאריך קיימים לפני הגישה אליהם
                   const dateA = a.date && a.date.seconds ? new Date(a.date.seconds * 1000) : new Date(0);
                   const dateB = b.date && b.date.seconds ? new Date(b.date.seconds * 1000) : new Date(0);
                   return dateB - dateA;
                 })
                 .map(game => {
-                  // מצא את אובייקט השחקן הספציפי במשחק הנוכחי
                   const playerInGame = game.players.find(p => p.name === selectedPlayerName);
-                  // חשב את הרווח/הפסד עבור משחק זה
                   const gameProfitLoss = playerInGame.cashOut - playerInGame.buyIn;
-                  // פורמט את התאריך לתצוגה ידידותית למשתמש
                   const gameDate = game.date ? new Date(game.date.seconds * 1000).toLocaleDateString('he-IL') : 'תאריך לא ידוע';
 
                   return (
@@ -168,7 +146,6 @@ function PersonalTracking() {
                       <div className="player-stats">
                         <span>השקעה: {playerInGame.buyIn.toFixed(2)} ₪</span>
                         <span>יציאה: {playerInGame.cashOut.toFixed(2)} ₪</span>
-                        {/* הצג רווח/הפסד עבור משחק זה עם עיצוב מתאים */}
                         <span className={`profit-loss ${gameProfitLoss >= 0 ? 'positive' : 'negative'}`}>
                           רווח/הפסד: {gameProfitLoss.toFixed(2)} ₪
                         </span>

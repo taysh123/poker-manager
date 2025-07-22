@@ -1,3 +1,4 @@
+// src/App.jsx
 import { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, NavLink } from 'react-router-dom';
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
@@ -19,7 +20,7 @@ import './firebase'; // ודא ש-Firebase מאותחל
 
 // ייבוא אייקונים חדשים עבור הניווט
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faChartLine, faHome, faCoins, faSignInAlt, faSignOutAlt, faUsers, faBook, faUserFriends, faTrophy, faClipboardList, faCog } from '@fortawesome/free-solid-svg-icons'; // הוספת faCog
+import { faChartLine, faHome, faCoins, faSignInAlt, faSignOutAlt, faUsers, faBook, faUserFriends, faTrophy, faClipboardList, faCog } from '@fortawesome/free-solid-svg-icons';
 
 function App() {
   const [user, setUser] = useState(null);
@@ -47,18 +48,18 @@ function App() {
       {/* רכיב ה-Header מכיל את הניווט */}
       <Header user={user}>
         {/* הוספת קישורי ניווט ל-Header */}
-        <nav className="main-nav-links"> {/* שיניתי את שם הקלאס מ-"navbar" ל-"main-nav-links" כדי למנוע התנגשויות */}
+        <nav className="main-nav-links">
           {user ? (
             <>
               {/* כפתור "בית" הוסר מכאן - הלוגו משמש כעת למטרה זו */}
               <NavLink to="/cash-game" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
-                <FontAwesomeIcon icon={faCoins} /> משחק מזומן
+                <FontAwesomeIcon icon={faCoins} /> משחקי קאש
               </NavLink>
               <NavLink to="/tournament" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
                 <FontAwesomeIcon icon={faTrophy} /> טורניר
               </NavLink>
               <NavLink to="/sessions" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
-                <FontAwesomeIcon icon={faClipboardList} /> סשנים
+                <FontAwesomeIcon icon={faClipboardList} /> משחקים שמורים
               </NavLink>
               <NavLink to="/player-stats" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
                 <FontAwesomeIcon icon={faUsers} /> סטטיסטיקות שחקנים

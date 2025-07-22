@@ -1,7 +1,8 @@
+// src/pages/Homepage.jsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getFirestore, doc, getDoc, collection, query, getDocs, setDoc, onSnapshot } from 'firebase/firestore'; // הוספתי setDoc ו-onSnapshot
-import { getAuth } from 'firebase/auth'; // ייבוא getAuth
+import { getFirestore, doc, getDoc, collection, query, getDocs, setDoc, onSnapshot } from 'firebase/firestore';
+import { getAuth } from 'firebase/auth';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCog } from '@fortawesome/free-solid-svg-icons';
 import '../pages/Dashboard.css'; // ייבוא ה-CSS של הדאשבורד
@@ -16,7 +17,7 @@ function Homepage() {
   const [widgetPreferences, setWidgetPreferences] = useState({});
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState(null);
-  const [currentUserDisplayName, setCurrentUserDisplayName] = useState('משתמש'); // מצב חדש לשם המשתמש
+  const [currentUserDisplayName, setCurrentUserDisplayName] = useState('משתמש');
   const [dashboardData, setDashboardData] = useState({
     totalProfitLoss: 0,
     lastSessions: [],
@@ -24,16 +25,17 @@ function Homepage() {
   });
 
   useEffect(() => {
-    const auth = getAuth(); // אתחול auth כאן
+    const auth = getAuth();
     const db = getFirestore();
-    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id'; // קבלת appId
 
-    const unsubscribeAuth = auth.onAuthStateChanged(async (currentUser) => { // שיניתי את שם המשתנה ל-unsubscribeAuth
+    const unsubscribeAuth = auth.onAuthStateChanged(async (currentUser) => {
       if (currentUser) {
         setUserId(currentUser.uid);
-        setCurrentUserDisplayName(currentUser.displayName || currentUser.email || 'משתמש'); // עדכון שם המשתמש
+        setCurrentUserDisplayName(currentUser.displayName || currentUser.email || 'משתמש');
 
         // 1. טעינת העדפות הווידג'טים
+        // הנתיב תוקן: artifacts/${appId}/users/${currentUser.uid}/dashboardSettings/preferences
         const userPrefsDocRef = doc(db, `artifacts/${appId}/users/${currentUser.uid}/dashboardSettings`, 'preferences');
         let initialPreferences = {};
         try {
@@ -42,7 +44,6 @@ function Homepage() {
             initialPreferences = prefsDocSnap.data().widgets || {};
             setWidgetPreferences(initialPreferences);
           } else {
-            // אם אין העדפות, אתחל את כולן למופעלות כברירת מחדל
             const defaultPreferences = {
               totalProfitLoss: true,
               lastSessions: true,
@@ -50,12 +51,10 @@ function Homepage() {
             };
             initialPreferences = defaultPreferences;
             setWidgetPreferences(defaultPreferences);
-            // שמור את ברירת המחדל כדי שלא יטען שוב ושוב
             await setDoc(userPrefsDocRef, { widgets: defaultPreferences }, { merge: true });
           }
         } catch (error) {
           console.error("שגיאה בטעינת העדפות דאשבורד:", error);
-          // במקרה של שגיאה, השתמש בהעדפות ברירת מחדל
           initialPreferences = {
             totalProfitLoss: true,
             lastSessions: true,
@@ -72,21 +71,22 @@ function Homepage() {
 
           try {
             // טעינת סשנים לחישוב רווח/הפסד וסשנים אחרונים
+            // הנתיב תוקן: artifacts/${appId}/users/${currentUser.uid}/sessions
             const sessionsColRef = collection(db, `artifacts/${appId}/users/${currentUser.uid}/sessions`);
-            const sessionsQuerySnapshot = await getDocs(sessionsColRef); // השתמש ב-getDocs לטעינה ראשונית
+            const sessionsQuerySnapshot = await getDocs(sessionsColRef);
             sessionsQuerySnapshot.forEach((doc) => {
               const sessionData = doc.data();
               totalPL += sessionData.profitLoss || 0;
               sessionsList.push({ id: doc.id, ...sessionData });
             });
 
-            // מיון סשנים לפי תאריך (החדשים ביותר קודם)
             sessionsList.sort((a, b) => new Date(b.date) - new Date(a.date));
 
             // טעינת שחקנים לספירה
+            // הנתיב תוקן: artifacts/${appId}/users/${currentUser.uid}/players
             const playersColRef = collection(db, `artifacts/${appId}/users/${currentUser.uid}/players`);
-            const playersQuerySnapshot = await getDocs(playersColRef); // השתמש ב-getDocs לטעינה ראשונית
-            playersCount = playersQuerySnapshot.size; // סופר את מספר המסמכים בקולקציה
+            const playersQuerySnapshot = await getDocs(playersColRef);
+            playersCount = playersQuerySnapshot.size;
 
             setDashboardData({
               totalProfitLoss: totalPL,
@@ -101,49 +101,15 @@ function Homepage() {
           }
         };
 
-        // קריאה ראשונית לטעינת הנתונים
         loadDashboardData();
 
-        // ניתן להוסיף כאן onSnapshot listeners לווידג'טים ספציפיים אם רוצים עדכונים בזמן אמת
-        // לדוגמה, עבור סשנים:
-        // const sessionsColRef = collection(db, `artifacts/${appId}/users/${currentUser.uid}/sessions`);
-        // const unsubscribeSessions = onSnapshot(sessionsColRef, (snapshot) => {
-        //   const updatedSessions = [];
-        //   let updatedTotalPL = 0;
-        //   snapshot.forEach((doc) => {
-        //     const sessionData = doc.data();
-        //     updatedTotalPL += sessionData.profitLoss || 0;
-        //     updatedSessions.push({ id: doc.id, ...sessionData });
-        //   });
-        //   updatedSessions.sort((a, b) => new Date(b.date) - new Date(a.date));
-        //   setDashboardData(prevData => ({
-        //     ...prevData,
-        //     totalProfitLoss: updatedTotalPL,
-        //     lastSessions: updatedSessions,
-        //   }));
-        // });
-
-        // עבור שחקנים:
-        // const playersColRef = collection(db, `artifacts/${appId}/users/${currentUser.uid}/players`);
-        // const unsubscribePlayers = onSnapshot(playersColRef, (snapshot) => {
-        //   setDashboardData(prevData => ({
-        //     ...prevData,
-        //     playerCount: snapshot.size,
-        //   }));
-        // });
-
-        // return () => {
-        //   unsubscribeSessions();
-        //   unsubscribePlayers();
-        // };
-
       } else {
-        navigate('/'); // אם המשתמש לא מחובר, נווט לדף הבית
+        navigate('/');
       }
     });
 
-    return () => unsubscribeAuth(); // ודא ביטול הרשמה של onAuthStateChanged
-  }, [navigate]); // הוספתי navigate כתלות, למרות שבדרך כלל הוא יציב
+    return () => unsubscribeAuth();
+  }, [navigate]);
 
   if (loading) {
     return (

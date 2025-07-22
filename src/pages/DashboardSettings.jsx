@@ -17,31 +17,30 @@ function DashboardSettings() {
     { id: 'lastSessions', name: 'סשנים אחרונים' },
     { id: 'playerCount', name: 'מספר שחקנים' },
     // הוסף כאן ווידג'טים נוספים כשתפתח אותם
-    // { id: 'profitLossChart', name: 'גרף רווח/הפסד' },
-    // { id: 'bestPlayers', name: 'שחקנים מובילים' },
   ];
 
   useEffect(() => {
     const auth = getAuth();
     const db = getFirestore();
-    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id'; // קבלת appId
 
     const unsubscribe = auth.onAuthStateChanged(async (currentUser) => {
       if (currentUser) {
         setUserId(currentUser.uid);
+        // הנתיב תוקן: artifacts/${appId}/users/${currentUser.uid}/dashboardSettings/preferences
         const userDocRef = doc(db, `artifacts/${appId}/users/${currentUser.uid}/dashboardSettings`, 'preferences');
         try {
           const docSnap = await getDoc(userDocRef);
           if (docSnap.exists()) {
-            // אם קיימות העדפות, טען אותן
             setWidgetPreferences(docSnap.data().widgets || {});
           } else {
-            // אם אין העדפות, אתחל את כולן למופעלות כברירת מחדל
             const initialPreferences = {};
             availableWidgets.forEach(widget => {
               initialPreferences[widget.id] = true;
             });
             setWidgetPreferences(initialPreferences);
+            // שמור את ברירת המחדל
+            await setDoc(userDocRef, { widgets: initialPreferences }, { merge: true });
           }
         } catch (error) {
           console.error("שגיאה בטעינת העדפות דאשבורד:", error);
@@ -49,7 +48,7 @@ function DashboardSettings() {
           setLoading(false);
         }
       } else {
-        navigate('/'); // אם המשתמש לא מחובר, נווט לדף הבית
+        navigate('/');
       }
     });
 
@@ -67,21 +66,21 @@ function DashboardSettings() {
     if (!userId) return;
 
     const db = getFirestore();
-    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id'; // קבלת appId
+    // הנתיב תוקן: artifacts/${appId}/users/${userId}/dashboardSettings/preferences
     const userDocRef = doc(db, `artifacts/${appId}/users/${userId}/dashboardSettings`, 'preferences');
 
     try {
       await setDoc(userDocRef, { widgets: widgetPreferences }, { merge: true });
       console.log("העדפות דאשבורד נשמרו בהצלחה!");
-      navigate('/home'); // נווט חזרה לדף הבית לאחר שמירה
+      navigate('/home');
     } catch (error) {
       console.error("שגיאה בשמירת העדפות דאשבורד:", error);
-      // ניתן להציג הודעת שגיאה למשתמש
     }
   };
 
   const handleCancel = () => {
-    navigate('/home'); // נווט חזרה לדף הבית ללא שמירה
+    navigate('/home');
   };
 
   if (loading) {
@@ -104,7 +103,7 @@ function DashboardSettings() {
             <input
               type="checkbox"
               id={widget.id}
-              checked={!!widgetPreferences[widget.id]} // ודא שהערך הוא בוליאני
+              checked={!!widgetPreferences[widget.id]}
               onChange={() => handleCheckboxChange(widget.id)}
             />
           </li>

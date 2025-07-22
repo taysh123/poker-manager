@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { collection, getDocs, doc, updateDoc, deleteDoc, query, orderBy } from 'firebase/firestore'; // ייבוא deleteDoc
+import { collection, getDocs, doc, updateDoc, deleteDoc, query, orderBy } from 'firebase/firestore';
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import { db } from '../firebase';
 import { useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faHistory, faCalendarAlt, faCoins, faUsers, faCamera, faPlus, faTimes, faTrashAlt } from '@fortawesome/free-solid-svg-icons'; // ייבוא faTrashAlt
+import { faHistory, faCalendarAlt, faCoins, faUsers, faCamera, faPlus, faTimes, faTrashAlt } from '@fortawesome/free-solid-svg-icons';
 import './Sessions.css';
 
 function Sessions() {
@@ -43,16 +43,17 @@ function Sessions() {
   const fetchCashGames = async (userId) => {
     setLoadingGames(true);
     setErrorGames(null);
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id'; // קבלת appId
     try {
-      const gamesCollectionRef = collection(db, 'users', userId, 'cashGames');
-      // נמיין לפי תאריך יצירה בסדר יורד
+      // הנתיב תוקן: artifacts/${appId}/users/${userId}/cashGames
+      const gamesCollectionRef = collection(db, `artifacts/${appId}/users/${userId}/cashGames`);
       const q = query(gamesCollectionRef, orderBy('date', 'desc'));
       const querySnapshot = await getDocs(q);
       const gamesList = querySnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
-        date: doc.data().date?.toDate().toLocaleString(), // המרה לתאריך קריא
-        images: doc.data().images || [], // וודא שיש מערך תמונות
+        date: doc.data().date?.toDate().toLocaleString(),
+        images: doc.data().images || [],
       }));
       setCashGames(gamesList);
       setLoadingGames(false);
@@ -79,21 +80,18 @@ function Sessions() {
     }
 
     setUploadingImage(true);
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id'; // קבלת appId
     try {
       const reader = new FileReader();
       reader.onloadend = async () => {
         const base64Image = reader.result;
-        const gameDocRef = doc(db, 'users', user.uid, 'cashGames', selectedGameId);
+        // הנתיב תוקן: artifacts/${appId}/users/${user.uid}/cashGames/${selectedGameId}
+        const gameDocRef = doc(db, `artifacts/${appId}/users/${user.uid}/cashGames`, selectedGameId);
         
-        // קבל את המסמך הנוכחי כדי לא להחליף תמונות קיימות
         const currentDoc = cashGames.find(game => game.id === selectedGameId);
         const existingImages = currentDoc ? currentDoc.images : [];
 
-        // וודא שהתמונה החדשה לא תחרוג ממגבלת ה-1MB
-        // בדיקה גסה: Base64 גדול בערך ב-33% מהגודל המקורי.
-        // אם תמונה אחת גדולה מדי, זה עדיין יכול להיות בעיה.
-        // פתרון מלא יותר דורש דחיסה או Cloud Storage.
-        if (base64Image.length * 0.75 > 1024 * 1024) { // הערכה גסה של גודל בייטים
+        if (base64Image.length * 0.75 > 1024 * 1024) {
           alert('התמונה גדולה מדי. אנא העלה תמונה קטנה יותר (עד 1MB).');
           setUploadingImage(false);
           return;
@@ -105,7 +103,7 @@ function Sessions() {
         alert('התמונה הועלתה בהצלחה למשחק!');
         setNewImageFile(null);
         setShowImageModal(false);
-        fetchCashGames(user.uid); // רענן את רשימת המשחקים
+        fetchCashGames(user.uid);
       };
       reader.readAsDataURL(newImageFile);
     } catch (error) {
@@ -124,14 +122,16 @@ function Sessions() {
     const confirmed = window.confirm('האם אתה בטוח שברצונך למחוק תמונה זו?');
     if (!confirmed) return;
 
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id'; // קבלת appId
     try {
-      const gameDocRef = doc(db, 'users', user.uid, 'cashGames', gameId);
+      // הנתיב תוקן: artifacts/${appId}/users/${user.uid}/cashGames/${gameId}
+      const gameDocRef = doc(db, `artifacts/${appId}/users/${user.uid}/cashGames`, gameId);
       const gameToUpdate = cashGames.find(game => game.id === gameId);
       if (gameToUpdate) {
         const updatedImages = gameToUpdate.images.filter((_, idx) => idx !== imageIndex);
         await updateDoc(gameDocRef, { images: updatedImages });
         alert('התמונה נמחקה בהצלחה!');
-        fetchCashGames(user.uid); // רענן את הרשימה
+        fetchCashGames(user.uid);
       }
     } catch (error) {
       console.error('שגיאה במחיקת תמונה:', error);
@@ -139,7 +139,6 @@ function Sessions() {
     }
   };
 
-  // פונקציה חדשה למחיקת משחק שלם
   const handleDeleteGame = async (gameId) => {
     if (!user || user.isAnonymous) {
       alert('יש להתחבר כדי למחוק משחקים.');
@@ -149,11 +148,13 @@ function Sessions() {
     const confirmed = window.confirm('האם אתה בטוח שברצונך למחוק משחק זה לצמיתות? פעולה זו אינה ניתנת לביטול.');
     if (!confirmed) return;
 
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id'; // קבלת appId
     try {
-      const gameDocRef = doc(db, 'users', user.uid, 'cashGames', gameId);
+      // הנתיב תוקן: artifacts/${appId}/users/${user.uid}/cashGames/${gameId}
+      const gameDocRef = doc(db, `artifacts/${appId}/users/${user.uid}/cashGames`, gameId);
       await deleteDoc(gameDocRef);
       alert('המשחק נמחק בהצלחה!');
-      fetchCashGames(user.uid); // רענן את רשימת המשחקים לאחר המחיקה
+      fetchCashGames(user.uid);
     } catch (error) {
       console.error('שגיאה במחיקת משחק:', error);
       alert('שגיאה במחיקת המשחק. נסה שוב מאוחר יותר.');
@@ -178,7 +179,7 @@ function Sessions() {
 
   return (
     <div className="page-container sessions-container">
-      <h2><FontAwesomeIcon icon={faHistory} /> משחקים שמורים</h2>
+      <h2><FontAwesomeIcon icon={faHistory} /> משחקים שמורים</h2> {/* שינוי טקסט */}
 
       {loadingGames ? (
         <p className="loading-message">טוען היסטוריית משחקים...</p>
@@ -193,7 +194,6 @@ function Sessions() {
               <div className="game-header">
                 <h3>משחק מתאריך: <FontAwesomeIcon icon={faCalendarAlt} /> {game.date}</h3>
                 <p><FontAwesomeIcon icon={faCoins} /> יחס צ'יפים לשקל: {game.chipsPerShekel}</p>
-                {/* כפתור מחיקת משחק שלם */}
                 {!user.isAnonymous && (
                   <button onClick={() => handleDeleteGame(game.id)} className="delete-game-button">
                     <FontAwesomeIcon icon={faTrashAlt} /> מחק משחק
@@ -228,7 +228,6 @@ function Sessions() {
                 </table>
               </div>
               
-              {/* הצגת תמונות קיימות */}
               {game.images && game.images.length > 0 && (
                 <div className="game-images-section">
                   <h4><FontAwesomeIcon icon={faCamera} /> תמונות מהמשחק:</h4>
@@ -245,7 +244,6 @@ function Sessions() {
                 </div>
               )}
 
-              {/* כפתור להוספת תמונה למשחק קיים */}
               {!user.isAnonymous && (
                 <button onClick={() => handleAddImageClick(game.id)} className="add-image-to-game-button">
                   <FontAwesomeIcon icon={faCamera} /> הוסף תמונה למשחק זה
@@ -256,7 +254,6 @@ function Sessions() {
         </div>
       )}
 
-      {/* מודאל להעלאת תמונה */}
       {showImageModal && (
         <div className="image-upload-modal-overlay">
           <div className="image-upload-modal">
