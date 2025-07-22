@@ -12,13 +12,14 @@ import PlayerStats from './pages/PlayerStats';
 import PlayerManagement from './pages/PlayerManagement';
 import Homepage from './pages/Homepage';
 import PokerJournal from './pages/PokerJournal';
-import PersonalTracking from './pages/PersonalTracking';
+import PersonalTracking from './pages/PersonalTracking'; // ייבוא דף מעקב אישי
+import DashboardSettings from './pages/DashboardSettings'; // ייבוא דף הגדרות דאשבורד חדש
 import './App.css';
 import './firebase'; // ודא ש-Firebase מאותחל
 
 // ייבוא אייקונים חדשים עבור הניווט
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faChartLine, faHome, faCoins, faSignInAlt, faSignOutAlt, faUsers, faBook, faUserFriends, faTrophy, faClipboardList } from '@fortawesome/free-solid-svg-icons';
+import { faChartLine, faHome, faCoins, faSignInAlt, faSignOutAlt, faUsers, faBook, faUserFriends, faTrophy, faClipboardList, faCog } from '@fortawesome/free-solid-svg-icons'; // הוספת faCog
 
 function App() {
   const [user, setUser] = useState(null);
@@ -46,12 +47,10 @@ function App() {
       {/* רכיב ה-Header מכיל את הניווט */}
       <Header user={user}>
         {/* הוספת קישורי ניווט ל-Header */}
-        <nav className="navbar">
+        <nav className="main-nav-links"> {/* שיניתי את שם הקלאס מ-"navbar" ל-"main-nav-links" כדי למנוע התנגשויות */}
           {user ? (
             <>
-              <NavLink to="/home" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
-                <FontAwesomeIcon icon={faHome} /> בית
-              </NavLink>
+              {/* כפתור "בית" הוסר מכאן - הלוגו משמש כעת למטרה זו */}
               <NavLink to="/cash-game" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
                 <FontAwesomeIcon icon={faCoins} /> משחק מזומן
               </NavLink>
@@ -70,9 +69,12 @@ function App() {
               <NavLink to="/poker-journal" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
                 <FontAwesomeIcon icon={faBook} /> יומן פוקר
               </NavLink>
-              {/* הקישור החדש לעמוד מעקב אישי */}
               <NavLink to="/personal-tracking" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
                 <FontAwesomeIcon icon={faChartLine} /> מעקב אישי
+              </NavLink>
+              {/* קישור חדש לדף הגדרות הדאשבורד */}
+              <NavLink to="/dashboard-settings" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
+                <FontAwesomeIcon icon={faCog} /> הגדרות דאשבורד
               </NavLink>
             </>
           ) : (
@@ -101,8 +103,9 @@ function App() {
           <Route path="/player-stats" element={user ? <PlayerStats /> : <Navigate to="/" />} />
           <Route path="/player-management" element={user ? <PlayerManagement /> : <Navigate to="/" />} />
           <Route path="/poker-journal" element={user ? <PokerJournal /> : <Navigate to="/" />} />
-          {/* הוספת המסלול החדש עבור עמוד המעקב האישי */}
           <Route path="/personal-tracking" element={user ? <PersonalTracking /> : <Navigate to="/" />} />
+          {/* נתיב חדש לדף הגדרות הדאשבורד */}
+          <Route path="/dashboard-settings" element={user ? <DashboardSettings /> : <Navigate to="/" />} />
         </Routes>
       </main>
     </Router>

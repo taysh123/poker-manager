@@ -1,0 +1,237 @@
+:root {
+  --dashboard-bg: #f5f7fa; /* רקע בהיר לדאשבורד */
+  --widget-bg: #ffffff; /* רקע לבן לווידג'טים */
+  --widget-border: #e0e0e0; /* גבול עדין לווידג'טים */
+  --text-color-dark: #333333; /* טקסט כהה */
+  --text-color-light: #666666; /* טקסט בהיר יותר */
+  --primary-accent: #007bff; /* צבע הדגשה ראשי (כחול) */
+  --secondary-accent: #28a745; /* צבע הדגשה משני (ירוק) */
+  --danger-color: #dc3545; /* צבע אדום לאזהרות/מחיקה */
+  --shadow-light: 0 2px 5px rgba(0, 0, 0, 0.05);
+  --shadow-medium: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+/* סגנונות כלליים לדאשבורד */
+.dashboard-container {
+  padding: 30px;
+  background-color: var(--dashboard-bg);
+  min-height: calc(100vh - 80px); /* גובה מינימלי, בהתחשב בכותרת */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  direction: rtl; /* תמיכה בעברית */
+  color: var(--text-color-dark);
+}
+
+.dashboard-header {
+  width: 100%;
+  max-width: 1200px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+  flex-wrap: wrap; /* כדי שיתאים למובייל */
+}
+
+.dashboard-header h1 {
+  font-size: 2.5em;
+  color: var(--primary-accent);
+  margin: 0;
+  text-align: right;
+  flex-grow: 1; /* יתפוס כמה שיותר מקום */
+}
+
+.dashboard-settings-button {
+  background-color: var(--primary-accent);
+  color: white;
+  border: none;
+  padding: 12px 25px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1.1em;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dashboard-settings-button:hover {
+  background-color: #0056b3;
+  transform: translateY(-2px);
+}
+
+.widgets-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); /* 300px מינימום רוחב לווידג'ט */
+  gap: 25px;
+  width: 100%;
+  max-width: 1200px;
+  margin-top: 20px;
+}
+
+/* סגנונות כלליים לווידג'ט */
+.dashboard-widget {
+  background-color: var(--widget-bg);
+  border: 1px solid var(--widget-border);
+  border-radius: 12px;
+  padding: 25px;
+  box-shadow: var(--shadow-light);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.dashboard-widget:hover {
+  transform: translateY(-5px);
+  box-shadow: var(--shadow-medium);
+}
+
+.dashboard-widget h3 {
+  color: var(--primary-accent);
+  font-size: 1.6em;
+  margin-top: 0;
+  margin-bottom: 15px;
+}
+
+.dashboard-widget p {
+  font-size: 1.1em;
+  color: var(--text-color-light);
+  margin-bottom: 10px;
+}
+
+/* סגנונות לדף הגדרות הדאשבורד */
+.dashboard-settings-container {
+  padding: 30px;
+  max-width: 800px;
+  margin: 40px auto;
+  background-color: var(--widget-bg);
+  border-radius: 12px;
+  box-shadow: var(--shadow-medium);
+  direction: rtl;
+  color: var(--text-color-dark);
+}
+
+.dashboard-settings-container h2 {
+  font-size: 2em;
+  color: var(--primary-accent);
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.widget-list {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+}
+
+.widget-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: var(--dashboard-bg); /* רקע בהיר יותר לפריט */
+  padding: 15px 20px;
+  border-radius: 10px;
+  border: 1px solid var(--widget-border);
+  box-shadow: var(--shadow-light);
+}
+
+.widget-item label {
+  font-size: 1.1em;
+  font-weight: bold;
+  color: var(--text-color-dark);
+  cursor: pointer;
+  flex-grow: 1; /* כדי שהלייבל יתפוס מקום */
+  text-align: right; /* יישור לימין */
+  padding-left: 10px; /* רווח מהצ'קבוקס */
+}
+
+.widget-item input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  accent-color: var(--secondary-accent); /* צבע ירוק לצ'קבוקס */
+}
+
+.dashboard-settings-actions {
+  margin-top: 40px;
+  text-align: center;
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+}
+
+.dashboard-settings-actions button {
+  padding: 12px 30px;
+  border: none;
+  border-radius: 8px;
+  font-size: 1.1em;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.dashboard-settings-actions .save-button {
+  background-color: var(--secondary-accent);
+  color: white;
+}
+
+.dashboard-settings-actions .save-button:hover {
+  background-color: #218838;
+  transform: translateY(-2px);
+}
+
+.dashboard-settings-actions .cancel-button {
+  background-color: var(--widget-border);
+  color: var(--text-color-dark);
+}
+
+.dashboard-settings-actions .cancel-button:hover {
+  background-color: #d0d0d0;
+  transform: translateY(-2px);
+}
+
+/* התאמות למסכים קטנים */
+@media (max-width: 768px) {
+  .dashboard-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 20px;
+  }
+
+  .dashboard-header h1 {
+    font-size: 2em;
+    text-align: center;
+    width: 100%;
+  }
+
+  .dashboard-settings-button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .widgets-grid {
+    grid-template-columns: 1fr; /* ווידג'ט אחד בטור */
+    padding: 0 15px;
+  }
+
+  .dashboard-settings-container {
+    padding: 20px;
+    margin: 20px auto;
+  }
+
+  .widget-list {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-settings-actions {
+    flex-direction: column;
+    gap: 15px;
+  }
+
+  .dashboard-settings-actions button {
+    width: 100%;
+  }
+}
