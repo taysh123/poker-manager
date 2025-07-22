@@ -36,156 +36,149 @@ code {
   padding: 30px;
   background-color: var(--card-bg);
   border-radius: 12px;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
-  animation: fadeIn 1s ease-in-out;
-  text-align: center; /* Center content within the dashboard container */
-  position: relative; /* Ensure it's above other elements if needed */
-  z-index: 1; /* Give it a higher z-index than the nav bar if there's overlap */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
-/* Dashboard heading */
-.dashboard-container h2 {
-  font-family: 'Oswald', sans-serif;
-  color: var(--secondary-color);
-  margin-bottom: 30px;
-  font-size: 2.8em;
-  letter-spacing: 1px;
+/* General button styling */
+button {
+  padding: 10px 20px;
+  border-radius: 5px;
+  border: none;
+  background-color: var(--primary-color);
+  color: white;
+  font-size: 1em;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
 }
 
-/* Container for the main action cards */
-.dashboard-cards-container {
-  display: grid; /* Use CSS Grid for flexible layout */
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); /* Responsive columns */
-  gap: 30px; /* Space between cards */
-  justify-content: center; /* Center cards horizontally */
-  align-items: stretch; /* Make cards stretch to same height */
-  margin-top: 30px;
-  width: 100%; /* Ensure it takes full width of its parent */
-  max-width: 900px; /* Optional: limit max width for better aesthetics on very wide screens */
+button:hover {
+  background-color: var(--button-hover-bg);
 }
 
-/* Individual dashboard card styling */
-.dashboard-card {
-  background-color: #3b3b3b;
-  border-radius: 12px;
-  padding: 30px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-  text-decoration: none; /* Remove underline for links */
+/* Form input styling */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+select,
+textarea {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 15px;
+  border: 1px solid var(--border-color);
+  border-radius: 5px;
+  background-color: var(--input-bg);
   color: var(--text-color);
+  font-size: 1em;
+  box-sizing: border-box; /* Include padding and border in the element's total width and height */
+}
+
+input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="password"]:focus,
+input[type="number"]:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--primary-color);
+  outline: none;
+}
+
+/* Page container for consistent padding and centering */
+.page-container {
+  max-width: 1000px;
+  margin: 40px auto;
+  padding: 20px;
+  background-color: var(--card-bg);
+  border-radius: 12px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  min-height: calc(100vh - 80px - 60px); /* Adjust based on header/footer height */
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
   text-align: center;
-  transition: transform 0.3s ease, box-shadow 0.3s ease, background-color 0.3s ease;
-  min-height: 200px; /* Ensure a minimum height for cards */
 }
 
-.dashboard-card:hover {
-  transform: translateY(-8px); /* Lift effect on hover */
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5);
-  background-color: #4a4a4a; /* Slightly lighter background on hover */
+.page-container h1, .page-container h2 {
+  color: var(--primary-color);
+  margin-bottom: 20px;
 }
 
-.dashboard-card svg {
-  color: var(--primary-color); /* Icon color */
-  font-size: 3.5em; /* Large icon size */
-  margin-bottom: 15px;
+.page-container p {
+  color: var(--light-text-color);
+  line-height: 1.6;
 }
 
-.dashboard-card h3 {
-  font-family: 'Oswald', sans-serif;
-  font-size: 1.8em;
-  color: var(--secondary-color); /* Heading color */
-  margin-bottom: 10px;
-}
-
-.dashboard-card p {
-  font-family: 'Roboto', sans-serif;
-  font-size: 1em;
-  color: #ccc; /* Description text color */
-  line-height: 1.5;
-}
-
-/* Responsive adjustments for smaller screens */
-@media (max-width: 768px) {
-  .dashboard-container {
-    padding: 20px;
-    margin: 20px auto;
-  }
-
-  .dashboard-container h2 {
-    font-size: 2.2em;
-    margin-bottom: 25px;
-  }
-
-  .dashboard-cards-container {
-    grid-template-columns: 1fr; /* Stack cards on very small screens */
-    gap: 20px;
-  }
-
-  .dashboard-card {
-    padding: 25px;
-    min-height: 180px;
-  }
-
-  .dashboard-card svg {
-    font-size: 3em;
-  }
-
-  .dashboard-card h3 {
-    font-size: 1.6em;
-  }
-}
-
-/* Fade-in animation */
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-/* Ensure the main content area has enough padding at the top
-   to prevent overlap with a fixed navigation bar.
-   Adjust this value based on the height of your navigation bar. */
+/* Specific styling for the main content area to account for fixed header */
 .main-content-area {
-  padding-top: 80px; /* Example: If your nav bar is 60px tall, add some extra space */
+  padding-top: 80px; /* Adjust this value based on your header's height */
+  flex-grow: 1; /* Allows it to take up available space */
+  width: 100%;
 }
 
-/* Specific styling for the login form container based on the screenshot */
-.login-form-container {
+/* Loading screen styling */
+.loading-screen {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  font-size: 1.5em;
+  color: var(--primary-color);
+  background-color: var(--bg-color);
+}
+
+/* Login and Register page specific styles */
+.auth-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background-color: var(--bg-color);
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.auth-form-card {
   background-color: var(--card-bg);
-  border-radius: 12px;
   padding: 40px;
+  border-radius: 15px;
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
   text-align: center;
-  max-width: 400px; /* Adjust as needed */
+  max-width: 450px;
   width: 90%;
-  margin: auto; /* Center the form horizontally */
   display: flex;
   flex-direction: column;
-  gap: 20px; /* Space between elements in the form */
+  gap: 20px;
 }
 
-.login-form-container h2 {
+.auth-form-card h2 {
   font-family: 'Oswald', sans-serif;
   color: var(--secondary-color);
-  font-size: 2.2em;
+  font-size: 2.5em;
   margin-bottom: 15px;
 }
 
-.login-form-container p {
+.auth-form-card p {
   font-family: 'Roboto', sans-serif;
   color: #ccc;
   margin-bottom: 25px;
 }
 
-.login-form-container button {
+.auth-form-card form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.auth-form-card input {
+  padding: 15px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background-color: var(--input-bg);
+  color: var(--text-color);
+  font-size: 1.1em;
+}
+
+.auth-form-card button {
   padding: 15px 25px;
   border-radius: 8px;
   border: none;
@@ -196,38 +189,215 @@ code {
   font-weight: bold;
 }
 
-.login-form-container .connect-button {
+.auth-form-card .primary-button {
   background-color: var(--primary-color);
   color: white;
 }
 
-.login-form-container .connect-button:hover {
+.auth-form-card .primary-button:hover {
   background-color: var(--button-hover-bg);
   transform: translateY(-2px);
 }
 
-.login-form-container .google-button {
-  background-color: #DB4437; /* Google red */
+.auth-form-card .secondary-button {
+  background-color: #555;
   color: white;
 }
 
-.login-form-container .google-button:hover {
-  background-color: #c0392b;
+.auth-form-card .secondary-button:hover {
+  background-color: #666;
   transform: translateY(-2px);
 }
 
-.login-form-container .email-button {
-  background-color: #555; /* Darker grey for email */
+.auth-form-card .link-text {
+  color: var(--primary-color);
+  cursor: pointer;
+  text-decoration: none;
+  margin-top: 10px;
+  display: block;
+}
+
+.auth-form-card .link-text:hover {
+  text-decoration: underline;
+}
+
+/* LoginMainPage specific styles */
+.login-main-page-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #1a1a1a 0%, #2c3e50 100%); /* Gradient background */
+  color: white;
+  text-align: center;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.login-main-page-container .logo-placeholder {
+  width: 150px;
+  height: 150px;
+  background-color: var(--secondary-color);
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 30px;
+  font-size: 3em;
+  font-weight: bold;
+  color: #1a1a1a;
+  box-shadow: 0 0 20px rgba(255, 193, 7, 0.5);
+}
+
+.login-main-page-container h1 {
+  font-family: 'Oswald', sans-serif;
+  font-size: 3.5em;
+  margin-bottom: 15px;
+  color: var(--primary-color);
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.login-main-page-container p {
+  font-family: 'Roboto', sans-serif;
+  font-size: 1.3em;
+  margin-bottom: 40px;
+  max-width: 600px;
+  line-height: 1.6;
+}
+
+.login-main-page-buttons {
+  display: flex;
+  gap: 25px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.login-main-page-buttons .button {
+  padding: 18px 35px;
+  border-radius: 10px;
+  font-size: 1.2em;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-weight: bold;
+  text-decoration: none; /* For Link components acting as buttons */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+}
+
+.login-main-page-buttons .button.primary {
+  background-color: var(--primary-color);
+  color: white;
+  border: 2px solid var(--primary-color);
+}
+
+.login-main-page-buttons .button.primary:hover {
+  background-color: var(--button-hover-bg);
+  transform: translateY(-3px);
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.4);
+}
+
+.login-main-page-buttons .button.secondary {
+  background-color: transparent;
+  color: var(--secondary-color);
+  border: 2px solid var(--secondary-color);
+}
+
+.login-main-page-buttons .button.secondary:hover {
+  background-color: var(--secondary-color);
+  color: #1a1a1a;
+  transform: translateY(-3px);
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.4);
+}
+
+/* Responsive adjustments for LoginMainPage */
+@media (max-width: 768px) {
+  .login-main-page-container h1 {
+    font-size: 2.5em;
+  }
+
+  .login-main-page-container p {
+    font-size: 1em;
+  }
+
+  .login-main-page-buttons {
+    flex-direction: column;
+    width: 80%;
+  }
+
+  .login-main-page-buttons .button {
+    width: 100%;
+    padding: 15px 25px;
+    font-size: 1.1em;
+  }
+}
+
+/* Styling for the custom modal */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background-color: var(--card-bg);
+  padding: 30px;
+  border-radius: 12px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
+  text-align: center;
+  max-width: 450px;
+  width: 90%;
+  color: var(--text-color);
+  font-size: 1.1em;
+}
+
+.modal-content p {
+  margin-bottom: 25px;
+  line-height: 1.6;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+}
+
+.modal-button {
+  padding: 12px 25px;
+  border-radius: 8px;
+  border: none;
+  font-size: 1em;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+  font-weight: bold;
+}
+
+.confirm-button {
+  background-color: var(--primary-color);
   color: white;
 }
 
-.login-form-container .email-button:hover {
-  background-color: #444;
+.confirm-button:hover {
+  background-color: var(--button-hover-bg);
   transform: translateY(-2px);
 }
 
-.login-form-container .divider {
-  color: #888;
-  font-size: 0.9em;
-  margin: 15px 0;
+.cancel-button {
+  background-color: #6c757d; /* Gray color for cancel */
+  color: white;
+}
+
+.cancel-button:hover {
+  background-color: #5a6268;
+  transform: translateY(-2px);
 }

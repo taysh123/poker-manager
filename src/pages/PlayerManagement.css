@@ -1,121 +1,92 @@
-@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;700&family=Roboto:wght@400;700&display=swap');
+/* PlayerManagement.css */
 
-/* General variables for colors, consistent with the main theme */
-:root {
-  --bg-color: #1a1a1a;
-  --text-color: #e0e0e0;
-  --primary-color: #4CAF50; /* Green for success/actions */
-  --secondary-color: #FFC107; /* Gold/Yellow for emphasis */
-  --card-bg: #2b2b2b;
-  --border-color: #444;
-  --input-bg: #333;
-  --table-header-bg: #333;
-  --table-border: #555;
-  --button-hover-bg: #45a049;
-  --danger-color: #f44336;
-}
-
+/* Container for the entire page */
 .player-management-container {
   max-width: 900px;
-  width: 90%;
   margin: 40px auto;
   padding: 30px;
   background-color: var(--card-bg);
   border-radius: 12px;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
-  animation: fadeIn 1s ease-in-out;
+  box-shadow: var(--shadow-medium);
+  text-align: center;
+  direction: rtl; /* For Hebrew text */
 }
 
 .player-management-container h2 {
-  font-family: 'Oswald', sans-serif;
-  color: var(--secondary-color);
-  text-align: center;
-  margin-bottom: 25px;
+  color: var(--primary-color);
   font-size: 2.5em;
-  letter-spacing: 1px;
+  margin-bottom: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 15px;
 }
 
 .player-management-container h3 {
-  font-family: 'Oswald', sans-serif;
-  color: var(--text-color);
+  color: var(--secondary-color);
+  font-size: 1.8em;
   margin-bottom: 20px;
-  font-size: 1.5em;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 10px;
 }
 
-.add-player-section, .players-list-section {
-  background-color: #3b3b3b;
+/* Section styling */
+.section {
+  background-color: var(--input-bg);
   padding: 25px;
   border-radius: 10px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
   margin-bottom: 30px;
+  box-shadow: var(--shadow-light);
+}
+
+/* Add Player Section */
+.add-player-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
 }
 
 .add-player-form {
   display: flex;
+  flex-direction: column;
   gap: 15px;
-  margin-top: 20px;
+  width: 100%;
+  max-width: 400px;
 }
 
-/* --- GLOBAL INPUT STYLING FOR VISIBILITY --- */
-/* Ensure all input types, selects, and textareas have explicit dark backgrounds and light text */
-input[type="text"],
-input[type="number"],
-select,
-textarea {
+.add-player-form input[type="text"] {
   width: 100%;
   padding: 12px 15px;
   border: 1px solid var(--border-color);
   border-radius: 8px;
-  background-color: var(--input-bg); /* Dark background */
-  color: var(--text-color); /* Light text */
-  font-size: 1em;
-  outline: none;
-  transition: border-color 0.3s ease, background-color 0.3s ease;
-  box-sizing: border-box; /* Include padding and border in the element's total width and height */
-}
-
-/* Placeholder styling for better visibility */
-input::placeholder,
-textarea::placeholder {
-  color: #888; /* A darker gray for placeholders */
-  opacity: 1; /* Ensure full opacity */
-}
-
-/* Ensure read-only inputs maintain dark background and light text */
-input[readonly] {
-  background-color: #444; /* Slightly different dark shade for read-only */
+  background-color: var(--bg-color);
   color: var(--text-color);
-  opacity: 0.9; /* Make it slightly less prominent */
-  cursor: default;
+  font-size: 1.1em;
+  outline: none;
+  transition: border-color 0.3s ease;
 }
 
-/* Focus state for inputs */
-input[type="text"]:focus,
-input[type="number"]:focus,
-select:focus,
-textarea:focus {
-  border-color: var(--secondary-color); /* Gold border on focus */
-  outline: none;
-  box-shadow: 0 0 0 3px rgba(255, 193, 7, 0.3); /* Subtle glow */
+.add-player-form input[type="text"]:focus {
+  border-color: var(--primary-color);
 }
-/* --- END GLOBAL INPUT STYLING --- */
 
 .add-player-form button {
-  background-color: var(--primary-color);
-  color: #fff;
   padding: 12px 20px;
-  border: none;
   border-radius: 8px;
+  border: none;
+  background-color: var(--primary-color);
+  color: white;
+  font-size: 1.1em;
   cursor: pointer;
-  font-size: 1em;
-  font-weight: bold;
   transition: background-color 0.3s ease, transform 0.2s ease;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
+  font-weight: bold;
 }
 
 .add-player-form button:hover {
@@ -123,59 +94,133 @@ textarea:focus {
   transform: translateY(-2px);
 }
 
+/* Players List Section */
+.players-list-section {
+  overflow-x: auto; /* For responsive table on small screens */
+}
+
 .players-table-container {
-  overflow-x: auto;
-  margin-top: 20px;
+  width: 100%;
+  overflow-x: auto; /* Allows horizontal scrolling for table on small screens */
 }
 
 .players-table {
   width: 100%;
   border-collapse: collapse;
+  margin-top: 20px;
+  min-width: 400px; /* Ensure table doesn't get too narrow */
 }
 
-.players-table th, .players-table td {
+.players-table th,
+.players-table td {
+  padding: 15px;
   border: 1px solid var(--table-border);
-  padding: 12px 15px;
-  text-align: center;
+  text-align: right;
   color: var(--text-color);
 }
 
 .players-table th {
   background-color: var(--table-header-bg);
+  color: var(--header-text-color);
   font-weight: bold;
-  font-family: 'Oswald', sans-serif;
-  letter-spacing: 0.5px;
+  font-size: 1.1em;
 }
 
 .players-table tbody tr:nth-child(even) {
-  background-color: #2f2f2f;
+  background-color: #333; /* Slightly different background for even rows */
 }
 
-.delete-btn {
-  background-color: var(--danger-color);
-  color: #fff;
-  padding: 8px 12px;
-  border: none;
+.players-table tbody tr:hover {
+  background-color: #444; /* Hover effect for rows */
+}
+
+.players-table .delete-btn {
+  padding: 8px 15px;
   border-radius: 6px;
+  border: none;
+  background-color: var(--danger-color);
+  color: white;
+  font-size: 0.95em;
   cursor: pointer;
-  font-size: 0.9em;
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
   transition: background-color 0.3s ease, transform 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  font-weight: bold;
+  margin: 0 auto; /* Center button in table cell */
 }
 
-.delete-btn:hover {
+.players-table .delete-btn:hover {
   background-color: #d32f2f;
+  transform: translateY(-1px);
+}
+
+/* Modal Styling */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background-color: var(--card-bg);
+  padding: 30px;
+  border-radius: 12px;
+  box-shadow: var(--shadow-dark);
+  text-align: center;
+  max-width: 450px;
+  width: 90%;
+  color: var(--text-color);
+  font-size: 1.1em;
+}
+
+.modal-content p {
+  margin-bottom: 25px;
+  line-height: 1.6;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+}
+
+.modal-button {
+  padding: 12px 25px;
+  border-radius: 8px;
+  border: none;
+  font-size: 1em;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+  font-weight: bold;
+}
+
+.confirm-button {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.confirm-button:hover {
+  background-color: var(--button-hover-bg);
   transform: translateY(-2px);
 }
 
-/* Messages */
-.player-management-container p {
-  text-align: center;
-  margin-top: 20px;
-  font-size: 1.1em;
-  color: var(--text-color);
+.cancel-button {
+  background-color: #6c757d; /* Gray color for cancel */
+  color: white;
+}
+
+.cancel-button:hover {
+  background-color: #5a6268;
+  transform: translateY(-2px);
 }
 
 /* Responsive adjustments */
@@ -185,27 +230,43 @@ textarea:focus {
     margin: 20px auto;
   }
 
+  .player-management-container h2 {
+    font-size: 2em;
+    gap: 10px;
+  }
+
+  .player-management-container h3 {
+    font-size: 1.5em;
+    gap: 8px;
+  }
+
   .add-player-form {
     flex-direction: column;
-    gap: 10px;
+    align-items: stretch;
   }
 
   .add-player-form button {
     width: 100%;
   }
 
-  .players-table {
-    min-width: 400px; /* Ensure table is readable on small screens */
+  .players-table th,
+  .players-table td {
+    padding: 10px;
+    font-size: 0.9em;
   }
-}
 
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+  .players-table .delete-btn {
+    font-size: 0.85em;
+    padding: 6px 10px;
+  }
+
+  .modal-content {
+    padding: 20px;
+    font-size: 1em;
+  }
+
+  .modal-button {
+    padding: 10px 20px;
+    font-size: 0.9em;
+  }
 }
