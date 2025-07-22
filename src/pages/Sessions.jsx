@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { collection, getDocs, doc, updateDoc, query, orderBy } from 'firebase/firestore';
+import { collection, getDocs, doc, updateDoc, deleteDoc, query, orderBy } from 'firebase/firestore'; // ייבוא deleteDoc
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import { db } from '../firebase';
 import { useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faHistory, faCalendarAlt, faCoins, faUsers, faCamera, faPlus, faTimes } from '@fortawesome/free-solid-svg-icons';
+import { faHistory, faCalendarAlt, faCoins, faUsers, faCamera, faPlus, faTimes, faTrashAlt } from '@fortawesome/free-solid-svg-icons'; // ייבוא faTrashAlt
 import './Sessions.css';
 
 function Sessions() {
@@ -139,6 +139,27 @@ function Sessions() {
     }
   };
 
+  // פונקציה חדשה למחיקת משחק שלם
+  const handleDeleteGame = async (gameId) => {
+    if (!user || user.isAnonymous) {
+      alert('יש להתחבר כדי למחוק משחקים.');
+      return;
+    }
+
+    const confirmed = window.confirm('האם אתה בטוח שברצונך למחוק משחק זה לצמיתות? פעולה זו אינה ניתנת לביטול.');
+    if (!confirmed) return;
+
+    try {
+      const gameDocRef = doc(db, 'users', user.uid, 'cashGames', gameId);
+      await deleteDoc(gameDocRef);
+      alert('המשחק נמחק בהצלחה!');
+      fetchCashGames(user.uid); // רענן את רשימת המשחקים לאחר המחיקה
+    } catch (error) {
+      console.error('שגיאה במחיקת משחק:', error);
+      alert('שגיאה במחיקת המשחק. נסה שוב מאוחר יותר.');
+    }
+  };
+
   if (loadingAuth) {
     return (
       <div className="page-container sessions-container">
@@ -172,6 +193,12 @@ function Sessions() {
               <div className="game-header">
                 <h3>משחק מתאריך: <FontAwesomeIcon icon={faCalendarAlt} /> {game.date}</h3>
                 <p><FontAwesomeIcon icon={faCoins} /> יחס צ'יפים לשקל: {game.chipsPerShekel}</p>
+                {/* כפתור מחיקת משחק שלם */}
+                {!user.isAnonymous && (
+                  <button onClick={() => handleDeleteGame(game.id)} className="delete-game-button">
+                    <FontAwesomeIcon icon={faTrashAlt} /> מחק משחק
+                  </button>
+                )}
               </div>
               <div className="players-table-container">
                 <table className="players-table">
@@ -201,7 +228,7 @@ function Sessions() {
                 </table>
               </div>
               
-              {/* חדש: הצגת תמונות קיימות */}
+              {/* הצגת תמונות קיימות */}
               {game.images && game.images.length > 0 && (
                 <div className="game-images-section">
                   <h4><FontAwesomeIcon icon={faCamera} /> תמונות מהמשחק:</h4>
@@ -218,7 +245,7 @@ function Sessions() {
                 </div>
               )}
 
-              {/* חדש: כפתור להוספת תמונה למשחק קיים */}
+              {/* כפתור להוספת תמונה למשחק קיים */}
               {!user.isAnonymous && (
                 <button onClick={() => handleAddImageClick(game.id)} className="add-image-to-game-button">
                   <FontAwesomeIcon icon={faCamera} /> הוסף תמונה למשחק זה
@@ -229,7 +256,7 @@ function Sessions() {
         </div>
       )}
 
-      {/* חדש: מודאל להעלאת תמונה */}
+      {/* מודאל להעלאת תמונה */}
       {showImageModal && (
         <div className="image-upload-modal-overlay">
           <div className="image-upload-modal">

@@ -12,7 +12,7 @@
   --table-header-bg: #333;
   --table-border: #555;
   --button-hover-bg: #45a049;
-  --danger-color: #f44336;
+  --danger-color: #f44336; /* צבע אדום לסכנה/מחיקה */
 }
 
 /* Base styles for the page container */
@@ -74,6 +74,8 @@
   margin-bottom: 20px;
   padding-bottom: 10px;
   border-bottom: 1px solid var(--table-border);
+  flex-wrap: wrap; /* Allow elements to wrap on smaller screens */
+  gap: 10px; /* Space between header elements */
 }
 
 .game-header p {
@@ -173,7 +175,7 @@ textarea:focus {
 }
 /* --- END GLOBAL INPUT STYLING --- */
 
-/* NEW: Image display and upload button for saved games */
+/* Image display and upload button for saved games */
 .game-images-section {
   margin-top: 20px;
   padding-top: 15px;
@@ -259,7 +261,7 @@ textarea:focus {
   transform: translateY(-2px);
 }
 
-/* NEW: Image Upload Modal */
+/* Image Upload Modal */
 .image-upload-modal-overlay {
   position: fixed;
   top: 0;
@@ -344,6 +346,29 @@ textarea:focus {
   font-size: 0.85em;
   margin-top: 15px;
 }
+
+/* NEW: Style for the delete game button */
+.delete-game-button {
+  background-color: var(--danger-color); /* אדום למחיקה */
+  color: #fff;
+  padding: 8px 15px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.9em;
+  font-weight: bold;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 5px; /* רווח קטן מעל אם יש אלמנטים אחרים */
+}
+
+.delete-game-button:hover {
+  background-color: #c23321; /* אדום כהה יותר בריחוף */
+  transform: translateY(-2px);
+}
+
 
 /* Responsive adjustments */
 @media (max-width: 768px) {
