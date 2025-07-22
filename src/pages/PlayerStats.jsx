@@ -1,20 +1,23 @@
 import React, { useEffect, useState } from 'react';
 import { collection, getDocs } from 'firebase/firestore';
-import { getAuth, onAuthStateChanged } from 'firebase/auth'; // אין צורך ב-signInAnonymously כאן
-import { db } from '../firebase'; // ודא שנתיב זה נכון לקובץ ה-firebase שלך
-import { useNavigate } from 'react-router-dom'; // ייבוא useNavigate
+import { getAuth, onAuthStateChanged } from 'firebase/auth';
+import { db } from '../firebase'; // Ensure db is correctly imported
+import { useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faUsers, faChartLine, faCoins, faMoneyBillWave, faHandshake, faDollarSign } from '@fortawesome/free-solid-svg-icons';
-import './PlayerStats.css'; // ייבוא קובץ ה-CSS החדש
+import './PlayerStats.css'; // Import the new CSS file
 
 function PlayerStats() {
   const [user, setUser] = useState(null);
   const [loadingAuth, setLoadingAuth] = useState(true);
-  const navigate = useNavigate(); // ייבוא useNavigate
+  const navigate = useNavigate();
 
   const [playerStats, setPlayerStats] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // Get the appId from the global variable __app_id
+  const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
   useEffect(() => {
     const auth = getAuth();
@@ -22,55 +25,59 @@ function PlayerStats() {
       if (currentUser) {
         setUser(currentUser);
         setLoadingAuth(false);
-        // טען סטטיסטיקות רק אם המשתמש אינו אנונימי
+        // Load statistics only if the user is not anonymous
         if (!currentUser.isAnonymous) {
-          fetchPlayerStats(currentUser.uid);
+          fetchPlayerStats(currentUser.uid, appId); // Pass appId to fetchPlayerStats
         } else {
           setLoading(false);
           setError('סטטיסטיקות שחקנים אינן זמינות במצב אורח. אנא התחבר כדי לצפות בהן.');
         }
       } else {
-        // אם אין משתמש מחובר, נווט לדף הכניסה הראשי
+        // If no user is logged in, navigate to the main login page
         navigate('/');
       }
     });
 
     return () => unsubscribe();
-  }, [navigate]);
+  }, [navigate, appId]); // Add appId to dependencies
 
-  const fetchPlayerStats = async (userId) => {
+  const fetchPlayerStats = async (userId, currentAppId) => { // Accept currentAppId as parameter
     setLoading(true);
     setError(null);
     try {
-      const cashGamesCollection = collection(db, 'users', userId, 'cashGames');
+      // This is the corrected path for the Firestore collection
+      const cashGamesCollection = collection(db, 'artifacts', currentAppId, 'users', userId, 'cashGames');
       const querySnapshot = await getDocs(cashGamesCollection);
       
       const statsMap = new Map();
 
       querySnapshot.docs.forEach(doc => {
         const game = doc.data();
-        game.players.forEach(player => {
-          if (!statsMap.has(player.name)) {
-            statsMap.set(player.name, {
-              name: player.name,
-              totalBuyIn: 0,
-              totalCashOut: 0,
-              netProfit: 0,
-              gamesPlayed: 0,
-              avgBuyIn: 0,
-              avgCashOut: 0,
-              hourlyRate: 0,
-            });
-          }
+        // Ensure game.players exists and is an array before iterating
+        if (game.players && Array.isArray(game.players)) {
+          game.players.forEach(player => {
+            if (!statsMap.has(player.name)) {
+              statsMap.set(player.name, {
+                name: player.name,
+                totalBuyIn: 0,
+                totalCashOut: 0,
+                netProfit: 0,
+                gamesPlayed: 0,
+                avgBuyIn: 0,
+                avgCashOut: 0,
+                hourlyRate: 0, // Placeholder, as it's commented out in render
+              });
+            }
 
-          const currentStats = statsMap.get(player.name);
-          currentStats.totalBuyIn += player.buyIn;
-          currentStats.totalCashOut += player.cashOut;
-          currentStats.gamesPlayed += 1;
-          currentStats.netProfit = currentStats.totalCashOut - currentStats.totalBuyIn;
-          currentStats.avgBuyIn = currentStats.totalBuyIn / currentStats.gamesPlayed;
-          currentStats.avgCashOut = currentStats.totalCashOut / currentStats.gamesPlayed;
-        });
+            const currentStats = statsMap.get(player.name);
+            currentStats.totalBuyIn += player.buyIn || 0; // Add nullish coalescing to prevent NaN
+            currentStats.totalCashOut += player.cashOut || 0; // Add nullish coalescing to prevent NaN
+            currentStats.gamesPlayed += 1;
+            currentStats.netProfit = currentStats.totalCashOut - currentStats.totalBuyIn;
+            currentStats.avgBuyIn = currentStats.gamesPlayed > 0 ? currentStats.totalBuyIn / currentStats.gamesPlayed : 0;
+            currentStats.avgCashOut = currentStats.gamesPlayed > 0 ? currentStats.totalCashOut / currentStats.gamesPlayed : 0;
+          });
+        }
       });
 
       setPlayerStats(Array.from(statsMap.values()));
@@ -90,7 +97,7 @@ function PlayerStats() {
     );
   }
 
-  // אם אין משתמש (אפילו לא אורח), או אם המשתמש הוא אורח, נציג הודעה מתאימה
+  // If there is no user (not even a guest), or if the user is a guest, display an appropriate message
   if (!user || user.isAnonymous) {
     return (
       <div className="page-container player-stats-container">
