@@ -77,7 +77,8 @@ function PlayerManagement() {
 
   useEffect(() => {
     const auth = getAuth();
-    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id'; // קבלת appId
+    // קבלת ה-appId מהמשתנה הגלובלי __app_id
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (currentUser) {
@@ -118,7 +119,8 @@ function PlayerManagement() {
 
   const handleAddPlayer = async (e) => {
     e.preventDefault();
-    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id'; // קבלת appId
+    // קבלת ה-appId מהמשתנה הגלובלי __app_id
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
     if (!user) {
       showAlert('שגיאת אימות. אנא רענן את הדף.');
@@ -152,7 +154,8 @@ function PlayerManagement() {
   };
 
   const handleDeletePlayer = async (playerId) => {
-    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id'; // קבלת appId
+    // קבלת ה-appId מהמשתנה הגלובלי __app_id
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
     if (!user) {
       showAlert('שגיאת אימות. אנא רענן את הדף.');

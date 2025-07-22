@@ -20,12 +20,15 @@ function PokerJournal() {
 
   useEffect(() => {
     const auth = getAuth();
+    // קבלת ה-appId מהמשתנה הגלובלי __app_id
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       if (currentUser) {
         setUser(currentUser);
         setLoadingAuth(false);
         if (!currentUser.isAnonymous) {
-          fetchJournalEntries(currentUser.uid);
+          fetchJournalEntries(currentUser.uid, appId); // העבר appId לפונקציה
         } else {
           setLoadingEntries(false);
           setErrorEntries('יומן פוקר אינו זמין במצב אורח. אנא התחבר כדי להוסיף רשומות.');
@@ -38,11 +41,12 @@ function PokerJournal() {
     return () => unsubscribe();
   }, [navigate]);
 
-  const fetchJournalEntries = async (userId) => {
+  const fetchJournalEntries = async (userId, appId) => { // קבל appId כארגומנט
     setLoadingEntries(true);
     setErrorEntries(null);
     try {
-      const journalCollectionRef = collection(db, 'users', userId, 'pokerJournal');
+      // הנתיב תוקן בהתאם לכללי האבטחה
+      const journalCollectionRef = collection(db, `artifacts/${appId}/users/${userId}/pokerJournal`);
       // נמיין לפי תאריך יצירה בסדר יורד
       const q = query(journalCollectionRef, orderBy('createdAt', 'desc'));
       const querySnapshot = await getDocs(q);
@@ -62,6 +66,9 @@ function PokerJournal() {
 
   const handleAddEntry = async (e) => {
     e.preventDefault();
+    // קבלת ה-appId מהמשתנה הגלובלי __app_id
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+
     if (!user || user.isAnonymous) {
       alert('יש להתחבר כדי להוסיף רשומות ליומן.');
       return;
@@ -72,7 +79,8 @@ function PokerJournal() {
     }
 
     try {
-      const journalCollectionRef = collection(db, 'users', user.uid, 'pokerJournal');
+      // הנתיב תוקן בהתאם לכללי האבטחה
+      const journalCollectionRef = collection(db, `artifacts/${appId}/users/${user.uid}/pokerJournal`);
       await addDoc(journalCollectionRef, {
         title: newEntryTitle.trim(),
         content: newEntryContent.trim(),
@@ -80,7 +88,7 @@ function PokerJournal() {
       });
       setNewEntryTitle('');
       setNewEntryContent('');
-      fetchJournalEntries(user.uid); // רענן את הרשימה
+      fetchJournalEntries(user.uid, appId); // רענן את הרשימה, העבר appId
       alert('רשומה נוספה בהצלחה!');
     } catch (error) {
       console.error('שגיאה בהוספת רשומה:', error);
@@ -89,18 +97,25 @@ function PokerJournal() {
   };
 
   const handleDeleteEntry = async (entryId) => {
+    // קבלת ה-appId מהמשתנה הגלובלי __app_id
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+
     if (!user || user.isAnonymous) {
       alert('יש להתחבר כדי למחוק רשומות מהיומן.');
       return;
     }
 
+    // שימוש במודל CustomModal במקום window.confirm
+    // הערה: CustomModal לא מוגדר בקובץ זה, יש לוודא שהוא מיובא או מוגדר.
+    // לצורך הדוגמה, נשאר עם alert זמני, אך מומלץ להשתמש במודל מותאם אישית.
     const confirmed = window.confirm('האם אתה בטוח שברצונך למחוק רשומה זו?');
     if (!confirmed) return;
 
     try {
-      const entryDocRef = doc(db, 'users', user.uid, 'pokerJournal', entryId);
+      // הנתיב תוקן בהתאם לכללי האבטחה
+      const entryDocRef = doc(db, `artifacts/${appId}/users/${user.uid}/pokerJournal`, entryId);
       await deleteDoc(entryDocRef);
-      fetchJournalEntries(user.uid); // רענן את הרשימה
+      fetchJournalEntries(user.uid, appId); // רענן את הרשימה, העבר appId
       alert('רשומה נמחקה בהצלחה!');
     } catch (error) {
       console.error('שגיאה במחיקת רשומה:', error);
@@ -126,6 +141,9 @@ function PokerJournal() {
 
   return (
     <div className="page-container poker-journal-container">
+      {/* אם יש לך CustomModal כללי, ודא שהוא מיובא ומוגדר כאן */}
+      {/* <CustomModal ... /> */}
+
       <h2><FontAwesomeIcon icon={faBook} /> יומן פוקר</h2>
 
       <div className="section add-entry-section">

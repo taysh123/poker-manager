@@ -70,12 +70,15 @@ function CashGame() {
 
   useEffect(() => {
     const auth = getAuth();
+    // קבלת ה-appId מהמשתנה הגלובלי __app_id
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       if (currentUser) {
         setUser(currentUser);
         setLoadingAuth(false);
         if (!currentUser.isAnonymous) {
-          fetchAllPlayers(currentUser.uid);
+          fetchAllPlayers(currentUser.uid, appId); // העבר appId לפונקציה
         } else {
           setAllPlayers([]);
         }
@@ -98,10 +101,11 @@ function CashGame() {
     }
   }, [chipsPerShekel, standardBuyInShekels]);
 
-  const fetchAllPlayers = async (userId) => {
+  const fetchAllPlayers = async (userId, appId) => { // קבל appId כארגומנט
     if (!userId) return;
     try {
-      const playersCollection = collection(db, 'users', userId, 'players');
+      // הנתיב תוקן בהתאם לכללי האבטחה
+      const playersCollection = collection(db, `artifacts/${appId}/users/${userId}/players`);
       const querySnapshot = await getDocs(playersCollection);
       const playersList = querySnapshot.docs.map(doc => doc.data().name);
       setAllPlayers(playersList);
@@ -215,6 +219,9 @@ function CashGame() {
   };
   
   const handleCalculateAndSave = async () => {
+    // קבלת ה-appId מהמשתנה הגלובלי __app_id
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+
     if (!user) {
       alert('שגיאת אימות. אנא רענן את הדף.');
       return;
@@ -245,7 +252,8 @@ function CashGame() {
     };
 
     try {
-      const userGamesCollection = collection(db, 'users', user.uid, 'cashGames');
+      // הנתיב תוקן בהתאם לכללי האבטחה
+      const userGamesCollection = collection(db, `artifacts/${appId}/users/${user.uid}/cashGames`);
       await addDoc(userGamesCollection, gameData);
       alert('המשחק נשמר בהצלחה!');
     } catch (error) {
