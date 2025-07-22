@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { getFirestore, doc, getDoc, collection, query, getDocs, setDoc, onSnapshot } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCog, faUserChart, faCoins, faHandshake, faBook, faUsers } from '@fortawesome/free-solid-svg-icons'; // ייבוא אייקונים נוספים
+// שינוי כאן: החלפתי את faUserChart ב-faChartBar
+import { faCog, faChartBar, faCoins, faHandshake, faBook, faUsers } from '@fortawesome/free-solid-svg-icons';
 import '../pages/Dashboard.css'; // ייבוא ה-CSS של הדאשבורד
 import '../pages/Homepage.css'; // ייבוא ה-CSS של דף הבית
 
@@ -165,7 +166,7 @@ function Homepage() {
             <p>תעד ונתח את הידיים והסשנים שלך.</p>
           </div>
           <div className="home-link-card" onClick={() => navigate('/personal-tracking')}>
-            <FontAwesomeIcon icon={faUserChart} />
+            <FontAwesomeIcon icon={faChartBar} /> {/* שימוש באייקון המתוקן */}
             <h3>מעקב אישי</h3>
             <p>עקוב אחר הביצועים האישיים שלך במשחקים.</p>
           </div>
