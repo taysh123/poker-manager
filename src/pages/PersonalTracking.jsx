@@ -4,6 +4,7 @@ import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import { db } from '../firebase'; // ודא שהנתיב ל-firebase.js נכון
 import { useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+// ודא ש-faChartLine מיובא מכאן
 import { faChartLine, faUserCircle } from '@fortawesome/free-solid-svg-icons';
 import './PersonalTracking.css'; // ייבוא קובץ ה-CSS החדש
 
