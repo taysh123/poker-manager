@@ -12,7 +12,7 @@ import PlayerStats from './pages/PlayerStats';
 import PlayerManagement from './pages/PlayerManagement';
 import Homepage from './pages/Homepage';
 import PokerJournal from './pages/PokerJournal';
-import PersonalTracking from './PersonalTracking'; // ייבוא הקומפוננטה החדשה למעקב אישי
+import PersonalTracking from './pages/PersonalTracking';
 import './App.css';
 import './firebase'; // ודא ש-Firebase מאותחל
 
