@@ -31,62 +31,52 @@ const CustomModal = ({ message, onConfirm, onCancel, type }) => {
   );
 };
 
-// פונקציית עזר לחישוב חובות בצורה מפושטת
+// פונקציית עזר לחישוב חובות
 function calculateDebts(players) {
-  const netAmounts = {}; // { playerName: netProfitLoss }
+  const gains = {};
+  const losses = {};
+  const debts = [];
 
-  // 1. קבע רווח/הפסד נקי של כל שחקן
+  // 1. קבע רווח/הפסד של כל שחקן
   players.forEach(p => {
-    netAmounts[p.name] = (netAmounts[p.name] || 0) + (p.cashOut - p.totalBuyIn);
+    const profit = p.cashOut - p.totalBuyIn;
+    if (profit > 0) {
+      gains[p.name] = profit;
+    } else if (profit < 0) {
+      losses[p.name] = -profit;
+    }
   });
 
-  const gainers = []; // שחקנים שצריכים לקבל כסף
-  const losers = [];  // שחקנים שצריכים לשלם כסף
-
-  for (const name in netAmounts) {
-    if (netAmounts[name] > 0) {
-      gainers.push({ name, amount: netAmounts[name] });
-    } else if (netAmounts[name] < 0) {
-      losers.push({ name, amount: -netAmounts[name] }); // שמור כערך חיובי
-    }
-  }
-
-  // מיין את המרוויחים והמפסידים כדי להתחיל עם הסכומים הגדולים ביותר
-  gainers.sort((a, b) => b.amount - a.amount);
-  losers.sort((a, b) => b.amount - a.amount);
-
-  const debts = [];
+  const gainers = Object.entries(gains).sort(([, a], [, b]) => b - a);
+  const losers = Object.entries(losses).sort(([, a], [, b]) => b - a);
 
   let gIndex = 0;
   let lIndex = 0;
 
   while (gIndex < gainers.length && lIndex < losers.length) {
-    const gainer = gainers[gIndex];
-    const loser = losers[lIndex];
+    const [gainerName, gainerAmount] = gainers[gIndex];
+    const [loserName, loserAmount] = losers[lIndex];
 
-    const settlementAmount = Math.min(gainer.amount, loser.amount);
+    const settlementAmount = Math.min(gainerAmount, loserAmount);
 
-    if (settlementAmount > 0.01) { // הימנע מחובות זניחים
+    if (settlementAmount > 0.01) { // Only add if amount is significant
       debts.push({
-        debtor: loser.name,
-        creditor: gainer.name,
+        debtor: loserName,
+        creditor: gainerName,
         amount: settlementAmount
       });
-
-      gainer.amount -= settlementAmount;
-      loser.amount -= settlementAmount;
     }
 
-    if (gainer.amount <= 0.01) {
-      gIndex++;
-    }
-    if (loser.amount <= 0.01) {
-      lIndex++;
-    }
+    gainers[gIndex][1] -= settlementAmount;
+    losers[lIndex][1] -= settlementAmount;
+
+    if (gainers[gIndex][1] <= 0.01) gIndex++;
+    if (losers[lIndex][1] <= 0.01) lIndex++;
   }
 
   return debts;
 }
+
 
 function CashGame() {
   const [user, setUser] = useState(null);
@@ -94,173 +84,179 @@ function CashGame() {
   const [loadingAuth, setLoadingAuth] = useState(true);
   const navigate = useNavigate();
 
-  const [allPlayers, setAllPlayers] = useState([]); // רשימת כל השחקנים הקבועים כאופציה
-  const [players, setPlayers] = useState([]); // שחקנים במשחק הנוכחי
-  const [selectedPlayerName, setSelectedPlayerName] = useState(''); // שחקן נבחר מהאופציות
-  const [newPlayerName, setNewPlayerName] = useState(''); // שם שחקן חדש להוספה
-  const [newPlayerBuyIn, setNewPlayerBuyIn] = useState(''); // כניסה ראשונית לשחקן חדש
-  const [chipsPerShekel, setChipsPerShekel] = useState('');
-  const [gameImages, setGameImages] = useState([]);
-  const fileInputRef = useRef(null);
-
+  const [chipRatio, setChipRatio] = useState(1);
+  const [players, setPlayers] = useState([]);
+  const [newPlayerName, setNewPlayerName] = useState('');
+  const [newPlayerBuyIn, setNewPlayerBuyIn] = useState('');
   const [debts, setDebts] = useState([]);
-  const [showModal, setShowModal] = useState(false);
-  const [modalMessage, setModalMessage] = useState('');
+  const [savedPlayers, setSavedPlayers] = useState([]);
+  const [gameImages, setGameImages] = useState([]); // לשמירת תמונות מקודדות ב-Base64
+  const imageInputRef = useRef(null); // Ref עבור אלמנט ה-input file
+  const [modalMessage, setModalMessage] = useState(null);
   const [modalType, setModalType] = useState('alert');
-  const [modalAction, setModalAction] = useState(null);
+  const [showConfirmSaveModal, setShowConfirmSaveModal] = useState(false);
 
-  // קבלת ה-appId מהמשתנה הגלובלי __app_id
   const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
-  // useEffect לאימות משתמש וטעינת שחקנים קבועים
   useEffect(() => {
     const auth = getAuth();
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (currentUser) {
         setUser(currentUser);
         setUserId(currentUser.uid);
+        setLoadingAuth(false);
         if (!currentUser.isAnonymous) {
-          await fetchAllPlayers(currentUser.uid); // טען את כל השחקנים הקבועים
+          await fetchSavedPlayers(currentUser.uid);
+        } else {
+          setModalMessage('כניסת אורח אינה תומכת בשמירת שחקנים קבועים או משחקים. אנא התחבר/הרשם.');
+          setModalType('alert');
         }
       } else {
         navigate('/');
       }
-      setLoadingAuth(false);
     });
 
     return () => unsubscribe();
   }, [navigate]);
 
-  // פונקציה לטעינת כל השחקנים הקבועים מ-Firestore
-  const fetchAllPlayers = async (currentUserId) => {
-    if (!currentUserId) return;
+  const fetchSavedPlayers = async (currentUserId) => {
     try {
       const playersCollectionRef = collection(db, `artifacts/${appId}/users/${currentUserId}/players`);
       const querySnapshot = await getDocs(playersCollectionRef);
-      const playersList = querySnapshot.docs.map(doc => doc.data().name);
-      setAllPlayers(playersList);
+      const playersList = querySnapshot.docs.map(doc => ({ id: doc.id, name: doc.data().name }));
+      setSavedPlayers(playersList);
     } catch (error) {
-      console.error('שגיאה בשליפת שחקנים קבועים:', error);
-      openModal("שגיאה בטעינת שחקנים קבועים: " + error.message, 'alert');
+      console.error("שגיאה בטעינת שחקנים קבועים:", error);
+      setModalMessage('שגיאה בטעינת שחקנים קבועים. נסה לרענן את הדף.');
+      setModalType('alert');
     }
   };
 
-  const openModal = (message, type, action = null) => {
-    setModalMessage(message);
-    setModalType(type);
-    setModalAction(() => action);
-    setShowModal(true);
-  };
+  const addPlayer = () => {
+    const name = newPlayerName.trim();
+    const buyIn = parseFloat(newPlayerBuyIn);
 
-  const closeModal = () => {
-    setShowModal(false);
-    setModalMessage('');
-    setModalType('alert');
-    setModalAction(null);
-  };
-
-  // פונקציית עזר לטיפול בקלט מספרי והסרת אפסים מובילים
-  const handleNumericInput = (value) => {
-    if (value === '' || value === '.') {
-      return value;
-    }
-    // אם הערך מתחיל ב-0 ואחריו יש ספרה נוספת (ולא רק "0"), הסר את ה-0 המוביל
-    if (value.length > 1 && value.startsWith('0') && value[1] !== '.') {
-      return String(Number(value));
-    }
-    return value;
-  };
-
-  const handleAddPlayer = () => {
-    let playerToAddName = '';
-    if (selectedPlayerName) {
-      playerToAddName = selectedPlayerName;
-    } else if (newPlayerName.trim()) {
-      playerToAddName = newPlayerName.trim();
-    } else {
-      openModal('אנא בחר שחקן קיים או הזן שם שחקן חדש.', 'alert');
+    if (!name || isNaN(buyIn) || buyIn <= 0) {
+      setModalMessage('יש להזין שם שחקן וסכום כניסה תקין.');
+      setModalType('alert');
       return;
     }
-
-    if (players.some(p => p.name === playerToAddName)) {
-      openModal('שחקן בשם זה כבר קיים במשחק.', 'alert');
+    if (players.some(p => p.name === name)) {
+      setModalMessage('שם השחקן כבר קיים ברשימה.');
+      setModalType('alert');
       return;
     }
-
-    const buyInAmount = parseFloat(newPlayerBuyIn) || 0;
-    if (isNaN(buyInAmount) || buyInAmount < 0) {
-      openModal('אנא הזן סכום כניסה חוקי (מספר חיובי או אפס).', 'alert');
-      return;
-    }
-
-    setPlayers([...players, {
-      id: Date.now().toString(), // ID זמני עבור הרשימה המקומית
-      name: playerToAddName,
-      buyIn: buyInAmount,
-      cashOut: 0,
-      totalBuyIn: buyInAmount
-    }]);
-    setSelectedPlayerName('');
+    setPlayers([...players, { name, buyIns: [buyIn], totalBuyIn: buyIn, cashOut: 0, chipRatio: chipRatio }]);
     setNewPlayerName('');
     setNewPlayerBuyIn('');
   };
 
-  const handleUpdatePlayerBuyIn = (id, value) => {
-    const cleanedValue = handleNumericInput(value);
-    const updatedPlayers = players.map(p => {
-      if (p.id === id) {
-        const newBuyIn = parseFloat(cleanedValue) || 0;
-        return { ...p, buyIn: newBuyIn, totalBuyIn: newBuyIn };
-      }
-      return p;
-    });
-    setPlayers(updatedPlayers);
+  const addSavedPlayerToGame = (playerName) => {
+    if (players.some(p => p.name === playerName)) {
+      setModalMessage('שחקן זה כבר נמצא במשחק.');
+      setModalType('alert');
+      return;
+    }
+    setPlayers([...players, { name: playerName, buyIns: [0], totalBuyIn: 0, cashOut: 0, chipRatio: chipRatio }]);
+    setModalMessage(`השחקן ${playerName} נוסף למשחק.`);
+    setModalType('alert');
   };
 
-  const handleUpdatePlayerCashOut = (id, value) => {
-    const cleanedValue = handleNumericInput(value);
-    const updatedPlayers = players.map(p => {
-      if (p.id === id) {
-        return { ...p, cashOut: parseFloat(cleanedValue) || 0 };
-      }
-      return p;
-    });
-    setPlayers(updatedPlayers);
+  const handleBuyInChange = (index, value) => {
+    const updatedPlayers = [...players];
+    const newBuyIn = parseFloat(value);
+    if (!isNaN(newBuyIn) && newBuyIn >= 0) {
+      updatedPlayers[index].buyIns = [newBuyIn]; // נניח שרק כניסה אחת מוצגת כאן
+      updatedPlayers[index].totalBuyIn = newBuyIn;
+      setPlayers(updatedPlayers);
+    }
   };
 
-  const handleDeletePlayer = (id) => {
-    openModal('האם אתה בטוח שברצונך למחוק שחקן זה מהמשחק הנוכחי?', 'confirm', () => {
-      setPlayers(players.filter(p => p.id !== id));
-      closeModal();
-    });
+  const handleCashOutChange = (index, value) => {
+    const updatedPlayers = [...players];
+    const newCashOut = parseFloat(value);
+    if (!isNaN(newCashOut) && newCashOut >= 0) {
+      updatedPlayers[index].cashOut = newCashOut;
+      setPlayers(updatedPlayers);
+    }
   };
 
-  const handleAddRebuy = (id) => {
-    openModal('האם אתה בטוח שברצונך להוסיף Re-Buy לשחקן זה?', 'confirm', () => {
-      const rebuyAmount = parseFloat(prompt('הכנס סכום Re-Buy:')) || 0;
-      if (rebuyAmount > 0) {
-        const updatedPlayers = players.map(p => {
-          if (p.id === id) {
-            return { ...p, buyIn: p.buyIn + rebuyAmount, totalBuyIn: p.totalBuyIn + rebuyAmount };
-          }
-          return p;
-        });
-        setPlayers(updatedPlayers);
-      }
-      closeModal();
-    });
+  const deletePlayer = (indexToDelete) => {
+    setPlayers(players.filter((_, index) => index !== indexToDelete));
+    setDebts([]); // איפוס חובות כששחקן נמחק
+  };
+
+  const handleCalculateAndSave = () => {
+    if (players.length === 0) {
+      setModalMessage('אין שחקנים במשחק כדי לחשב חובות.');
+      setModalType('alert');
+      return;
+    }
+    if (user && user.isAnonymous) {
+      setModalMessage('כניסת אורח אינה תומכת בשמירת משחקים. אנא התחבר/הרשם.');
+      setModalType('alert');
+      return;
+    }
+
+    setShowConfirmSaveModal(true);
+    setModalMessage('האם ברצונך לחשב חובות ולסגור את המשחק? פעולה זו תשמור את המשחק.');
+    setModalType('confirm');
+  };
+
+  const confirmSaveGame = async () => {
+    setShowConfirmSaveModal(false);
+    const calculatedDebts = calculateDebts(players);
+    setDebts(calculatedDebts);
+
+    try {
+      const gamesCollectionRef = collection(db, `artifacts/${appId}/users/${userId}/cashGames`);
+      await addDoc(gamesCollectionRef, {
+        date: new Date(),
+        chipsPerShekel: chipRatio,
+        players: players.map(p => ({
+          name: p.name,
+          buyIn: p.totalBuyIn,
+          cashOut: p.cashOut,
+          chipRatio: p.chipRatio
+        })),
+        debts: calculatedDebts.map(d => ({
+          debtor: d.debtor,
+          creditor: d.creditor,
+          amount: d.amount
+        })),
+        gameImages: gameImages, // שמירת תמונות
+      });
+      setModalMessage('המשחק נשמר בהצלחה!');
+      setModalType('alert');
+      // ניתן לאפס את המצב כאן או לנתב לדף אחר
+      setPlayers([]);
+      setNewPlayerName('');
+      setNewPlayerBuyIn('');
+      setDebts([]);
+      setGameImages([]);
+    } catch (error) {
+      console.error("שגיאה בשמירת המשחק:", error);
+      setModalMessage('שגיאה בשמירת המשחק. נסה שוב.');
+      setModalType('alert');
+    }
+  };
+
+  const cancelSaveGame = () => {
+    setShowConfirmSaveModal(false);
+    setModalMessage(null);
   };
 
   const handleImageUpload = (event) => {
     const files = Array.from(event.target.files);
-    const newImages = [];
     files.forEach(file => {
+      if (file.size > 1024 * 1024) { // 1MB limit
+        setModalMessage(`הקובץ ${file.name} גדול מדי (מעל 1MB).`);
+        setModalType('alert');
+        return;
+      }
       const reader = new FileReader();
       reader.onloadend = () => {
-        newImages.push(reader.result);
-        if (newImages.length === files.length) {
-          setGameImages(prevImages => [...prevImages, ...newImages]);
-        }
+        setGameImages(prevImages => [...prevImages, reader.result]);
       };
       reader.readAsDataURL(file);
     });
@@ -270,49 +266,9 @@ function CashGame() {
     setGameImages(prevImages => prevImages.filter((_, index) => index !== indexToRemove));
   };
 
-  const handleCalculateAndSave = async () => {
-    if (players.length === 0) {
-      openModal('אנא הוסף שחקנים למשחק לפני החישוב.', 'alert');
-      return;
-    }
-    if (isNaN(parseFloat(chipsPerShekel)) || parseFloat(chipsPerShekel) <= 0) {
-      openModal('אנא הזן יחס צ\'יפים לשקל חוקי (חייב להיות מספר חיובי).', 'alert');
-      return;
-    }
-
-    const allPlayersHaveCashOut = players.every(p => !isNaN(p.cashOut) && p.cashOut >= 0);
-    if (!allPlayersHaveCashOut) {
-      openModal('אנא ודא שכל השחקנים הזינו סכום יציאה חוקי (מספר חיובי או אפס).', 'alert');
-      return;
-    }
-
-    const calculatedDebts = calculateDebts(players);
-    setDebts(calculatedDebts);
-
-    if (!user || !userId) {
-      openModal('שגיאה: משתמש לא מאומת. לא ניתן לשמור את המשחק.', 'alert');
-      return;
-    }
-
-    try {
-      const sessionsCollectionRef = collection(db, `artifacts/${appId}/users/${userId}/sessions`);
-      await addDoc(sessionsCollectionRef, {
-        date: new Date(),
-        players: players.map(p => ({
-          name: p.name,
-          buyIn: p.buyIn,
-          cashOut: p.cashOut,
-          totalBuyIn: p.totalBuyIn // שמור את סך הכניסות
-        })),
-        chipsPerShekel: parseFloat(chipsPerShekel),
-        debts: calculatedDebts,
-        gameImages: gameImages // שמור תמונות כ-Base64
-      });
-      openModal('המשחק נשמר בהצלחה! החובות חושבו.', 'alert', () => navigate('/sessions'));
-    } catch (error) {
-      console.error("שגיאה בשמירת המשחק:", error);
-      openModal("שגיאה בשמירת המשחק: " + error.message, 'alert');
-    }
+  const closeModal = () => {
+    setModalMessage(null);
+    setModalType('alert'); // Reset to alert type for general messages
   };
 
   if (loadingAuth) {
@@ -325,76 +281,67 @@ function CashGame() {
 
   return (
     <div className="cash-game-container">
-      <CustomModal
-        message={modalMessage}
-        onConfirm={modalAction}
-        onCancel={closeModal}
-        type={modalType}
-      />
-
       <h2><FontAwesomeIcon icon={faCoins} /> ניהול משחק קאש</h2>
       <p className="text-center text-gray-600 mb-8">
-        הזן את פרטי השחקנים, הכניסות והיציאות שלהם כדי לחשב רווחים וחובות.
+        נהל את הכניסות, היציאות והחובות בין השחקנים במשחק הקאש שלך.
       </p>
 
-      <div className="section chips-ratio-section">
-        <h3><FontAwesomeIcon icon={faWallet} /> יחס צ'יפים לשקל</h3>
-        <input
-          type="number"
-          value={chipsPerShekel}
-          onChange={(e) => setChipsPerShekel(handleNumericInput(e.target.value))}
-          placeholder="יחס צ'יפים לשקל (לדוגמה: 100)"
-          min="0.01"
-          step="0.01"
-        />
-      </div>
-
-      <div className="section add-player-section">
-        <h3><FontAwesomeIcon icon={faUsers} /> הוסף שחקן למשחק</h3>
-        <div className="add-player-form">
-          {/* בחירה מתוך שחקנים קבועים */}
-          {allPlayers.length > 0 && (
-            <select
-              value={selectedPlayerName}
-              onChange={(e) => {
-                setSelectedPlayerName(e.target.value);
-                setNewPlayerName(''); // נקה שם שחקן חדש אם נבחר קיים
-              }}
-            >
-              <option value="">בחר שחקן קיים...</option>
-              {allPlayers.map((name, index) => (
-                <option key={index} value={name}>{name}</option>
-              ))}
-            </select>
-          )}
-
-          {/* או הזנת שם שחקן חדש */}
+      <div className="section chip-ratio-section">
+        <h3><FontAwesomeIcon icon={faWallet} /> יחס צ'יפים לכסף אמיתי</h3>
+        <div className="input-group">
+          <label htmlFor="chipRatio">צ'יפים ל-1 ₪:</label>
           <input
-            type="text"
-            value={newPlayerName}
-            onChange={(e) => {
-              setNewPlayerName(e.target.value);
-              setSelectedPlayerName(''); // נקה בחירה קיימת אם הוזן שם חדש
-            }}
-            placeholder="או הזן שם שחקן חדש"
-          />
-          <input
+            id="chipRatio"
             type="number"
-            value={newPlayerBuyIn}
-            onChange={(e) => setNewPlayerBuyIn(handleNumericInput(e.target.value))}
-            placeholder="כניסה ראשונית (₪)"
-            min="0"
-            step="0.01"
+            value={chipRatio}
+            onChange={(e) => setChipRatio(parseFloat(e.target.value) || 1)}
+            min="0.1"
+            step="0.1"
           />
-          <button onClick={handleAddPlayer}>
-            <FontAwesomeIcon icon={faPlus} /> הוסף
-          </button>
         </div>
       </div>
 
-      {players.length === 0 ? (
-        <p style={{ textAlign: 'center' }}>אין שחקנים במשחק. הוסף שחקנים כדי להתחיל!</p>
-      ) : (
+      <div className="section add-player-section">
+        <h3><FontAwesomeIcon icon={faUsers} /> הוסף שחקנים למשחק</h3>
+        <form onSubmit={(e) => { e.preventDefault(); addPlayer(); }} className="add-player-form">
+          <div className="player-input-group">
+            <input
+              type="text"
+              value={newPlayerName}
+              onChange={(e) => setNewPlayerName(e.target.value)}
+              placeholder="שם שחקן חדש"
+            />
+            <input
+              type="number"
+              value={newPlayerBuyIn}
+              onChange={(e) => setNewPlayerBuyIn(e.target.value)}
+              placeholder="כניסה ראשונית (₪)"
+              min="0"
+            />
+            <button type="submit">
+              <FontAwesomeIcon icon={faPlus} /> הוסף שחקן
+            </button>
+          </div>
+        </form>
+
+        {savedPlayers.length > 0 && (
+          <div className="saved-players-dropdown">
+            <label htmlFor="selectSavedPlayer">או בחר שחקן קיים:</label>
+            <select
+              id="selectSavedPlayer"
+              onChange={(e) => addSavedPlayerToGame(e.target.value)}
+              value="" // Reset select after selection
+            >
+              <option value="" disabled>בחר שחקן קבוע</option>
+              {savedPlayers.map(player => (
+                <option key={player.id} value={player.name}>{player.name}</option>
+              ))}
+            </select>
+          </div>
+        )}
+      </div>
+
+      {players.length > 0 && (
         <div className="section players-in-game-section">
           <h3><FontAwesomeIcon icon={faHandshake} /> שחקנים במשחק ({players.length})</h3>
           <div className="players-table-container">
@@ -403,38 +350,33 @@ function CashGame() {
                 <tr>
                   <th>שם שחקן</th>
                   <th>כניסה (₪)</th>
-                  <th>יציאה (₪)</th>
+                  <th>יציאה (צ'יפים)</th>
                   <th>פעולות</th>
                 </tr>
               </thead>
               <tbody>
-                {players.map(player => (
-                  <tr key={player.id}>
+                {players.map((player, index) => (
+                  <tr key={index}>
                     <td>{player.name}</td>
                     <td>
                       <input
                         type="number"
-                        value={player.buyIn}
-                        onChange={(e) => handleUpdatePlayerBuyIn(player.id, e.target.value)}
+                        value={player.totalBuyIn}
+                        onChange={(e) => handleBuyInChange(index, e.target.value)}
                         min="0"
-                        step="0.01"
                       />
                     </td>
                     <td>
                       <input
                         type="number"
                         value={player.cashOut}
-                        onChange={(e) => handleUpdatePlayerCashOut(player.id, e.target.value)}
+                        onChange={(e) => handleCashOutChange(index, e.target.value)}
                         min="0"
-                        step="0.01"
                       />
                     </td>
-                    <td className="player-actions">
-                      <button onClick={() => handleAddRebuy(player.id)} className="rebuy-btn">
-                        <FontAwesomeIcon icon={faPlus} /> Re-Buy
-                      </button>
-                      <button onClick={() => handleDeletePlayer(player.id)} className="delete-btn">
-                        <FontAwesomeIcon icon={faTimes} /> מחק
+                    <td>
+                      <button onClick={() => deletePlayer(index)} className="delete-btn">
+                        <FontAwesomeIcon icon={faTimes} />
                       </button>
                     </td>
                   </tr>
@@ -446,17 +388,17 @@ function CashGame() {
       )}
 
       <div className="section image-upload-section">
-        <h3><FontAwesomeIcon icon={faCamera} /> תמונות מהמשחק (אופציונלי)</h3>
+        <h3><FontAwesomeIcon icon={faCamera} /> הוסף תמונות מהמשחק</h3>
         <input
           type="file"
           accept="image/*"
           multiple
           onChange={handleImageUpload}
-          ref={fileInputRef}
-          style={{ display: 'none' }}
+          ref={imageInputRef}
+          style={{ display: 'none' }} // הסתר את האינפוט המקורי
         />
-        <button onClick={() => fileInputRef.current.click()} className="upload-button">
-          <FontAwesomeIcon icon={faUpload} /> העלה תמונות
+        <button onClick={() => imageInputRef.current.click()} className="upload-button">
+          <FontAwesomeIcon icon={faUpload} /> בחר תמונות
         </button>
         <div className="image-preview-grid">
           {gameImages.map((image, index) => (
@@ -501,10 +443,16 @@ function CashGame() {
             </tbody>
           </table>
           <p className="debt-note">
-            הערה: החובות מוצגים כדי לפשט את ההתחשבנות בין השחקנים.
+            * החישוב מבוסס על יחס הצ'יפים הנוכחי ונועד לפשט את החובות בין שחקנים.
           </p>
         </div>
       )}
+      <CustomModal
+        message={modalMessage}
+        onConfirm={showConfirmSaveModal ? confirmSaveGame : closeModal}
+        onCancel={showConfirmSaveModal ? cancelSaveGame : closeModal}
+        type={modalType}
+      />
     </div>
   );
 }

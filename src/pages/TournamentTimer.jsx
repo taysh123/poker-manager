@@ -1,6 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faPlay, faPause, faRedo, faForward, faBackward } from '@fortawesome/free-solid-svg-icons'; // ייבוא אייקונים חדשים
 
 function formatTime(seconds) {
   if (seconds < 0) seconds = 0;
@@ -11,13 +9,15 @@ function formatTime(seconds) {
 
 function TournamentTimer({ levels, anteEnabled }) {
   const [currentLevelIndex, setCurrentLevelIndex] = useState(0);
-  const [timeLeft, setTimeLeft] = useState(levels.length > 0 ? levels[0].duration : 0);
+  // ודא ש-levels הוא מערך ושיש בו אלמנטים לפני גישה ל-levels[0]
+  const [timeLeft, setTimeLeft] = useState(levels && levels.length > 0 ? levels[0].duration : 0);
   const timerRef = useRef(null);
   const [isRunning, setIsRunning] = useState(false);
 
   useEffect(() => {
+    // איפוס הטיימר בכל פעם שמערך ה-levels משתנה
     setCurrentLevelIndex(0);
-    setTimeLeft(levels.length > 0 ? levels[0].duration : 0);
+    setTimeLeft(levels && levels.length > 0 ? levels[0].duration : 0);
     setIsRunning(false);
   }, [levels]);
 
@@ -26,88 +26,68 @@ function TournamentTimer({ levels, anteEnabled }) {
       timerRef.current = setInterval(() => {
         setTimeLeft(prev => {
           if (prev <= 1) {
+            // אם הגענו לסוף הרמה הנוכחית
             if (currentLevelIndex < levels.length - 1) {
-              setCurrentLevelIndex(prevIndex => prevIndex + 1); 
-              return levels[currentLevelIndex + 1].duration; 
+              // עבור לרמה הבאה
+              setCurrentLevelIndex(prevIndex => prevIndex + 1);
+              return levels[currentLevelIndex + 1].duration;
             } else {
+              // אם הגענו לסוף כל הרמות
               clearInterval(timerRef.current);
               setIsRunning(false);
-              return 0; 
+              return 0; // סיים את הטיימר
             }
           }
-          return prev - 1; 
+          return prev - 1;
         });
-      }, 1000);
+      }, 1000); // עדכן כל שנייה
+    } else {
+      clearInterval(timerRef.current); // נקה את האינטרוול אם הטיימר לא רץ
     }
 
+    // פונקציית ניקוי עבור useEffect
     return () => clearInterval(timerRef.current);
-  }, [isRunning, currentLevelIndex, levels]); 
+  }, [isRunning, currentLevelIndex, levels]); // הוספת levels כתלות
 
-  // פונקציות לשליטה בטיימר
   const startTimer = () => setIsRunning(true);
   const stopTimer = () => setIsRunning(false);
   const resetTimer = () => {
     setIsRunning(false);
     setCurrentLevelIndex(0);
-    setTimeLeft(levels.length > 0 ? levels[0].duration : 0);
+    setTimeLeft(levels && levels.length > 0 ? levels[0].duration : 0);
   };
 
-  const nextLevel = () => {
-    if (currentLevelIndex < levels.length - 1) {
-      setCurrentLevelIndex(prevIndex => prevIndex + 1);
-      setTimeLeft(levels[currentLevelIndex + 1].duration);
-      setIsRunning(true);
-    } else {
-      setIsRunning(false);
-      setTimeLeft(0);
-    }
-  };
+  const currentLevel = levels[currentLevelIndex] || {}; // ודא ש-currentLevel מוגדר היטב
 
-  const prevLevel = () => {
-    if (currentLevelIndex > 0) {
-      setCurrentLevelIndex(prevIndex => prevIndex - 1);
-      setTimeLeft(levels[currentLevelIndex - 1].duration);
-      setIsRunning(true); 
-    }
-  };
-
-  const currentLevel = levels[currentLevelIndex] || {};
+  // אם אין רמות מוגדרות, הצג הודעה מתאימה
+  if (!levels || levels.length === 0) {
+    return (
+      <div className="tournament-timer-container">
+        <h3>ניהול טורניר - בליינדים</h3>
+        <p>אין רמות בליינד מוגדרות. אנא הוסף רמות כדי להתחיל את הטיימר.</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="timer-section"> {/* שינוי ל-className */}
-      <h3><FontAwesomeIcon icon={faTrophy} /> טיימר טורניר</h3>
-      {levels.length > 0 ? (
-        <>
-          <p className="level-info">רמה: {currentLevel.level}</p> {/* שינוי ל-className */}
-          <div className="blind-info-group"> {/* שינוי ל-className */}
-            <span>**בליינד קטן:** {currentLevel.smallBlind}</span>
-            <span>**בליינד גדול:** {currentLevel.bigBlind}</span>
-            {anteEnabled && <span>**אנטה:** {currentLevel.ante}</span>}
-          </div>
-          <h1 className="timer-display">
-            {formatTime(timeLeft)}
-          </h1>
-          <div className="timer-controls">
-            <button onClick={prevLevel} disabled={currentLevelIndex === 0}>
-              <FontAwesomeIcon icon={faBackward} /> רמה קודמת
-            </button>
-            <button onClick={startTimer} className="start-button" disabled={isRunning}>
-              <FontAwesomeIcon icon={faPlay} /> התחל
-            </button>
-            <button onClick={stopTimer} className="pause-button" disabled={!isRunning}>
-              <FontAwesomeIcon icon={faPause} /> השהה
-            </button>
-            <button onClick={nextLevel} disabled={currentLevelIndex === levels.length - 1}>
-              <FontAwesomeIcon icon={faForward} /> רמה הבאה
-            </button>
-            <button onClick={resetTimer} className="reset-button">
-              <FontAwesomeIcon icon={faRedo} /> איפוס
-            </button>
-          </div>
-        </>
-      ) : (
-        <p>הגדר מבנה בליינדים כדי להפעיל את הטיימר.</p>
-      )}
+    <div className="tournament-timer-container">
+      <h3>ניהול טורניר - בליינדים</h3>
+      <>
+        <p>רמה: {currentLevel.level}</p>
+        <div className="timer-details">
+          <span>**בליינד קטן:** {currentLevel.smallBlind}</span>
+          <span>**בליינד גדול:** {currentLevel.bigBlind}</span>
+          {anteEnabled && <span>**אנטה:** {currentLevel.ante}</span>}
+        </div>
+        <h1 className="timer-display">
+          {formatTime(timeLeft)}
+        </h1>
+        <div className="timer-controls">
+          <button onClick={startTimer} className="start-button">התחל</button>
+          <button onClick={stopTimer} className="pause-button">השהה</button>
+          <button onClick={resetTimer} className="reset-button">איפוס</button>
+        </div>
+      </>
     </div>
   );
 }

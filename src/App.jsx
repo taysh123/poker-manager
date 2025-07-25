@@ -34,23 +34,23 @@ function App() {
         if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
           await signInWithCustomToken(auth, __initial_auth_token);
         } else {
-          // אם אין טוקן מותאם אישית, היכנס כאנונימי
+          // אם אין טוקן, היכנס כאנונימי
           await signInAnonymously(auth);
         }
       } catch (error) {
         console.error("שגיאה באימות Firebase:", error);
-        // במקרה של שגיאה, עדיין ננסה להמשיך ולבדוק את מצב המשתמש
+        // במקרה של שגיאה, עדיין אפשר להמשיך ללא משתמש מחובר
       }
     };
-
-    // הפעלת האימות הראשוני
-    authenticateUser();
 
     // האזנה לשינויים במצב האימות
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
       setLoading(false);
     });
+
+    // קריאה לפונקציית האימות כאשר הקומפוננטה נטענת
+    authenticateUser();
 
     // ניקוי המאזין בעת פירוק הקומפוננטה
     return () => unsubscribe();
@@ -83,7 +83,7 @@ function App() {
           <Route path="/player-management" element={user ? <PlayerManagement /> : <Navigate to="/" />} />
           <Route path="/poker-journal" element={user ? <PokerJournal /> : <Navigate to="/" />} />
           <Route path="/personal-tracking" element={user ? <PersonalTracking /> : <Navigate to="/" />} /> {/* נתיב חדש למעקב אישי */}
-          <Route path="/dashboard-settings" element={user ? <DashboardSettings /> : <Navigate to="/" />} /> {/* נתיב להגדרות דאשבורד */}
+          <Route path="/dashboard-settings" element={user ? <DashboardSettings /> : <Navigate to="/" />} /> {/* נתיב חדש להגדרות דאשבורד */}
         </Routes>
       </main>
     </Router>

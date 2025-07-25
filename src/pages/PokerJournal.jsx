@@ -33,7 +33,7 @@ const CustomModal = ({ message, onConfirm, onCancel, type }) => {
 
 function PokerJournal() {
   const [user, setUser] = useState(null);
-  const [userId, setUserId] = useState(null); // מצב לשמירת ה-userId
+  const [userId, setUserId] = useState(null);
   const [loadingAuth, setLoadingAuth] = useState(true);
   const navigate = useNavigate();
 
@@ -42,13 +42,10 @@ function PokerJournal() {
   const [newEntryContent, setNewEntryContent] = useState('');
   const [loadingEntries, setLoadingEntries] = useState(true);
   const [errorEntries, setErrorEntries] = useState(null);
-
-  const [showModal, setShowModal] = useState(false);
-  const [modalMessage, setModalMessage] = useState('');
+  const [modalMessage, setModalMessage] = useState(null);
   const [modalType, setModalType] = useState('alert');
-  const [modalAction, setModalAction] = useState(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
 
-  // קבלת ה-appId מהמשתנה הגלובלי __app_id
   const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
   useEffect(() => {
@@ -56,60 +53,40 @@ function PokerJournal() {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       if (currentUser) {
         setUser(currentUser);
-        setUserId(currentUser.uid); // שמור את ה-UID
+        setUserId(currentUser.uid);
+        setLoadingAuth(false);
         if (!currentUser.isAnonymous) {
           fetchJournalEntries(currentUser.uid);
         } else {
           setLoadingEntries(false);
-          setErrorEntries('יומן פוקר אינו זמין במצב אורח. אנא התחבר כדי להוסיף רשומות.');
+          setErrorEntries('יומן פוקר אינו זמין למשתמשי אורח. אנא התחבר/הרשם.');
         }
       } else {
         navigate('/');
       }
-      setLoadingAuth(false);
     });
 
     return () => unsubscribe();
   }, [navigate]);
 
-  const openModal = (message, type, action = null) => {
-    setModalMessage(message);
-    setModalType(type);
-    setModalAction(() => action);
-    setShowModal(true);
-  };
-
-  const closeModal = () => {
-    setShowModal(false);
-    setModalMessage('');
-    setModalType('alert');
-    setModalAction(null);
-  };
-
   const fetchJournalEntries = async (currentUserId) => {
-    if (!currentUserId) {
-      console.warn("אין User ID, לא ניתן לטעון רשומות יומן.");
-      setLoadingEntries(false);
-      return;
-    }
     setLoadingEntries(true);
     setErrorEntries(null);
     try {
-      const journalCollectionRef = collection(db, `artifacts/${appId}/users/${currentUserId}/pokerJournal`);
-      // הסרתי orderBy('createdAt', 'desc') כדי למנוע שגיאות אינדקס בפיירסטור.
-      // המיון יתבצע בזיכרון.
-      const querySnapshot = await getDocs(journalCollectionRef);
+      // יומן פוקר הוא נתונים פרטיים של המשתמש
+      const journalCollectionRef = collection(db, `artifacts/${appId}/users/${currentUserId}/journalEntries`);
+      // הערה: orderBy עלול לדרוש אינדקסים ב-Firestore. אם יש שגיאות, ניתן להסיר את ה-orderBy ולמיין ב-JS.
+      const q = query(journalCollectionRef, orderBy('createdAt', 'desc'));
+      const querySnapshot = await getDocs(q);
       const entriesList = querySnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
-        createdAt: doc.data().createdAt?.toDate().toLocaleString('he-IL'), // המרה לפורמט תאריך מקומי
+        createdAt: doc.data().createdAt ? new Date(doc.data().createdAt.seconds * 1000).toLocaleDateString('he-IL') : 'תאריך לא ידוע'
       }));
-      // מיון בזיכרון לאחר קבלת הנתונים
-      entriesList.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
       setJournalEntries(entriesList);
-    } catch (err) {
-      console.error("שגיאה בשליפת רשומות יומן:", err);
-      setErrorEntries("שגיאה בטעינת רשומות היומן: " + err.message);
+    } catch (error) {
+      console.error("שגיאה בטעינת רשומות יומן:", error);
+      setErrorEntries('שגיאה בטעינת רשומות יומן. נסה לרענן את הדף.');
     } finally {
       setLoadingEntries(false);
     }
@@ -118,49 +95,76 @@ function PokerJournal() {
   const handleAddEntry = async (e) => {
     e.preventDefault();
     if (!user || user.isAnonymous) {
-      openModal('יש להתחבר כדי להוסיף רשומות יומן.', 'alert');
+      setModalMessage('יומן פוקר אינו זמין למשתמשי אורח. אנא התחבר/הרשם.');
+      setModalType('alert');
       return;
     }
-    if (!newEntryTitle.trim() || !newEntryContent.trim()) {
-      openModal('אנא הזן כותרת ותוכן לרשומה.', 'alert');
+
+    const title = newEntryTitle.trim();
+    const content = newEntryContent.trim();
+
+    if (!title || !content) {
+      setModalMessage('יש למלא גם כותרת וגם תוכן לרשומה.');
+      setModalType('alert');
       return;
     }
 
     try {
-      const journalCollectionRef = collection(db, `artifacts/${appId}/users/${userId}/pokerJournal`);
+      const journalCollectionRef = collection(db, `artifacts/${appId}/users/${userId}/journalEntries`);
       await addDoc(journalCollectionRef, {
-        title: newEntryTitle.trim(),
-        content: newEntryContent.trim(),
+        title,
+        content,
         createdAt: new Date(),
+        userId: userId // שמירת ה-userId לרשומה
       });
       setNewEntryTitle('');
       setNewEntryContent('');
       fetchJournalEntries(userId); // רענן את רשימת הרשומות
-      openModal('רשומה נוספה בהצלחה!', 'alert');
-    } catch (err) {
-      console.error("שגיאה בהוספת רשומה:", err);
-      openModal("שגיאה בהוספת רשומה: " + err.message, 'alert');
+      setModalMessage('רשומה נוספה בהצלחה!');
+      setModalType('alert');
+    } catch (error) {
+      console.error("שגיאה בהוספת רשומה:", error);
+      setModalMessage('שגיאה בהוספת רשומה. נסה שוב.');
+      setModalType('alert');
     }
   };
 
-  const handleDeleteEntry = (entryId) => {
+  const handleDeleteEntry = (id) => {
+    setConfirmDeleteId(id);
+    setModalMessage('האם אתה בטוח שברצונך למחוק רשומה זו? פעולה זו בלתי הפיכה.');
+    setModalType('confirm');
+  };
+
+  const confirmDelete = async () => {
     if (!user || user.isAnonymous) {
-      openModal('יש להתחבר כדי למחוק רשומות יומן.', 'alert');
+      setModalMessage('יומן פוקר אינו זמין למשתמשי אורח. אנא התחבר/הרשם.');
+      setModalType('alert');
+      setConfirmDeleteId(null);
       return;
     }
-    openModal('האם אתה בטוח שברצונך למחוק רשומה זו לצמיתות?', 'confirm', async () => {
-      try {
-        const entryDocRef = doc(db, `artifacts/${appId}/users/${userId}/pokerJournal`, entryId);
-        await deleteDoc(entryDocRef);
-        fetchJournalEntries(userId); // רענן את רשימת הרשומות
-        openModal('רשומה נמחקה בהצלחה!', 'alert');
-      } catch (err) {
-        console.error("שגיאה במחיקת רשומה:", err);
-        openModal("שגיאה במחיקת רשומה: " + err.message, 'alert');
-      } finally {
-        closeModal();
-      }
-    });
+
+    try {
+      await deleteDoc(doc(db, `artifacts/${appId}/users/${userId}/journalEntries`, confirmDeleteId));
+      fetchJournalEntries(userId); // רענן את רשימת הרשומות
+      setModalMessage('רשומה נמחקה בהצלחה!');
+      setModalType('alert');
+    } catch (error) {
+      console.error("שגיאה במחיקת רשומה:", error);
+      setModalMessage('שגיאה במחיקת רשומה. נסה שוב.');
+      setModalType('alert');
+    } finally {
+      setConfirmDeleteId(null);
+    }
+  };
+
+  const cancelDelete = () => {
+    setConfirmDeleteId(null);
+    setModalMessage(null);
+  };
+
+  const closeModal = () => {
+    setModalMessage(null);
+    setModalType('alert');
   };
 
   if (loadingAuth) {
@@ -173,16 +177,9 @@ function PokerJournal() {
 
   return (
     <div className="poker-journal-container">
-      <CustomModal
-        message={modalMessage}
-        onConfirm={modalAction}
-        onCancel={closeModal}
-        type={modalType}
-      />
-
       <h2><FontAwesomeIcon icon={faBook} /> יומן פוקר</h2>
       <p className="text-center text-gray-600 mb-8">
-        תיעד את הידיים, המחשבות והניתוחים שלך מכל סשן פוקר.
+        תיעד את סשני הפוקר שלך, ניתוחי ידיים, מחשבות ושיעורים כדי לשפר את המשחק שלך לאורך זמן.
       </p>
 
       <div className="section add-entry-section">
@@ -192,7 +189,7 @@ function PokerJournal() {
             type="text"
             value={newEntryTitle}
             onChange={(e) => setNewEntryTitle(e.target.value)}
-            placeholder="כותרת הרשומה (לדוגמה: יד מפתח, טעות נפוצה)"
+            placeholder="כותרת הרשומה (לדוגמה: 'ניתוח יד: פלוט בנהר')"
             required
           />
           <textarea
@@ -233,6 +230,12 @@ function PokerJournal() {
           </div>
         </div>
       )}
+      <CustomModal
+        message={modalMessage}
+        onConfirm={confirmDeleteId ? confirmDelete : closeModal}
+        onCancel={cancelDelete}
+        type={modalType}
+      />
     </div>
   );
 }

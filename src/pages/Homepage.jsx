@@ -3,10 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { getFirestore, doc, getDoc, collection, query, getDocs, setDoc, onSnapshot } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-// ייבוא אייקונים: faChartBar עבור מעקב אישי
-import { faCog, faChartBar, faCoins, faHandshake, faBook, faUsers, faChartLine } from '@fortawesome/free-solid-svg-icons';
+import { faCog } from '@fortawesome/free-solid-svg-icons';
 import '../pages/Dashboard.css'; // ייבוא ה-CSS של הדאשבורד
-import '../pages/Homepage.css'; // ייבוא ה-CSS של דף הבית
 
 // ייבוא הווידג'טים
 import TotalProfitLossWidget from '../components/widgets/TotalProfitLossWidget';
@@ -25,69 +23,69 @@ function Homepage() {
     playerCount: 0,
   });
 
+  const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+
   useEffect(() => {
     const auth = getAuth();
     const db = getFirestore();
-    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id'; // קבלת appId
 
     const unsubscribeAuth = auth.onAuthStateChanged(async (currentUser) => {
       if (currentUser) {
-        setUserId(currentUser.uid);
+        setUserId(currentUser.uid); // עדכון userId
         setCurrentUserDisplayName(currentUser.displayName || currentUser.email || 'משתמש');
 
-        // 1. טעינת העדפות הווידג'טים
-        // הנתיב תוקן: artifacts/${appId}/users/${currentUser.uid}/dashboardSettings/preferences
-        const userPrefsDocRef = doc(db, `artifacts/${appId}/users/${currentUser.uid}/dashboardSettings`, 'preferences');
-        let initialPreferences = {};
-        try {
-          const prefsDocSnap = await getDoc(userPrefsDocRef);
-          if (prefsDocSnap.exists()) {
-            initialPreferences = prefsDocSnap.data().widgets || {};
-            setWidgetPreferences(initialPreferences);
-          } else {
-            const defaultPreferences = {
-              totalProfitLoss: true,
-              lastSessions: true,
-              playerCount: true,
-            };
-            initialPreferences = defaultPreferences;
-            setWidgetPreferences(defaultPreferences);
-            await setDoc(userPrefsDocRef, { widgets: defaultPreferences }, { merge: true });
-          }
-        } catch (error) {
-          console.error("שגיאה בטעינת העדפות דאשבורד:", error);
-          initialPreferences = {
+        // טעינת העדפות ווידג'טים
+        const userDocRef = doc(db, `artifacts/${appId}/users/${currentUser.uid}/preferences/dashboard`);
+        const docSnap = await getDoc(userDocRef);
+        if (docSnap.exists()) {
+          setWidgetPreferences(docSnap.data().widgets || {});
+        } else {
+          // אם אין העדפות שמורות, הגדר ברירות מחדל
+          const defaultPreferences = {
             totalProfitLoss: true,
             lastSessions: true,
             playerCount: true,
           };
-          setWidgetPreferences(initialPreferences);
+          setWidgetPreferences(defaultPreferences);
+          // שמור את ברירות המחדל ב-Firestore
+          await setDoc(userDocRef, { widgets: defaultPreferences }, { merge: true });
         }
 
-        // 2. טעינת נתונים עבור הווידג'טים
+        // טעינת נתוני דאשבורד
         const loadDashboardData = async () => {
-          let totalPL = 0;
-          const sessionsList = [];
-          let playersCount = 0;
-
           try {
-            // טעינת סשנים לחישוב רווח/הפסד וסשנים אחרונים
-            // הנתיב תוקן: artifacts/${appId}/users/${currentUser.uid}/sessions
-            const sessionsColRef = collection(db, `artifacts/${appId}/users/${currentUser.uid}/sessions`);
-            const sessionsQuerySnapshot = await getDocs(sessionsColRef);
-            sessionsQuerySnapshot.forEach((doc) => {
-              const sessionData = doc.data();
-              totalPL += sessionData.profitLoss || 0;
-              sessionsList.push({ id: doc.id, ...sessionData });
+            // סך רווח/הפסד
+            const cashGamesCollectionRef = collection(db, `artifacts/${appId}/users/${currentUser.uid}/cashGames`);
+            const cashGamesSnapshot = await getDocs(cashGamesCollectionRef);
+            let totalPL = 0;
+            let sessionsList = [];
+            cashGamesSnapshot.docs.forEach(gameDoc => {
+              const gameData = gameDoc.data();
+              if (gameData.players && Array.isArray(gameData.players)) {
+                gameData.players.forEach(player => {
+                  // ודא שהשחקן הוא המשתמש הנוכחי (לפי שם תצוגה או אימייל)
+                  if (player.name === currentUser.displayName || player.name === currentUser.email) {
+                    const buyIn = parseFloat(player.buyIn) || 0;
+                    const cashOut = parseFloat(player.cashOut) || 0;
+                    totalPL += (cashOut - buyIn);
+                    sessionsList.push({
+                      id: gameDoc.id,
+                      date: gameData.date ? new Date(gameData.date.seconds * 1000) : new Date(),
+                      gameType: 'קאש', // או סוג המשחק בפועל
+                      profitLoss: (cashOut - buyIn),
+                    });
+                  }
+                });
+              }
             });
 
-            sessionsList.sort((a, b) => new Date(b.date) - new Date(a.date));
+            // מיון הסשנים מהחדש לישן
+            sessionsList.sort((a, b) => b.date - a.date);
 
-            // טעינת שחקנים לספירה
-            // הנתיב תוקן: artifacts/${appId}/users/${currentUser.uid}/players
-            const playersColRef = collection(db, `artifacts/${appId}/users/${currentUser.uid}/players`);
-            const playersQuerySnapshot = await getDocs(playersColRef);
-            playersCount = playersQuerySnapshot.size;
+            // מספר שחקנים
+            const playersCollectionRef = collection(db, `artifacts/${appId}/users/${currentUser.uid}/players`);
+            const playersSnapshot = await getDocs(playersCollectionRef);
+            const playersCount = playersSnapshot.size;
 
             setDashboardData({
               totalProfitLoss: totalPL,
@@ -110,7 +108,7 @@ function Homepage() {
     });
 
     return () => unsubscribeAuth();
-  }, [navigate]);
+  }, [navigate, appId]); // הוספת navigate ו-appId כתלויות
 
   if (loading) {
     return (
@@ -139,43 +137,7 @@ function Homepage() {
         {widgetPreferences.playerCount && (
           <PlayerCountWidget playerCount={dashboardData.playerCount} />
         )}
-      </div>
-
-      {/* קישורים מהירים */}
-      <div className="section quick-links-section">
-        <h3>קישורים מהירים</h3>
-        <div className="home-links-grid">
-          <div className="home-link-card" onClick={() => navigate('/cash-game')}>
-            <FontAwesomeIcon icon={faCoins} />
-            <h3>משחק קאש חדש</h3>
-            <p>התחל מעקב אחר משחק קאש חדש.</p>
-          </div>
-          <div className="home-link-card" onClick={() => navigate('/player-stats')}>
-            <FontAwesomeIcon icon={faChartLine} />
-            <h3>סטטיסטיקות שחקנים</h3>
-            <p>צפה בסטטיסטיקות מפורטות של כל השחקנים.</p>
-          </div>
-          <div className="home-link-card" onClick={() => navigate('/player-management')}>
-            <FontAwesomeIcon icon={faUsers} />
-            <h3>ניהול שחקנים</h3>
-            <p>הוסף, ערוך ומחק שחקנים קבועים.</p>
-          </div>
-          <div className="home-link-card" onClick={() => navigate('/poker-journal')}>
-            <FontAwesomeIcon icon={faBook} />
-            <h3>יומן פוקר</h3>
-            <p>תעד ונתח את הידיים והסשנים שלך.</p>
-          </div>
-          <div className="home-link-card" onClick={() => navigate('/personal-tracking')}>
-            <FontAwesomeIcon icon={faChartBar} /> {/* שימוש באייקון המתוקן */}
-            <h3>מעקב אישי</h3>
-            <p>עקוב אחר הביצועים האישיים שלך במשחקים.</p>
-          </div>
-          <div className="home-link-card" onClick={() => navigate('/sessions')}>
-            <FontAwesomeIcon icon={faHandshake} />
-            <h3>היסטוריית סשנים</h3>
-            <p>צפה ונהל את כל סשני המשחק שהקלטת.</p>
-          </div>
-        </div>
+        {/* הוסף כאן ווידג'טים נוספים לפי ההעדפות */}
       </div>
     </div>
   );
