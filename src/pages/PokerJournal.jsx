@@ -96,13 +96,16 @@ function PokerJournal() {
     setErrorEntries(null);
     try {
       const journalCollectionRef = collection(db, `artifacts/${appId}/users/${currentUserId}/pokerJournal`);
-      const q = query(journalCollectionRef, orderBy('createdAt', 'desc'));
-      const querySnapshot = await getDocs(q);
+      // הסרתי orderBy('createdAt', 'desc') כדי למנוע שגיאות אינדקס בפיירסטור.
+      // המיון יתבצע בזיכרון.
+      const querySnapshot = await getDocs(journalCollectionRef);
       const entriesList = querySnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
-        createdAt: doc.data().createdAt?.toDate().toLocaleString()
+        createdAt: doc.data().createdAt?.toDate().toLocaleString('he-IL'), // המרה לפורמט תאריך מקומי
       }));
+      // מיון בזיכרון לאחר קבלת הנתונים
+      entriesList.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
       setJournalEntries(entriesList);
     } catch (err) {
       console.error("שגיאה בשליפת רשומות יומן:", err);
@@ -112,15 +115,14 @@ function PokerJournal() {
     }
   };
 
-  const handleAddEntry = async (event) => {
-    event.preventDefault();
-    if (newEntryTitle.trim() === '' || newEntryContent.trim() === '') {
-      openModal('כותרת ותוכן הרשומה לא יכולים להיות ריקים.', 'alert');
+  const handleAddEntry = async (e) => {
+    e.preventDefault();
+    if (!user || user.isAnonymous) {
+      openModal('יש להתחבר כדי להוסיף רשומות יומן.', 'alert');
       return;
     }
-
-    if (!user || !userId) {
-      openModal('שגיאה: משתמש לא מאומת. לא ניתן להוסיף רשומה.', 'alert');
+    if (!newEntryTitle.trim() || !newEntryContent.trim()) {
+      openModal('אנא הזן כותרת ותוכן לרשומה.', 'alert');
       return;
     }
 
@@ -133,29 +135,28 @@ function PokerJournal() {
       });
       setNewEntryTitle('');
       setNewEntryContent('');
+      fetchJournalEntries(userId); // רענן את רשימת הרשומות
       openModal('רשומה נוספה בהצלחה!', 'alert');
-      fetchJournalEntries(userId); // רענן את הרשימה
-    } catch (error) {
-      console.error("שגיאה בהוספת רשומה:", error);
-      openModal("שגיאה בהוספת רשומה: " + error.message, 'alert');
+    } catch (err) {
+      console.error("שגיאה בהוספת רשומה:", err);
+      openModal("שגיאה בהוספת רשומה: " + err.message, 'alert');
     }
   };
 
   const handleDeleteEntry = (entryId) => {
+    if (!user || user.isAnonymous) {
+      openModal('יש להתחבר כדי למחוק רשומות יומן.', 'alert');
+      return;
+    }
     openModal('האם אתה בטוח שברצונך למחוק רשומה זו לצמיתות?', 'confirm', async () => {
-      if (!user || !userId) {
-        openModal('שגיאה: משתמש לא מאומת. לא ניתן למחוק רשומה.', 'alert');
-        closeModal();
-        return;
-      }
       try {
         const entryDocRef = doc(db, `artifacts/${appId}/users/${userId}/pokerJournal`, entryId);
         await deleteDoc(entryDocRef);
+        fetchJournalEntries(userId); // רענן את רשימת הרשומות
         openModal('רשומה נמחקה בהצלחה!', 'alert');
-        fetchJournalEntries(userId); // רענן את הרשימה
-      } catch (error) {
-        console.error("שגיאה במחיקת רשומה:", error);
-        openModal("שגיאה במחיקת רשומה: " + error.message, 'alert');
+      } catch (err) {
+        console.error("שגיאה במחיקת רשומה:", err);
+        openModal("שגיאה במחיקת רשומה: " + err.message, 'alert');
       } finally {
         closeModal();
       }
@@ -165,17 +166,7 @@ function PokerJournal() {
   if (loadingAuth) {
     return (
       <div className="poker-journal-container">
-        <h2>טוען אימות...</h2>
-      </div>
-    );
-  }
-
-  if (!user || user.isAnonymous) {
-    return (
-      <div className="poker-journal-container">
-        <p className="error-message text-center">
-          <FontAwesomeIcon icon={faBook} /> כדי לנהל יומן פוקר, עליך להתחבר או להירשם.
-        </p>
+        <h2>טוען...</h2>
       </div>
     );
   }
@@ -191,7 +182,7 @@ function PokerJournal() {
 
       <h2><FontAwesomeIcon icon={faBook} /> יומן פוקר</h2>
       <p className="text-center text-gray-600 mb-8">
-        תעד ונתח את הידיים והסשנים שלך כדי לשפר את המשחק.
+        תיעד את הידיים, המחשבות והניתוחים שלך מכל סשן פוקר.
       </p>
 
       <div className="section add-entry-section">
@@ -201,7 +192,7 @@ function PokerJournal() {
             type="text"
             value={newEntryTitle}
             onChange={(e) => setNewEntryTitle(e.target.value)}
-            placeholder="כותרת הרשומה"
+            placeholder="כותרת הרשומה (לדוגמה: יד מפתח, טעות נפוצה)"
             required
           />
           <textarea

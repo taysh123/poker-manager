@@ -90,310 +90,273 @@ const REALISTIC_BLIND_STRUCTURES = {
   ],
 };
 
-const INITIAL_CUSTOM_STRUCTURE = [
-  { level: 1, smallBlind: 10, bigBlind: 20, ante: 20, duration: 300 },
-  { level: 2, smallBlind: 20, bigBlind: 40, ante: 40, duration: 300 },
-];
-
 function Tournament() {
   const [user, setUser] = useState(null);
   const [loadingAuth, setLoadingAuth] = useState(true);
   const navigate = useNavigate();
 
-  const [buyIn, setBuyIn] = useState('');
-  const [numRebuys, setNumRebuys] = useState('');
-  const [numWinners, setNumWinners] = useState(3);
-  const [prizePercentages, setPrizePercentages] = useState([50, 30, 20]);
-  const [prizes, setPrizes] = useState([]);
-  const [selectedStructure, setSelectedStructure] = useState('MTT');
-  const [blindLevels, setBlindLevels] = useState(REALISTIC_BLIND_STRUCTURES['MTT']);
-  const [anteEnabled, setAnteEnabled] = useState(true);
-  
   const [players, setPlayers] = useState([]);
   const [newPlayerName, setNewPlayerName] = useState('');
-  const [initialStack, setInitialStack] = useState('');
+  const [buyIn, setBuyIn] = useState('');
+  const [startingStack, setStartingStack] = useState('');
+  const [prizeStructure, setPrizeStructure] = useState([]);
+  const [numWinners, setNumWinners] = useState(3);
+  const [totalPrizePool, setTotalPrizePool] = useState(0);
+
+  const [selectedStructure, setSelectedStructure] = useState('MTT');
+  const [blindLevels, setBlindLevels] = useState(REALISTIC_BLIND_STRUCTURES[selectedStructure]);
+  const [anteEnabled, setAnteEnabled] = useState(true);
 
   useEffect(() => {
     const auth = getAuth();
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       if (currentUser) {
         setUser(currentUser);
-        setLoadingAuth(false);
       } else {
-        navigate('/');
+        navigate('/'); // Redirect to login if not authenticated
       }
+      setLoadingAuth(false);
     });
+
     return () => unsubscribe();
   }, [navigate]);
 
   useEffect(() => {
+    // עדכן את מבנה הבליינדים כאשר נבחר מבנה אחר
     if (selectedStructure !== 'Custom') {
       setBlindLevels(REALISTIC_BLIND_STRUCTURES[selectedStructure]);
-    } else {
-      setBlindLevels(INITIAL_CUSTOM_STRUCTURE);
     }
   }, [selectedStructure]);
 
-  const handlePercentageChange = (index, value) => {
-    const newPercentages = [...prizePercentages];
-    newPercentages[index] = Number(value) || 0; 
-    setPrizePercentages(newPercentages);
-  };
+  useEffect(() => {
+    // חשב מחדש את סך קופת הפרסים כאשר מספר השחקנים או ה-Buy-in משתנים
+    const total = players.length * (parseFloat(buyIn) || 0);
+    setTotalPrizePool(total);
+    calculatePrizeStructure(total, numWinners);
+  }, [players.length, buyIn, numWinners]);
 
-  const handleNumWinnersChange = (e) => {
+  const handleNumericInputChange = (setterFunction) => (e) => {
     const value = e.target.value;
-    setNumWinners(Number(value) || 1);
-    setPrizePercentages(Array(Number(value) || 1).fill(0));
-  };
-
-  const calculatePrizes = () => {
-    const totalPlayers = players.length;
-    const totalPrizePool = (totalPlayers + Number(numRebuys)) * Number(buyIn);
-    const totalPercentage = prizePercentages.reduce((sum, p) => sum + p, 0);
-    if (totalPercentage !== 100) {
-      alert("סך האחוזים חייב להיות 100%.");
-      return;
+    if (value === '' || /^\d*\.?\d*$/.test(value)) {
+      setterFunction(value);
     }
-    const calculatedPrizes = prizePercentages.map((p, index) => {
-      const amount = (totalPrizePool * p) / 100;
-      return { place: index + 1, amount: amount.toFixed(2) };
-    });
-    setPrizes(calculatedPrizes);
   };
 
-  const handleLevelChange = (index, field, value) => {
-    const newLevels = [...blindLevels];
-    newLevels[index][field] = Number(value) || 0;
-    setBlindLevels(newLevels);
+  const addPlayer = () => {
+    if (newPlayerName.trim()) {
+      setPlayers([...players, newPlayerName.trim()]);
+      setNewPlayerName('');
+    }
+  };
+
+  const removePlayer = (indexToRemove) => {
+    setPlayers(players.filter((_, index) => index !== indexToRemove));
+  };
+
+  const calculatePrizeStructure = (currentTotalPrizePool, winnersCount) => {
+    const structure = [];
+    if (currentTotalPrizePool > 0 && winnersCount > 0) {
+      const percentages = [];
+      if (winnersCount === 1) percentages.push(1);
+      else if (winnersCount === 2) percentages.push(0.65, 0.35);
+      else if (winnersCount === 3) percentages.push(0.5, 0.3, 0.2);
+      else if (winnersCount === 4) percentages.push(0.4, 0.25, 0.2, 0.15);
+      else if (winnersCount === 5) percentages.push(0.35, 0.22, 0.18, 0.13, 0.12);
+      else { // עבור יותר מ-5 זוכים, ניתן ליצור לוגיקה מורכבת יותר או לפשט
+        for (let i = 0; i < winnersCount; i++) {
+          percentages.push(1 / winnersCount); // חלוקה שווה כברירת מחדל
+        }
+      }
+
+      for (let i = 0; i < winnersCount; i++) {
+        structure.push({
+          place: i + 1,
+          amount: currentTotalPrizePool * (percentages[i] || 0),
+        });
+      }
+    }
+    setPrizeStructure(structure);
   };
 
   const addLevel = () => {
     const lastLevel = blindLevels[blindLevels.length - 1];
-    setBlindLevels([
-      ...blindLevels,
-      {
-        level: lastLevel ? lastLevel.level + 1 : 1,
-        smallBlind: lastLevel ? lastLevel.smallBlind : 10,
-        bigBlind: lastLevel ? lastLevel.bigBlind : 20,
-        ante: lastLevel ? lastLevel.bigBlind : 20,
-        duration: lastLevel ? lastLevel.duration : 300,
-      },
-    ]);
+    setBlindLevels([...blindLevels, {
+      level: (lastLevel ? lastLevel.level : 0) + 1,
+      smallBlind: lastLevel ? lastLevel.smallBlind * 2 : 50,
+      bigBlind: lastLevel ? lastLevel.bigBlind * 2 : 100,
+      ante: lastLevel ? lastLevel.ante * 2 : 100,
+      duration: lastLevel ? lastLevel.duration : 600, // 10 דקות כברירת מחדל
+    }]);
   };
-  
+
   const add10Levels = () => {
-    const newLevels = [...blindLevels];
-    
-    for (let i = 1; i <= 10; i++) {
-        const previousLevel = newLevels[newLevels.length - 1];
-        let newSmallBlind, newBigBlind;
-
-        if (selectedStructure === 'Deepstack') {
-            newSmallBlind = previousLevel.smallBlind + (previousLevel.bigBlind / 4);
-            newBigBlind = previousLevel.bigBlind + (previousLevel.bigBlind / 2);
-        } else if (selectedStructure === 'Monster Stack') {
-            newSmallBlind = previousLevel.smallBlind + (previousLevel.bigBlind / 8);
-            newBigBlind = previousLevel.bigBlind + (previousLevel.bigBlind / 4);
-        } else {
-            newSmallBlind = previousLevel.smallBlind * 1.5;
-            newBigBlind = previousLevel.bigBlind * 1.5;
-        }
-
-        const newDuration = previousLevel.duration;
-        const newAnte = newBigBlind;
-
-        newLevels.push({
-            level: previousLevel.level + 1,
-            smallBlind: Math.round(newSmallBlind),
-            bigBlind: Math.round(newBigBlind),
-            ante: Math.round(newAnte),
-            duration: newDuration,
-        });
+    let currentLevels = [...blindLevels];
+    for (let i = 0; i < 10; i++) {
+      const lastLevel = currentLevels[currentLevels.length - 1];
+      currentLevels.push({
+        level: (lastLevel ? lastLevel.level : 0) + 1,
+        smallBlind: lastLevel ? Math.round(lastLevel.smallBlind * 1.5) : 50,
+        bigBlind: lastLevel ? Math.round(lastLevel.bigBlind * 1.5) : 100,
+        ante: lastLevel ? Math.round(lastLevel.ante * 1.5) : 100,
+        duration: lastLevel ? lastLevel.duration : 600,
+      });
     }
-    setBlindLevels(newLevels);
-};
-
-  const removeLevel = (index) => {
-    setBlindLevels(blindLevels.filter((_, i) => i !== index));
+    setBlindLevels(currentLevels);
   };
-  
-  const addPlayer = () => {
-      if (newPlayerName.trim() === '') {
-          alert("שם השחקן לא יכול להיות ריק.");
-          return;
+
+  const removeLevel = (indexToRemove) => {
+    setBlindLevels(blindLevels.filter((_, index) => index !== indexToRemove));
+  };
+
+  const handleLevelChange = (index, field, value) => {
+    const updatedLevels = blindLevels.map((level, i) => {
+      if (i === index) {
+        return { ...level, [field]: value };
       }
-      const newPlayer = {
-          id: Date.now(),
-          name: newPlayerName,
-          stack: Number(initialStack),
-          table: null,
-      };
-      setPlayers([...players, newPlayer]);
-      setNewPlayerName('');
-  };
-  
-  const removePlayer = (id) => {
-      setPlayers(players.filter(player => player.id !== id));
-  };
-  
-  // פונקציית עזר לטיפול בקלט מספרי והסרת אפסים מובילים
-  const handleNumericInputChange = (setter) => (e) => {
-    let value = e.target.value;
-    // אם הערך מתחיל ב-0 ואחריו יש ספרה נוספת, הסר את ה-0 המוביל
-    if (value.length > 1 && value.startsWith('0') && value !== '0') {
-      value = String(Number(value)); // המר למספר ואז חזרה למחרוזת כדי להסיר 0 מוביל
-    }
-    setter(value);
+      return level;
+    });
+    setBlindLevels(updatedLevels);
   };
 
   if (loadingAuth) {
     return (
-      <div className="page-container tournament-container">
-        <p style={{ textAlign: 'center', color: 'var(--text-color)' }}>טוען...</p>
-      </div>
-    );
-  }
-
-  if (!user) {
-    return (
-      <div className="page-container tournament-container">
-        <p style={{ textAlign: 'center', color: 'var(--text-color)' }}>מפנה לדף הכניסה...</p>
+      <div className="tournament-container">
+        <h2>טוען...</h2>
       </div>
     );
   }
 
   return (
-    <div className="page-container tournament-container">
-      <h2>ניהול טורניר פוקר</h2>
-
-      <div className="section controls">
-        <h3><FontAwesomeIcon icon={faCoins} /> הגדרות כלליות</h3>
-        <div className="input-group">
-          <label><FontAwesomeIcon icon={faCoins} /> סכום כניסה:</label>
-          <input 
-            type="number" 
-            value={buyIn} 
-            onChange={handleNumericInputChange(setBuyIn)} // שימוש בפונקציה החדשה
-            placeholder="₪" 
-            min="0"
-          />
-        </div>
-        <div className="input-group">
-          <label><FontAwesomeIcon icon={faPlus} /> סך הריביים:</label>
-          <input 
-            type="number" 
-            value={numRebuys} 
-            onChange={handleNumericInputChange(setNumRebuys)} // שימוש בפונקציה החדשה
-            min="0"
-          />
-        </div>
-        <div className="input-group">
-          <label><FontAwesomeIcon icon={faTrophy} /> מספר זוכים:</label>
-          <input 
-            type="number" 
-            value={numWinners} 
-            onChange={handleNumWinnersChange} 
-            min="1" 
-          />
-        </div>
-        <button onClick={calculatePrizes}>
-          חשב פרסים
-        </button>
-      </div>
-
-      <div className="section prize-distribution-section">
-        <h3>חלוקת פרסים</h3>
-        <p><strong>קופת פרסים כוללת:</strong> {(players.length + Number(numRebuys)) * Number(buyIn)} ₪</p>
-        {prizePercentages.map((p, index) => (
-          <div key={index} className="input-group">
-            <label><FontAwesomeIcon icon={faTrophy} /> מקום {index + 1}:</label>
-            <input 
-              type="number" 
-              value={p} 
-              onChange={handleNumericInputChange((val) => handlePercentageChange(index, val))} // שימוש בפונקציה החדשה
-              min="0" 
-              max="100" 
-            />
-            <span>%</span>
-          </div>
-        ))}
-      </div>
-      {prizes.length > 0 && (
-        <table className="prize-table">
-          <thead>
-            <tr><th>מקום</th><th>סכום פרס (₪)</th></tr>
-          </thead>
-          <tbody>
-            {prizes.map((p, i) => (<tr key={i}><td>{p.place}</td><td>{p.amount} ₪</td></tr>))}
-          </tbody>
-        </table>
-      )}
+    <div className="tournament-container">
+      <h2><FontAwesomeIcon icon={faTrophy} /> ניהול טורניר</h2>
+      <p className="text-center text-gray-600 mb-8">
+        הגדר את פרטי הטורניר, כולל שחקנים, מבנה פרסים ומבנה בליינדים.
+      </p>
 
       <div className="section players-section">
-          <h3><FontAwesomeIcon icon={faUsers} /> ניהול שחקנים</h3>
-          <p><strong>סה"כ שחקנים:</strong> {players.length}</p>
-          <div className="add-player-form">
-              <input 
-                  type="text" 
-                  value={newPlayerName} 
-                  onChange={(e) => setNewPlayerName(e.target.value)} 
-                  placeholder="הזן שם שחקן" 
-              />
-              <input 
-                  type="number" 
-                  value={initialStack} 
-                  onChange={handleNumericInputChange(setInitialStack)} // שימוש בפונקציה החדשה
-                  placeholder="סטאק התחלתי" 
-                  min="0"
-              />
-              <button onClick={addPlayer}>הוסף שחקן</button>
-          </div>
-          {players.length > 0 && (
-              <div className="player-list-container">
-                  <table className="player-table">
-                      <thead>
-                          <tr>
-                              <th>שם שחקן</th>
-                              <th>סטאק התחלתי</th>
-                              <th>פעולות</th>
-                          </tr>
-                      </thead>
-                      <tbody>
-                          {players.map(player => (
-                              <tr key={player.id}>
-                                  <td>{player.name}</td>
-                                  <td>{player.stack}</td>
-                                  <td>
-                                      <button onClick={() => removePlayer(player.id)} className="remove-btn"><FontAwesomeIcon icon={faTimes} /></button>
-                                  </td>
-                              </tr>
-                          ))}
-                      </tbody>
-                  </table>
-              </div>
+        <h3><FontAwesomeIcon icon={faUsers} /> שחקנים</h3>
+        <div className="add-player-form">
+          <input
+            type="text"
+            value={newPlayerName}
+            onChange={(e) => setNewPlayerName(e.target.value)}
+            placeholder="שם שחקן"
+          />
+          <button onClick={addPlayer}>
+            <FontAwesomeIcon icon={faPlus} /> הוסף שחקן
+          </button>
+        </div>
+        {players.length > 0 && (
+          <ul className="players-list">
+            {players.map((player, index) => (
+              <li key={index}>
+                {player}
+                <button onClick={() => removePlayer(index)} className="remove-btn">
+                  <FontAwesomeIcon icon={faTimes} />
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      <div className="section tournament-details-section">
+        <h3><FontAwesomeIcon icon={faCoins} /> פרטי טורניר</h3>
+        <div className="input-group">
+          <label htmlFor="buy-in">Buy-in לטורניר (₪):</label>
+          <input
+            id="buy-in"
+            type="number"
+            value={buyIn}
+            onChange={handleNumericInputChange(setBuyIn)}
+            placeholder="סכום כניסה"
+            min="0"
+            step="0.01"
+          />
+        </div>
+        <div className="input-group">
+          <label htmlFor="starting-stack">Starting Stack (צ'יפים):</label>
+          <input
+            id="starting-stack"
+            type="number"
+            value={startingStack}
+            onChange={handleNumericInputChange(setStartingStack)}
+            placeholder="כמות צ'יפים התחלתית"
+            min="0"
+            step="1"
+          />
+        </div>
+        <div className="input-group">
+          <label htmlFor="num-winners">מספר זוכים:</label>
+          <input
+            id="num-winners"
+            type="number"
+            value={numWinners}
+            onChange={(e) => setNumWinners(parseInt(e.target.value) || 0)}
+            min="0"
+            step="1"
+          />
+        </div>
+
+        <div className="prize-distribution-section">
+          <h3><FontAwesomeIcon icon={faTrophy} /> חלוקת פרסים</h3>
+          <p>סה"כ קופת פרסים: {totalPrizePool.toFixed(2)} ₪</p>
+          {prizeStructure.length > 0 ? (
+            <table className="prize-table">
+              <thead>
+                <tr>
+                  <th>מקום</th>
+                  <th>פרס (₪)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {prizeStructure.map((prize, index) => (
+                  <tr key={index}>
+                    <td>{prize.place}</td>
+                    <td>{prize.amount.toFixed(2)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            <p>הזן שחקנים ו-Buy-in כדי לראות את חלוקת הפרסים.</p>
           )}
+        </div>
       </div>
 
       <div className="section blind-structure-section">
-        <h3><FontAwesomeIcon icon={faCoins} /> הגדרות בליינדים</h3>
+        <h3><FontAwesomeIcon icon={faCoins} /> מבנה בליינדים</h3>
         <div className="input-group">
-          <label htmlFor="structure-select">בחר מבנה: </label>
-          <select id="structure-select" value={selectedStructure} onChange={(e) => setSelectedStructure(e.target.value)}>
-            {Object.keys(REALISTIC_BLIND_STRUCTURES).map(key => (<option key={key} value={key}>{key}</option>))}
-            <option value="Custom">בנה מבנה בעצמך</option>
+          <label htmlFor="blind-structure-select">בחר מבנה מוגדר מראש:</label>
+          <select
+            id="blind-structure-select"
+            value={selectedStructure}
+            onChange={(e) => setSelectedStructure(e.target.value)}
+          >
+            <option value="MTT">MTT (Multi-Table Tournament)</option>
+            <option value="Deepstack">Deepstack</option>
+            <option value="Monster Stack">Monster Stack</option>
+            <option value="Custom">מותאם אישית</option>
           </select>
         </div>
-        <div className="input-group">
-          <label><input type="checkbox" checked={anteEnabled} onChange={(e) => setAnteEnabled(e.target.checked)} />הפעל אנטה</label>
+
+        <div className="input-group checkbox-group">
+          <label htmlFor="ante-enabled">הפעל אנטה:</label>
+          <input
+            type="checkbox"
+            id="ante-enabled"
+            checked={anteEnabled}
+            onChange={(e) => setAnteEnabled(e.target.checked)}
+          />
         </div>
-        
+
         <div className="blind-table-container">
           <table className="blind-table">
             <thead>
               <tr>
                 <th>רמה</th>
-                <th>S. Blind</th>
-                <th>B. Blind</th>
+                <th>בליינד קטן</th>
+                <th>בליינד גדול</th>
                 {anteEnabled && <th>אנטה</th>}
                 <th>משך (דקות)</th>
                 {selectedStructure === 'Custom' && <th>פעולות</th>}
@@ -405,10 +368,10 @@ function Tournament() {
                   <td>{level.level}</td>
                   <td>
                     {selectedStructure === 'Custom' ? (
-                      <input 
-                        type="number" 
-                        value={level.smallBlind} 
-                        onChange={handleNumericInputChange((val) => handleLevelChange(index, 'smallBlind', val))} // שימוש בפונקציה החדשה
+                      <input
+                        type="number"
+                        value={level.smallBlind}
+                        onChange={handleNumericInputChange((val) => handleLevelChange(index, 'smallBlind', Number(val)))}
                         min="0"
                       />
                     ) : (
@@ -417,10 +380,10 @@ function Tournament() {
                   </td>
                   <td>
                     {selectedStructure === 'Custom' ? (
-                      <input 
-                        type="number" 
-                        value={level.bigBlind} 
-                        onChange={handleNumericInputChange((val) => handleLevelChange(index, 'bigBlind', val))} // שימוש בפונקציה החדשה
+                      <input
+                        type="number"
+                        value={level.bigBlind}
+                        onChange={handleNumericInputChange((val) => handleLevelChange(index, 'bigBlind', Number(val)))}
                         min="0"
                       />
                     ) : (
@@ -430,10 +393,10 @@ function Tournament() {
                   {anteEnabled && (
                     <td>
                       {selectedStructure === 'Custom' ? (
-                        <input 
-                          type="number" 
-                          value={level.ante} 
-                          onChange={handleNumericInputChange((val) => handleLevelChange(index, 'ante', val))} // שימוש בפונקציה החדשה
+                        <input
+                          type="number"
+                          value={level.ante}
+                          onChange={handleNumericInputChange((val) => handleLevelChange(index, 'ante', Number(val)))}
                           min="0"
                         />
                       ) : (

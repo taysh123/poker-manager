@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faPlay, faPause, faRedo, faForward, faBackward } from '@fortawesome/free-solid-svg-icons'; // ייבוא אייקונים חדשים
 
 function formatTime(seconds) {
   if (seconds < 0) seconds = 0;
@@ -14,7 +16,6 @@ function TournamentTimer({ levels, anteEnabled }) {
   const [isRunning, setIsRunning] = useState(false);
 
   useEffect(() => {
-    // איפוס הטיימר בכל פעם שמערך ה-levels משתנה
     setCurrentLevelIndex(0);
     setTimeLeft(levels.length > 0 ? levels[0].duration : 0);
     setIsRunning(false);
@@ -26,21 +27,23 @@ function TournamentTimer({ levels, anteEnabled }) {
         setTimeLeft(prev => {
           if (prev <= 1) {
             if (currentLevelIndex < levels.length - 1) {
-              setCurrentLevelIndex(currentLevelIndex + 1);
-              return levels[currentLevelIndex + 1].duration;
+              setCurrentLevelIndex(prevIndex => prevIndex + 1); 
+              return levels[currentLevelIndex + 1].duration; 
             } else {
               clearInterval(timerRef.current);
               setIsRunning(false);
-              return 0;
+              return 0; 
             }
           }
-          return prev - 1;
+          return prev - 1; 
         });
       }, 1000);
     }
-    return () => clearInterval(timerRef.current);
-  }, [isRunning, currentLevelIndex, levels]);
 
+    return () => clearInterval(timerRef.current);
+  }, [isRunning, currentLevelIndex, levels]); 
+
+  // פונקציות לשליטה בטיימר
   const startTimer = () => setIsRunning(true);
   const stopTimer = () => setIsRunning(false);
   const resetTimer = () => {
@@ -49,30 +52,61 @@ function TournamentTimer({ levels, anteEnabled }) {
     setTimeLeft(levels.length > 0 ? levels[0].duration : 0);
   };
 
+  const nextLevel = () => {
+    if (currentLevelIndex < levels.length - 1) {
+      setCurrentLevelIndex(prevIndex => prevIndex + 1);
+      setTimeLeft(levels[currentLevelIndex + 1].duration);
+      setIsRunning(true);
+    } else {
+      setIsRunning(false);
+      setTimeLeft(0);
+    }
+  };
+
+  const prevLevel = () => {
+    if (currentLevelIndex > 0) {
+      setCurrentLevelIndex(prevIndex => prevIndex - 1);
+      setTimeLeft(levels[currentLevelIndex - 1].duration);
+      setIsRunning(true); 
+    }
+  };
+
   const currentLevel = levels[currentLevelIndex] || {};
 
   return (
-    <div style={{ padding: '20px', border: '1px solid #ccc', marginTop: '20px' }}>
-      <h3>ניהול טורניר - בליינדים</h3>
+    <div className="timer-section"> {/* שינוי ל-className */}
+      <h3><FontAwesomeIcon icon={faTrophy} /> טיימר טורניר</h3>
       {levels.length > 0 ? (
         <>
-          <p>רמה: {currentLevel.level}</p>
-          <div style={{ display: 'flex', justifyContent: 'center', gap: 20 }}>
+          <p className="level-info">רמה: {currentLevel.level}</p> {/* שינוי ל-className */}
+          <div className="blind-info-group"> {/* שינוי ל-className */}
             <span>**בליינד קטן:** {currentLevel.smallBlind}</span>
             <span>**בליינד גדול:** {currentLevel.bigBlind}</span>
             {anteEnabled && <span>**אנטה:** {currentLevel.ante}</span>}
           </div>
-          <h1 className="timer-display" style={{ fontSize: '3rem', fontWeight: 'bold', textAlign: 'center' }}>
+          <h1 className="timer-display">
             {formatTime(timeLeft)}
           </h1>
-          <div className="timer-controls" style={{ display: 'flex', justifyContent: 'center', gap: '10px', marginTop: '20px' }}>
-            <button onClick={startTimer}>התחל</button>
-            <button onClick={stopTimer} style={{ backgroundColor: '#f44336' }}>עצור</button>
-            <button onClick={resetTimer} style={{ backgroundColor: '#ff9800' }}>אפס</button>
+          <div className="timer-controls">
+            <button onClick={prevLevel} disabled={currentLevelIndex === 0}>
+              <FontAwesomeIcon icon={faBackward} /> רמה קודמת
+            </button>
+            <button onClick={startTimer} className="start-button" disabled={isRunning}>
+              <FontAwesomeIcon icon={faPlay} /> התחל
+            </button>
+            <button onClick={stopTimer} className="pause-button" disabled={!isRunning}>
+              <FontAwesomeIcon icon={faPause} /> השהה
+            </button>
+            <button onClick={nextLevel} disabled={currentLevelIndex === levels.length - 1}>
+              <FontAwesomeIcon icon={faForward} /> רמה הבאה
+            </button>
+            <button onClick={resetTimer} className="reset-button">
+              <FontAwesomeIcon icon={faRedo} /> איפוס
+            </button>
           </div>
         </>
       ) : (
-        <p>יש להוסיף רמות בליינדים כדי להתחיל.</p>
+        <p>הגדר מבנה בליינדים כדי להפעיל את הטיימר.</p>
       )}
     </div>
   );

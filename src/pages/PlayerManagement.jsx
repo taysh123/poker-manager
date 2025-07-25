@@ -101,58 +101,56 @@ function PlayerManagement() {
       setPlayers(fetchedPlayers);
     } catch (err) {
       console.error("שגיאה בטעינת שחקנים:", err);
-      setErrorPlayers("שגיאה בטעינת שחקנים: " + err.message);
+      setErrorPlayers("שגיאה בטעינת שחקנים. אנא נסה שוב.");
     } finally {
       setLoadingPlayers(false);
     }
   };
 
-  const handleAddPlayer = async (event) => {
-    event.preventDefault();
-    if (newPlayerName.trim() === '') {
-      openModal('שם שחקן לא יכול להיות ריק.', 'alert');
+  const handleAddPlayer = async (e) => {
+    e.preventDefault();
+    if (!user || user.isAnonymous) {
+      openModal('יש להתחבר כדי להוסיף שחקנים.', 'alert');
+      return;
+    }
+    if (!newPlayerName.trim()) {
+      openModal('אנא הזן שם שחקן.', 'alert');
       return;
     }
     if (players.some(p => p.name === newPlayerName.trim())) {
-      openModal('שחקן בשם זה כבר קיים ברשימה.', 'alert');
-      return;
-    }
-
-    if (!user || !userId) {
-      openModal('שגיאה: משתמש לא מאומת. לא ניתן להוסיף שחקן.', 'alert');
+      openModal('שחקן בשם זה כבר קיים.', 'alert');
       return;
     }
 
     try {
       const playersCollectionRef = collection(db, `artifacts/${appId}/users/${userId}/players`);
-      const docRef = await addDoc(playersCollectionRef, {
+      await addDoc(playersCollectionRef, {
         name: newPlayerName.trim(),
-        createdAt: new Date()
+        createdAt: new Date(),
       });
-      setPlayers([...players, { id: docRef.id, name: newPlayerName.trim() }]);
       setNewPlayerName('');
+      fetchPlayers(userId); // רענן את רשימת השחקנים
       openModal('שחקן נוסף בהצלחה!', 'alert');
-    } catch (error) {
-      console.error("שגיאה בהוספת שחקן:", error);
-      openModal("שגיאה בהוספת שחקן: " + error.message, 'alert');
+    } catch (err) {
+      console.error("שגיאה בהוספת שחקן:", err);
+      openModal("שגיאה בהוספת שחקן: " + err.message, 'alert');
     }
   };
 
   const handleDeletePlayer = (playerId) => {
+    if (!user || user.isAnonymous) {
+      openModal('יש להתחבר כדי למחוק שחקנים.', 'alert');
+      return;
+    }
     openModal('האם אתה בטוח שברצונך למחוק שחקן זה לצמיתות?', 'confirm', async () => {
-      if (!user || !userId) {
-        openModal('שגיאה: משתמש לא מאומת. לא ניתן למחוק שחקן.', 'alert');
-        closeModal();
-        return;
-      }
       try {
         const playerDocRef = doc(db, `artifacts/${appId}/users/${userId}/players`, playerId);
         await deleteDoc(playerDocRef);
-        setPlayers(players.filter(p => p.id !== playerId));
+        fetchPlayers(userId); // רענן את רשימת השחקנים
         openModal('שחקן נמחק בהצלחה!', 'alert');
-      } catch (error) {
-        console.error("שגיאה במחיקת שחקן:", error);
-        openModal("שגיאה במחיקת שחקן: " + error.message, 'alert');
+      } catch (err) {
+        console.error("שגיאה במחיקת שחקן:", err);
+        openModal("שגיאה במחיקת שחקן: " + err.message, 'alert');
       } finally {
         closeModal();
       }
@@ -162,17 +160,7 @@ function PlayerManagement() {
   if (loadingAuth) {
     return (
       <div className="player-management-container">
-        <h2>טוען אימות...</h2>
-      </div>
-    );
-  }
-
-  if (!user || user.isAnonymous) {
-    return (
-      <div className="player-management-container">
-        <p className="error-message text-center">
-          <FontAwesomeIcon icon={faUsers} /> כדי לנהל שחקנים קבועים, עליך להתחבר או להירשם.
-        </p>
+        <h2>טוען...</h2>
       </div>
     );
   }
@@ -186,9 +174,9 @@ function PlayerManagement() {
         type={modalType}
       />
 
-      <h2><FontAwesomeIcon icon={faUsers} /> ניהול שחקנים קבועים</h2>
+      <h2><FontAwesomeIcon icon={faUserPlus} /> ניהול שחקנים קבועים</h2>
       <p className="text-center text-gray-600 mb-8">
-        הוסף, ערוך ומחק שחקנים קבועים שיופיעו אוטומטית במשחקים.
+        הוסף, ערוך ומחק שחקנים קבועים שיופיעו ברשימות הבחירה במשחקים.
       </p>
 
       <div className="section add-player-section">

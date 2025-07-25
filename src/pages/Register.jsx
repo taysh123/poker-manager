@@ -14,9 +14,9 @@ function Register() {
     try {
       const auth = getAuth();
       await createUserWithEmailAndPassword(auth, email, password);
-      navigate('/'); // ניווט לדף הבית לאחר הרשמה מוצלחת
+      navigate('/home'); 
     } catch (err) {
-      console.error(err); // הדפסת השגיאה המלאה לקונסול
+      console.error(err);  
       switch (err.code) {
         case 'auth/email-already-in-use':
           setError('האימייל שהזנת כבר בשימוש.');
@@ -52,12 +52,13 @@ function Register() {
           placeholder="סיסמה (6 תווים לפחות)"
           required
         />
+        {error && <p style={{ color: 'red', textAlign: 'center' }}>{error}</p>}
         <button type="submit">הירשם</button>
       </form>
-      {error && <p style={{ color: 'red', marginTop: 10 }}>{error}</p>}
-      <p style={{ marginTop: 20 }}>
-        יש לך כבר חשבון? <Link to="/login">התחבר כאן</Link>
-      </p>
+
+      <div style={{ marginTop: 20, textAlign: 'center', color: 'var(--text-color)' }}>
+        כבר יש לך חשבון? <Link to="/login" style={{ color: 'var(--primary-color)', textDecoration: 'none' }}>התחבר כאן</Link>
+      </div>
     </div>
   );
 }

@@ -1,71 +1,88 @@
-import React, { useState } from 'react';
-import { getAuth, signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
-import { useNavigate, Link } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { getAuth, signInAnonymously, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faUser, faEnvelope, faLock } from '@fortawesome/free-solid-svg-icons'; 
+import { faGoogle } from '@fortawesome/free-brands-svg-icons'; 
+import './LoginMainPage.css'; 
 
-function Login() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+function LoginMainPage() {
+  const [loadingAuth, setLoadingAuth] = useState(true);
   const navigate = useNavigate();
+  const auth = getAuth();
 
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    setError('');
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      if (user) {
+        navigate('/home');
+      } else {
+        setLoadingAuth(false);
+      }
+    });
+    return () => unsubscribe();
+  }, [navigate, auth]);
+
+  const handleGuestLogin = async () => {
     try {
-      const auth = getAuth();
-      await signInWithEmailAndPassword(auth, email, password);
-      navigate('/');
-    } catch (err) {
-      console.error(err);
-      setError('שגיאה בכניסה. אנא בדוק את האימייל והסיסמה.');
+      await signInAnonymously(auth);
+      navigate('/home'); 
+    } catch (error) {
+      console.error("Error signing in anonymously:", error);
+      alert("שגיאה בהתחברות כאורח. נסה שוב."); 
     }
   };
 
   const handleGoogleLogin = async () => {
     try {
-      const auth = getAuth();
       const provider = new GoogleAuthProvider();
       await signInWithPopup(auth, provider);
-      navigate('/');
-    } catch (err) {
-      console.error(err);
-      setError('שגיאה בכניסה עם גוגל.');
+      navigate('/home'); 
+    } catch (error) {
+      console.error("Error signing in with Google:", error);
+      if (error.code === 'auth/popup-closed-by-user') {
+        alert("התחברות Google בוטלה על ידי המשתמש.");
+      } else if (error.code === 'auth/cancelled-popup-request') {
+        alert("בקשת התחברות Google בוטלה.");
+      } else {
+        alert("שגיאה בהתחברות עם Google. נסה שוב.");
+      }
     }
   };
 
-  return (
-    <div className="page-container">
-      <h2>התחברות</h2>
-      <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: 15, maxWidth: 300, margin: 'auto' }}>
-        <input
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="אימייל"
-          required
-        />
-        <input
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          placeholder="סיסמה"
-          required
-        />
-        <button type="submit">התחבר</button>
-      </form>
-
-      <div style={{ marginTop: 20 }}>
-        <button onClick={handleGoogleLogin}>
-          התחבר עם Google
-        </button>
+  if (loadingAuth) {
+    return (
+      <div className="page-container login-main-container">
+        <p style={{ textAlign: 'center', color: 'var(--text-color)' }}>טוען...</p>
       </div>
+    );
+  }
 
-      {error && <p style={{ color: 'red', marginTop: 10 }}>{error}</p>}
-      <p style={{ marginTop: 20 }}>
-        אין לך חשבון? <Link to="/register">הירשם כאן</Link>
-      </p>
+  return (
+    <div className="page-container login-main-container">
+      <div className="login-card">
+        <h2>ברוכים הבאים!</h2>
+        <p>בחר כיצד ברצונך להתחבר:</p>
+        
+        <button onClick={handleGuestLogin} className="login-button guest-button">
+          <FontAwesomeIcon icon={faUser} /> התחבר כאורח
+        </button>
+
+        <div className="divider">או</div>
+
+        <button onClick={() => navigate('/login')} className="login-button email-password-button">
+          <FontAwesomeIcon icon={faEnvelope} /> התחבר עם אימייל וסיסמה
+        </button>
+
+        <button onClick={handleGoogleLogin} className="login-button google-button">
+          <FontAwesomeIcon icon={faGoogle} /> התחבר עם Google
+        </button>
+
+        <div className="register-link">
+          אין לך חשבון? <Link to="/register">הירשם כאן</Link>
+        </div>
+      </div>
     </div>
   );
 }
 
-export default Login;
+export default LoginMainPage;

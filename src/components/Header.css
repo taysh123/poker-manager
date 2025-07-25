@@ -17,130 +17,166 @@
 .app-header {
   background-color: var(--header-background); /* צבע רקע מהמשתנים */
   color: var(--header-text-color); /* צבע טקסט מהמשתנים */
-  padding: 15px 20px; /* ריפוד פנימי */
-  display: flex; /* שימוש ב-Flexbox ליישור אלמנטים */
-  justify-content: space-between; /* פיזור אלמנטים לקצוות */
-  align-items: center; /* יישור אנכי למרכז */
-  box-shadow: var(--shadow-medium); /* צל עדין לתלת מימד */
+  padding: 15px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: var(--shadow-medium);
   position: fixed; /* קיבוע הכותרת לראש העמוד */
   top: 0;
   left: 0;
   width: 100%;
-  z-index: 1000; /* ודא שהכותרת תמיד מעל תוכן אחר */
-  direction: rtl; /* יישור מימין לשמאל */
-  box-sizing: border-box; /* ודא שה-padding לא מגדיל את הרוחב */
+  z-index: 1000; /* וודא שהכותרת מעל תוכן אחר */
+  direction: rtl; /* תמיכה בעברית מימין לשמאל */
+  box-sizing: border-box; /* וודא שריפוד וגבולות כלולים ברוחב הכולל */
 }
 
 .header-left {
   display: flex;
   align-items: center;
-  gap: 10px; /* רווח בין הלוגו לכותרת */
+  gap: 10px;
 }
 
 .logo-link {
   display: flex;
   align-items: center;
-  text-decoration: none; /* הסרת קו תחתון מקישור */
-  color: var(--header-text-color);
+  text-decoration: none; /* הסר קו תחתון מקישור הלוגו */
+  color: inherit; /* ירושה של צבע הטקסט מה-header */
 }
 
 .app-logo {
-  height: 40px; /* גובה הלוגו */
-  width: auto; /* רוחב אוטומטי לשמירה על פרופורציות */
-  border-radius: 50%; /* לוגו עגול */
-  margin-left: 10px; /* רווח מימין לטקסט */
+  height: 40px; /* גודל הלוגו */
+  margin-left: 10px; /* רווח בין הלוגו לשם האפליקציה */
 }
 
-.app-title {
-  font-size: 1.8em; /* גודל כותרת האפליקציה */
-  font-weight: bold;
-  font-family: 'Oswald', sans-serif; /* פונט ייחודי לכותרת */
-  white-space: nowrap; /* מונע שבירת שורה */
+.app-name {
+  font-family: 'Oswald', sans-serif; /* פונט מודרני */
+  font-size: 1.8em; /* גודל גדול יותר לשם האפליקציה */
+  font-weight: 700;
+  color: var(--primary-color); /* צבע ירוק בולט */
+  text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3); /* צל עדין לטקסט */
+  transition: color 0.3s ease; /* אנימציה למעבר צבע */
 }
 
-/* סגנונות כפתור המבורגר (למובייל בלבד) */
-.hamburger-menu {
-  display: none; /* מוסתר כברירת מחדל (לדסקטופ) */
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 10px;
-  color: var(--header-text-color);
+.app-name:hover {
+  color: var(--secondary-color); /* שינוי צבע בריחוף */
 }
 
-.hamburger-menu svg {
-  width: 30px;
-  height: 30px;
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 20px;
 }
 
-/* סגנונות תפריט הניווט הראשי */
+/* סגנונות תפריט הניווט */
 .main-nav ul {
-  list-style: none; /* הסרת נקודות מרשימה */
+  list-style: none;
   margin: 0;
   padding: 0;
-  display: flex; /* Flexbox לפריטי התפריט */
+  display: flex;
   gap: 25px; /* רווח בין פריטי התפריט */
 }
 
-.main-nav li {
-  position: relative; /* עבור אפקטים עתידיים (כמו קו תחתון במעבר עכבר) */
-}
-
-.main-nav a, .main-nav button {
-  color: var(--header-text-color); /* צבע טקסט */
-  text-decoration: none; /* הסרת קו תחתון */
-  font-size: 1.1em; /* גודל פונט */
+.main-nav li a,
+.main-nav li button {
+  color: var(--header-text-color);
+  text-decoration: none;
+  font-size: 1.1em;
   font-weight: 500;
   padding: 8px 12px;
-  border-radius: 5px;
-  transition: background-color 0.3s ease, color 0.3s ease; /* אנימציית מעבר */
-  white-space: nowrap; /* מונע שבירת שורה בפריטי תפריט */
-  background: none; /* כפתורים שקופים כברירת מחדל */
-  border: none;
-  cursor: pointer;
+  border-radius: 6px;
+  transition: background-color 0.3s ease, color 0.3s ease;
+  white-space: nowrap; /* מונע שבירת שורה בקישורים */
 }
 
-.main-nav a:hover, .main-nav button:hover {
-  background-color: rgba(255, 255, 255, 0.15); /* רקע בהיר במעבר עכבר */
-  color: var(--secondary-color); /* צבע הדגשה */
+.main-nav li a:hover,
+.main-nav li button:hover {
+  background-color: rgba(255, 255, 255, 0.1); /* רקע בהיר בריחוף */
+  color: var(--primary-color); /* הדגשה בצבע ראשי */
 }
 
-/* סגנון מיוחד להודעת ברוך הבא */
-.welcome-message {
-  color: var(--secondary-color); /* צבע הדגשה לשם המשתמש */
+.main-nav li .welcome-message {
+  color: var(--secondary-color); /* צבע שונה להודעת ברוך הבא */
   font-weight: bold;
   padding: 8px 12px;
-  white-space: nowrap;
+  cursor: default;
 }
 
-/* סגנון כפתור התנתקות */
 .logout-button {
-  background-color: var(--primary-color); /* כפתור התנתקות בצבע ראשי */
+  background-color: var(--danger-color); /* כפתור התנתקות אדום */
   color: white;
+  border: none;
+  cursor: pointer;
   padding: 8px 15px;
-  border-radius: 8px;
+  border-radius: 6px;
+  font-size: 1em;
+  font-weight: bold;
   transition: background-color 0.3s ease;
 }
 
 .logout-button:hover {
-  background-color: #3a7bd5; /* גוון כהה יותר במעבר עכבר */
+  background-color: #c0392b; /* אדום כהה יותר בריחוף */
 }
 
-/* מדיה קווריות - התאמה למסכים קטנים (מובייל) */
+/* סגנונות כפתור המבורגר (מוצג רק במובייל) */
+.hamburger-menu {
+  display: none; /* מוסתר כברירת מחדל בדסקטופ */
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 10px;
+  z-index: 1001; /* וודא שההמבורגר מעל הכל */
+}
+
+.hamburger-icon {
+  display: block;
+  width: 25px;
+  height: 3px;
+  background-color: var(--header-text-color);
+  margin: 5px 0;
+  transition: all 0.3s ease-in-out;
+}
+
+/* אנימציית המבורגר X */
+.hamburger-menu.open .hamburger-icon:nth-child(1) {
+  transform: translateY(8px) rotate(45deg);
+}
+
+.hamburger-menu.open .hamburger-icon:nth-child(2) {
+  opacity: 0;
+}
+
+.hamburger-menu.open .hamburger-icon:nth-child(3) {
+  transform: translateY(-8px) rotate(-45deg);
+}
+
+/* סגנונות לאזור התוכן הראשי כדי למנוע חפיפה עם הכותרת הקבועה */
+.main-content-area {
+  padding-top: 80px; /* גובה הכותרת + קצת ריווח */
+  flex-grow: 1; /* מאפשר לאזור התוכן לתפוס את השטח הזמין */
+  display: flex;
+  flex-direction: column;
+}
+
+/* מדיה קוורייס להתאמה למסכים קטנים (מובייל) */
 @media (max-width: 768px) {
   .app-header {
-    flex-wrap: wrap; /* מאפשר לאלמנטים לעבור שורה */
-    justify-content: space-between; /* יישור לקצוות */
+    flex-wrap: wrap; /* אפשר לעטוף אלמנטים */
+    justify-content: space-between;
     padding: 10px 15px;
   }
 
   .header-left {
-    order: 1; /* ודא שהלוגו נשאר ראשון */
+    flex-grow: 1; /* מאפשר ללוגו לתפוס את השטח הזמין */
+    justify-content: flex-start;
+  }
+
+  .app-name {
+    font-size: 1.5em; /* גודל קטן יותר במובייל */
   }
 
   .hamburger-menu {
-    display: block; /* הצג את כפתור ההמבורגר במובייל */
-    order: 2; /* מיקום כפתור ההמבורגר */
+    display: block; /* הצג כפתור המבורגר במובייל */
   }
 
   .main-nav {
@@ -167,26 +203,20 @@
   }
 
   .main-nav li {
-    margin: 0; /* אפס שוליים בין פריטים */
-    width: 100%;
+    margin: 0; /* אפס שוליים */
+    width: 100%; /* תפוס רוחב מלא */
     text-align: center; /* יישור טקסט למרכז */
   }
 
-  .main-nav a, .main-nav button {
-    display: block; /* הפוך לבלוק כדי למלא את כל הרוחב ולחיץ בקלות */
-    padding: 12px 20px; /* הגדל ריפוד ללחיצה קלה יותר */
-    border-radius: 0; /* הסרת פינות מעוגלות לפריטים בודדים */
+  .main-nav li a,
+  .main-nav li button {
+    display: block; /* הפוך לבלוק כדי למלא את כל הרוחב */
+    padding: 12px 20px; /* ריפוד גדול יותר ללחיצה קלה יותר */
+    width: calc(100% - 40px); /* התאמה לריפוד */
+    margin: 5px auto; /* ריווח בין פריטים במובייל */
   }
 
-  .welcome-message {
+  .main-nav li .welcome-message {
     padding: 12px 20px;
-    width: 100%;
-    text-align: center;
   }
-}
-
-/* סגנונות ל-main-content-area כדי למנוע חפיפה עם הכותרת הקבועה */
-.main-content-area {
-  padding-top: 80px; /* גובה הכותרת + רווח קטן */
-  /* יש לוודא שה-padding הזה מוחל על האלמנט שעוטף את ה-Routes ב-App.jsx */
 }

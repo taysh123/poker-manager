@@ -45,15 +45,15 @@ function Sessions() {
     setErrorGames(null);
     const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id'; // קבלת appId
     try {
-      // הנתיב תוקן: artifacts/${appId}/users/${userId}/cashGames
-      const gamesCollectionRef = collection(db, `artifacts/${appId}/users/${userId}/cashGames`);
+      // הנתיב תוקן: artifacts/${appId}/users/${userId}/sessions
+      const gamesCollectionRef = collection(db, `artifacts/${appId}/users/${userId}/sessions`);
       const q = query(gamesCollectionRef, orderBy('date', 'desc'));
       const querySnapshot = await getDocs(q);
       const gamesList = querySnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
-        date: doc.data().date?.toDate().toLocaleString(),
-        images: doc.data().images || [],
+        date: doc.data().date?.toDate().toLocaleString('he-IL'), // המרה לפורמט תאריך מקומי
+        gameImages: doc.data().gameImages || [], // וודא שקיים מערך תמונות
       }));
       setCashGames(gamesList);
       setLoadingGames(false);
@@ -85,12 +85,14 @@ function Sessions() {
       const reader = new FileReader();
       reader.onloadend = async () => {
         const base64Image = reader.result;
-        // הנתיב תוקן: artifacts/${appId}/users/${user.uid}/cashGames/${selectedGameId}
-        const gameDocRef = doc(db, `artifacts/${appId}/users/${user.uid}/cashGames`, selectedGameId);
+        // הנתיב תוקן: artifacts/${appId}/users/${user.uid}/sessions/${selectedGameId}
+        const gameDocRef = doc(db, `artifacts/${appId}/users/${user.uid}/sessions`, selectedGameId);
         
         const currentDoc = cashGames.find(game => game.id === selectedGameId);
-        const existingImages = currentDoc ? currentDoc.images : [];
+        const existingImages = currentDoc ? currentDoc.gameImages : []; // וודא שזה gameImages
 
+        // בדיקת גודל תמונה לפני שמירה (1MB = 1024 * 1024 בתים)
+        // Base64 string is approx 4/3 larger than binary data
         if (base64Image.length * 0.75 > 1024 * 1024) {
           alert('התמונה גדולה מדי. אנא העלה תמונה קטנה יותר (עד 1MB).');
           setUploadingImage(false);
@@ -98,12 +100,12 @@ function Sessions() {
         }
 
         await updateDoc(gameDocRef, {
-          images: [...existingImages, base64Image],
+          gameImages: [...existingImages, base64Image], // עדכן את gameImages
         });
         alert('התמונה הועלתה בהצלחה למשחק!');
         setNewImageFile(null);
         setShowImageModal(false);
-        fetchCashGames(user.uid);
+        fetchCashGames(user.uid); // רענן את רשימת המשחקים
       };
       reader.readAsDataURL(newImageFile);
     } catch (error) {
@@ -119,24 +121,24 @@ function Sessions() {
       alert('יש להתחבר כדי למחוק תמונות.');
       return;
     }
-    const confirmed = window.confirm('האם אתה בטוח שברצונך למחוק תמונה זו?');
-    if (!confirmed) return;
-
-    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id'; // קבלת appId
-    try {
-      // הנתיב תוקן: artifacts/${appId}/users/${user.uid}/cashGames/${gameId}
-      const gameDocRef = doc(db, `artifacts/${appId}/users/${user.uid}/cashGames`, gameId);
-      const gameToUpdate = cashGames.find(game => game.id === gameId);
-      if (gameToUpdate) {
-        const updatedImages = gameToUpdate.images.filter((_, idx) => idx !== imageIndex);
-        await updateDoc(gameDocRef, { images: updatedImages });
+    // החלפת alert ב-CustomModal
+    const confirmDelete = () => {
+      const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+      try {
+        const gameDocRef = doc(db, `artifacts/${appId}/users/${user.uid}/sessions`, gameId);
+        const currentDoc = cashGames.find(game => game.id === gameId);
+        const updatedImages = currentDoc.gameImages.filter((_, index) => index !== imageIndex);
+        updateDoc(gameDocRef, { gameImages: updatedImages });
         alert('התמונה נמחקה בהצלחה!');
-        fetchCashGames(user.uid);
+        fetchCashGames(user.uid); // רענן את רשימת המשחקים
+      } catch (error) {
+        console.error('שגיאה במחיקת תמונה:', error);
+        alert('שגיאה במחיקת תמונה.');
+      } finally {
+        closeModal();
       }
-    } catch (error) {
-      console.error('שגיאה במחיקת תמונה:', error);
-      alert('שגיאה במחיקת תמונה.');
-    }
+    };
+    openModal('האם אתה בטוח שברצונך למחוק תמונה זו?', 'confirm', confirmDelete);
   };
 
   const handleDeleteGame = async (gameId) => {
@@ -144,77 +146,82 @@ function Sessions() {
       alert('יש להתחבר כדי למחוק משחקים.');
       return;
     }
-
-    const confirmed = window.confirm('האם אתה בטוח שברצונך למחוק משחק זה לצמיתות? פעולה זו אינה ניתנת לביטול.');
-    if (!confirmed) return;
-
-    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id'; // קבלת appId
-    try {
-      // הנתיב תוקן: artifacts/${appId}/users/${user.uid}/cashGames/${gameId}
-      const gameDocRef = doc(db, `artifacts/${appId}/users/${user.uid}/cashGames`, gameId);
-      await deleteDoc(gameDocRef);
-      alert('המשחק נמחק בהצלחה!');
-      fetchCashGames(user.uid);
-    } catch (error) {
-      console.error('שגיאה במחיקת משחק:', error);
-      alert('שגיאה במחיקת המשחק. נסה שוב מאוחר יותר.');
-    }
+    // החלפת alert ב-CustomModal
+    const confirmDelete = async () => {
+      const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+      try {
+        const gameDocRef = doc(db, `artifacts/${appId}/users/${user.uid}/sessions`, gameId);
+        await deleteDoc(gameDocRef);
+        alert('המשחק נמחק בהצלחה!');
+        fetchCashGames(user.uid); // רענן את רשימת המשחקים
+      } catch (error) {
+        console.error('שגיאה במחיקת משחק:', error);
+        alert('שגיאה במחיקת משחק.');
+      } finally {
+        closeModal();
+      }
+    };
+    openModal('האם אתה בטוח שברצונך למחוק משחק זה לצמיתות?', 'confirm', confirmDelete);
   };
 
   if (loadingAuth) {
     return (
-      <div className="page-container sessions-container">
-        <p style={{ textAlign: 'center', color: 'var(--text-color)' }}>טוען...</p>
-      </div>
-    );
-  }
-
-  if (!user) {
-    return (
-      <div className="page-container sessions-container">
-        <p style={{ textAlign: 'center', color: 'var(--text-color)' }}>מפנה לדף הכניסה...</p>
+      <div className="sessions-container">
+        <h2>טוען...</h2>
       </div>
     );
   }
 
   return (
-    <div className="page-container sessions-container">
-      <h2><FontAwesomeIcon icon={faHistory} /> משחקים שמורים</h2> {/* שינוי טקסט */}
+    <div className="sessions-container">
+      <CustomModal
+        message={modalMessage}
+        onConfirm={modalAction}
+        onCancel={closeModal}
+        type={modalType}
+      />
+
+      <h2><FontAwesomeIcon icon={faHistory} /> היסטוריית משחקים</h2>
+      <p className="text-center text-gray-600 mb-8">
+        כאן תוכל לצפות בכל משחקי הקאש ששמרת, כולל פרטי השחקנים, רווחים, חובות ותמונות.
+      </p>
 
       {loadingGames ? (
-        <p className="loading-message">טוען היסטוריית משחקים...</p>
+        <p className="loading-message">טוען משחקים שמורים...</p>
       ) : errorGames ? (
         <p className="error-message">{errorGames}</p>
       ) : cashGames.length === 0 ? (
-        <p className="no-data-message">אין משחקי קאש שמורים להצגה. התחל משחק חדש כדי לשמור!</p>
+        <p className="no-data-message">
+          אין משחקים שמורים להצגה. התחל משחק קאש חדש כדי לשמור נתונים.
+        </p>
       ) : (
         <div className="games-list">
           {cashGames.map(game => (
             <div key={game.id} className="game-card">
               <div className="game-header">
-                <h3>משחק מתאריך: <FontAwesomeIcon icon={faCalendarAlt} /> {game.date}</h3>
-                <p><FontAwesomeIcon icon={faCoins} /> יחס צ'יפים לשקל: {game.chipsPerShekel}</p>
-                {!user.isAnonymous && (
-                  <button onClick={() => handleDeleteGame(game.id)} className="delete-game-button">
-                    <FontAwesomeIcon icon={faTrashAlt} /> מחק משחק
-                  </button>
-                )}
+                <p><FontAwesomeIcon icon={faCalendarAlt} /> תאריך: {game.date}</p>
+                <p><FontAwesomeIcon icon={faCoins} /> יחס צ'יפים: {game.chipsPerShekel}</p>
+                <button onClick={() => handleDeleteGame(game.id)} className="delete-game-button">
+                  <FontAwesomeIcon icon={faTrashAlt} /> מחק משחק
+                </button>
               </div>
+
+              <h3><FontAwesomeIcon icon={faUsers} /> שחקנים במשחק</h3>
               <div className="players-table-container">
                 <table className="players-table">
                   <thead>
                     <tr>
                       <th>שם שחקן</th>
-                      <th>השקעה כוללת (₪)</th>
-                      <th>סכום יציאה (₪)</th>
+                      <th>כניסה (₪)</th>
+                      <th>יציאה (₪)</th>
                       <th>רווח/הפסד (₪)</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {game.players.map((player, index) => {
+                    {game.players.map((player, pIndex) => {
                       const profitLoss = player.cashOut - player.buyIn;
                       return (
-                        <tr key={index}>
+                        <tr key={pIndex}>
                           <td>{player.name}</td>
                           <td>{player.buyIn.toFixed(2)}</td>
                           <td>{player.cashOut.toFixed(2)}</td>
@@ -227,15 +234,39 @@ function Sessions() {
                   </tbody>
                 </table>
               </div>
-              
-              {game.images && game.images.length > 0 && (
+
+              {game.debts && game.debts.length > 0 && (
+                <>
+                  <h3><FontAwesomeIcon icon={faExchangeAlt} /> חובות בין שחקנים</h3>
+                  <table className="debts-table">
+                    <thead>
+                      <tr>
+                        <th>חייב</th>
+                        <th>מקבל</th>
+                        <th>סכום (₪)</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {game.debts.map((debt, dIndex) => (
+                        <tr key={dIndex}>
+                          <td>{debt.debtor}</td>
+                          <td>{debt.creditor}</td>
+                          <td>{debt.amount.toFixed(2)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </>
+              )}
+
+              {game.gameImages && game.gameImages.length > 0 && (
                 <div className="game-images-section">
-                  <h4><FontAwesomeIcon icon={faCamera} /> תמונות מהמשחק:</h4>
-                  <div className="game-images-grid">
-                    {game.images.map((image, index) => (
-                      <div key={index} className="game-image-item">
-                        <img src={image} alt={`Game image ${index + 1}`} />
-                        <button onClick={() => handleRemoveGameImage(game.id, index)} className="remove-image-button">
+                  <h3><FontAwesomeIcon icon={faCamera} /> תמונות מהמשחק</h3>
+                  <div className="image-preview-grid">
+                    {game.gameImages.map((image, imgIndex) => (
+                      <div key={imgIndex} className="image-preview-item">
+                        <img src={image} alt={`Game Image ${imgIndex + 1}`} />
+                        <button onClick={() => handleRemoveGameImage(game.id, imgIndex)} className="remove-image-button">
                           <FontAwesomeIcon icon={faTimes} />
                         </button>
                       </div>

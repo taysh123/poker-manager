@@ -68,6 +68,7 @@ function PlayerStats() {
               gamesPlayed: 0,
               avgBuyIn: 0,
               avgCashOut: 0,
+              // hourlyRate: 0, // אם תרצה להוסיף חישוב קצב שעתי
             };
 
             const buyIn = parseFloat(player.buyIn) || 0;
@@ -83,18 +84,19 @@ function PlayerStats() {
         }
       });
 
-      const calculatedStats = Array.from(statsMap.values()).map(stats => ({
-        ...stats,
-        avgBuyIn: stats.gamesPlayed > 0 ? stats.totalBuyIn / stats.gamesPlayed : 0,
-        avgCashOut: stats.gamesPlayed > 0 ? stats.totalCashOut / stats.gamesPlayed : 0,
-      }));
+      const calculatedStats = Array.from(statsMap.values()).map(stats => {
+        return {
+          ...stats,
+          avgBuyIn: stats.gamesPlayed > 0 ? stats.totalBuyIn / stats.gamesPlayed : 0,
+          avgCashOut: stats.gamesPlayed > 0 ? stats.totalCashOut / stats.gamesPlayed : 0,
+        };
+      });
 
       setPlayerStats(calculatedStats);
-
+      setLoading(false);
     } catch (err) {
-      console.error("שגיאה בטעינת סטטיסטיקות שחקנים:", err);
-      setError("שגיאה בטעינת סטטיסטיקות שחקנים: " + err.message);
-    } finally {
+      console.error("שגיאה בשליפת סטטיסטיקות שחקנים:", err);
+      setError("שגיאה בטעינת סטטיסטיקות שחקנים. אנא נסה שוב.");
       setLoading(false);
     }
   };
@@ -102,34 +104,7 @@ function PlayerStats() {
   if (loadingAuth) {
     return (
       <div className="player-stats-container">
-        <h2>טוען אימות משתמש...</h2>
-      </div>
-    );
-  }
-
-  if (!user || user.isAnonymous) {
-    return (
-      <div className="player-stats-container">
-        <p className="error-message text-center">
-          <FontAwesomeIcon icon={faChartLine} /> כדי לצפות בסטטיסטיקות שחקנים, עליך להתחבר או להירשם.
-        </p>
-      </div>
-    );
-  }
-
-  if (loading) {
-    return (
-      <div className="player-stats-container">
-        <h2><FontAwesomeIcon icon={faChartLine} /> סטטיסטיקות שחקנים</h2>
-        <p style={{ textAlign: 'center', color: 'var(--text-color)' }}>טוען סטטיסטיקות שחקנים...</p>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="player-stats-container">
-        <p className="error-message" style={{ textAlign: 'center', color: 'var(--danger-color)' }}>{error}</p>
+        <h2>טוען...</h2>
       </div>
     );
   }
@@ -137,9 +112,16 @@ function PlayerStats() {
   return (
     <div className="player-stats-container">
       <h2><FontAwesomeIcon icon={faChartLine} /> סטטיסטיקות שחקנים</h2>
+      <p className="text-center text-gray-600 mb-8">
+        כאן תוכל לראות סטטיסטיקות מפורטות עבור כל השחקנים מכל משחקי הקאש השמורים.
+      </p>
 
-      {playerStats.length === 0 ? (
-        <p style={{ textAlign: 'center' }}>אין נתוני משחקים זמינים להצגת סטטיסטיקות. התחל משחק חדש כדי לראות נתונים!</p>
+      {loading ? (
+        <p>טוען סטטיסטיקות שחקנים...</p>
+      ) : error ? (
+        <p className="error-message">{error}</p>
+      ) : playerStats.length === 0 ? (
+        <p>אין סטטיסטיקות שחקנים להצגה. הוסף משחקים כדי להתחיל!</p>
       ) : (
         <div className="section stats-table-container">
           <table className="player-stats-table">

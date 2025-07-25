@@ -24,92 +24,79 @@ function Header({ user }) {
       navigate('/'); // ניווט לדף הבית לאחר יציאה מוצלחת
     } catch (error) {
       console.error('שגיאה ביציאה:', error);
-      // ניתן להציג הודעת שגיאה למשתמש כאן
+      // ניתן להציג הודעת שגיאה למשתמש
     }
   };
 
-  // אפקט לסגירת תפריט המובייל אוטומטית כאשר הנתיב משתנה
-  useEffect(() => {
-    setIsMobileMenuOpen(false); // סגור את התפריט בכל ניווט
-  }, [location.pathname]); // תלוי בשינויי הנתיב
-
-  // פונקציה לשינוי מצב תפריט המובייל (פתוח/סגור)
-  const toggleMobileMenu = () => {
-    setIsMobileMenuOpen(!isMobileMenuOpen);
-  };
-
-  // פונקציה לקבלת שם המשתמש
+  // פונקציה לקבלת שם התצוגה של המשתמש
   const getUserDisplayName = () => {
     if (user) {
-      // אם למשתמש יש displayName, נשתמש בו. אחרת, ננסה להשתמש באימייל.
+      if (user.isAnonymous) {
+        return 'אורח';
+      }
       return user.displayName || user.email || 'משתמש';
     }
-    return 'אורח'; // אם אין משתמש מחובר
+    return 'אורח';
   };
+
+  // סגור את תפריט המובייל כשמנווטים לדף חדש
+  useEffect(() => {
+    setIsMobileMenuOpen(false);
+  }, [location.pathname]);
 
   return (
     <header className="app-header">
-      {/* אזור הלוגו והכותרת */}
       <div className="header-left">
-        {/* הלוגו מקשר לדף הבית רק אם המשתמש מחובר */}
-        {user ? (
-          <Link to="/home" className="logo-link">
-            <img src={logoImage} alt="Poker App Logo" className="app-logo" />
-            <span className="app-title">Poker App</span>
-          </Link>
-        ) : (
-          // אם לא מחובר, הלוגו יקשר לדף הכניסה הראשי
-          <Link to="/" className="logo-link">
-            <img src={logoImage} alt="Poker App Logo" className="app-logo" />
-            <span className="app-title">Poker App</span>
-          </Link>
-        )}
+        {/* לוגו האפליקציה - כעת טקסט "PokerFlow" */}
+        <Link to={user ? "/home" : "/"} className="logo-link">
+          {/* <img src={logoImage} alt="Poker Manager Logo" className="app-logo" /> */}
+          <span className="app-name">PokerFlow</span>
+        </Link>
       </div>
 
-      {/* כפתור המבורגר - גלוי רק במובייל */}
-      <button className="hamburger-menu" onClick={toggleMobileMenu} aria-label="פתח/סגור תפריט ניווט">
-        {/* אייקון המבורגר פשוט באמצעות SVG או CSS */}
-        <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round">
-          <line x1="3" y1="12" x2="21" y2="12"></line>
-          <line x1="3" y1="6" x2="21" y2="6"></line>
-          <line x1="3" y1="18" x2="21" y2="18"></line>
-        </svg>
-      </button>
+      <div className="header-right">
+        {/* כפתור המבורגר למובייל */}
+        <button className="hamburger-menu" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
+          <span className="hamburger-icon"></span>
+          <span className="hamburger-icon"></span>
+          <span className="hamburger-icon"></span>
+        </button>
 
-      {/* אלמנט הניווט הראשי. הקלאס 'open' מופעל כאשר תפריט המובייל פתוח. */}
-      <nav className={`main-nav ${isMobileMenuOpen ? 'open' : ''}`}>
-        <ul>
-          {user ? (
-            // אם המשתמש מחובר, הצג את פריטי התפריט עבור משתמשים מחוברים
-            <>
-              {/* הצגת שם המשתמש */}
-              <li className="welcome-message">
-                שלום, {getUserDisplayName()}!
-              </li>
-              <li><Link to="/home">דף הבית</Link></li>
-              <li><Link to="/cash-game">משחק קאש</Link></li>
-              <li><Link to="/tournament">טורניר</Link></li>
-              <li><Link to="/sessions">משחקים שמורים</Link></li>
-              <li><Link to="/player-stats">סטטיסטיקות שחקנים</Link></li>
-              <li><Link to="/player-management">ניהול שחקנים</Link></li>
-              <li><Link to="/poker-journal">יומן פוקר</Link></li>
-              <li><Link to="/personal-tracking">מעקב אישי</Link></li> {/* הוספנו את הקישור הזה! */}
-              <li>
-                {/* כפתור התנתקות */}
-                <button onClick={handleLogout} className="logout-button">
-                  התנתק
-                </button>
-              </li>
-            </>
-          ) : (
-            // אם המשתמש אינו מחובר, הצג קישורים להתחברות והרשמה
-            <>
-              <li><Link to="/login">התחבר</Link></li>
-              <li><Link to="/register">הירשם</Link></li>
-            </>
-          )}
-        </ul>
-      </nav>
+        {/* תפריט ניווט ראשי. הקלאס 'open' מופעל כאשר תפריט המובייל פתוח. */}
+        <nav className={`main-nav ${isMobileMenuOpen ? 'open' : ''}`}>
+          <ul>
+            {user ? (
+              // אם המשתמש מחובר, הצג את פריטי התפריט עבור משתמשים מחוברים
+              <>
+                {/* הצגת שם המשתמש */}
+                <li className="welcome-message">
+                  שלום, {getUserDisplayName()}!
+                </li>
+                <li><Link to="/home">דף הבית</Link></li>
+                <li><Link to="/cash-game">משחק קאש</Link></li>
+                <li><Link to="/tournament">טורניר</Link></li>
+                <li><Link to="/sessions">משחקים שמורים</Link></li>
+                <li><Link to="/player-stats">סטטיסטיקות שחקנים</Link></li>
+                <li><Link to="/player-management">ניהול שחקנים</Link></li>
+                <li><Link to="/poker-journal">יומן פוקר</Link></li>
+                <li><Link to="/personal-tracking">מעקב אישי</Link></li> {/* הוספנו את הקישור הזה! */}
+                <li>
+                  {/* כפתור התנתקות */}
+                  <button onClick={handleLogout} className="logout-button">
+                    התנתק
+                  </button>
+                </li>
+              </>
+            ) : (
+              // אם המשתמש אינו מחובר, הצג קישורים להתחברות והרשמה
+              <>
+                <li><Link to="/login">התחבר</Link></li>
+                <li><Link to="/register">הירשם</Link></li>
+              </>
+            )}
+          </ul>
+        </nav>
+      </div>
     </header>
   );
 }
