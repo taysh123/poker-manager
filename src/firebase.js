@@ -1,3 +1,5 @@
+// src/firebase.js
+// ייבוא פונקציות נחוצות מ-Firebase SDK
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInAnonymously, signInWithCustomToken } from 'firebase/auth'; // ייבוא signInWithCustomToken
 import { getFirestore } from 'firebase/firestore';
