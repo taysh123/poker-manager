@@ -5,10 +5,35 @@ import { db } from '../firebase';
 import { useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faBook, faPlus, faTrashAlt, faCalendarAlt } from '@fortawesome/free-solid-svg-icons';
-import './PokerJournal.css'; // נצטרך ליצור קובץ CSS עבורו
+import './PokerJournal.css';
+
+// רכיב Modal פשוט להודעות אישור ושגיאה
+const CustomModal = ({ message, onConfirm, onCancel, type }) => {
+  if (!message) return null;
+
+  return (
+    <div className="modal-overlay">
+      <div className="modal-content">
+        <p>{message}</p>
+        <div className="modal-actions">
+          {type === 'confirm' && (
+            <>
+              <button onClick={onConfirm} className="modal-button confirm-button">אישור</button>
+              <button onClick={onCancel} className="modal-button cancel-button">ביטול</button>
+            </>
+          )}
+          {type === 'alert' && (
+            <button onClick={onCancel} className="modal-button confirm-button">הבנתי</button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
 
 function PokerJournal() {
   const [user, setUser] = useState(null);
+  const [userId, setUserId] = useState(null); // מצב לשמירת ה-userId
   const [loadingAuth, setLoadingAuth] = useState(true);
   const navigate = useNavigate();
 
@@ -18,17 +43,22 @@ function PokerJournal() {
   const [loadingEntries, setLoadingEntries] = useState(true);
   const [errorEntries, setErrorEntries] = useState(null);
 
+  const [showModal, setShowModal] = useState(false);
+  const [modalMessage, setModalMessage] = useState('');
+  const [modalType, setModalType] = useState('alert');
+  const [modalAction, setModalAction] = useState(null);
+
+  // קבלת ה-appId מהמשתנה הגלובלי __app_id
+  const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+
   useEffect(() => {
     const auth = getAuth();
-    // קבלת ה-appId מהמשתנה הגלובלי __app_id
-    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       if (currentUser) {
         setUser(currentUser);
-        setLoadingAuth(false);
+        setUserId(currentUser.uid); // שמור את ה-UID
         if (!currentUser.isAnonymous) {
-          fetchJournalEntries(currentUser.uid, appId); // העבר appId לפונקציה
+          fetchJournalEntries(currentUser.uid);
         } else {
           setLoadingEntries(false);
           setErrorEntries('יומן פוקר אינו זמין במצב אורח. אנא התחבר כדי להוסיף רשומות.');
@@ -36,115 +66,133 @@ function PokerJournal() {
       } else {
         navigate('/');
       }
+      setLoadingAuth(false);
     });
 
     return () => unsubscribe();
   }, [navigate]);
 
-  const fetchJournalEntries = async (userId, appId) => { // קבל appId כארגומנט
+  const openModal = (message, type, action = null) => {
+    setModalMessage(message);
+    setModalType(type);
+    setModalAction(() => action);
+    setShowModal(true);
+  };
+
+  const closeModal = () => {
+    setShowModal(false);
+    setModalMessage('');
+    setModalType('alert');
+    setModalAction(null);
+  };
+
+  const fetchJournalEntries = async (currentUserId) => {
+    if (!currentUserId) {
+      console.warn("אין User ID, לא ניתן לטעון רשומות יומן.");
+      setLoadingEntries(false);
+      return;
+    }
     setLoadingEntries(true);
     setErrorEntries(null);
     try {
-      // הנתיב תוקן בהתאם לכללי האבטחה
-      const journalCollectionRef = collection(db, `artifacts/${appId}/users/${userId}/pokerJournal`);
-      // נמיין לפי תאריך יצירה בסדר יורד
+      const journalCollectionRef = collection(db, `artifacts/${appId}/users/${currentUserId}/pokerJournal`);
       const q = query(journalCollectionRef, orderBy('createdAt', 'desc'));
       const querySnapshot = await getDocs(q);
       const entriesList = querySnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
-        createdAt: doc.data().createdAt?.toDate().toLocaleString() // המרה לתאריך קריא
+        createdAt: doc.data().createdAt?.toDate().toLocaleString()
       }));
       setJournalEntries(entriesList);
-      setLoadingEntries(false);
     } catch (err) {
-      console.error('שגיאה בשליפת רשומות יומן:', err);
-      setErrorEntries('שגיאה בטעינת רשומות היומן. נסה שוב מאוחר יותר.');
+      console.error("שגיאה בשליפת רשומות יומן:", err);
+      setErrorEntries("שגיאה בטעינת רשומות היומן: " + err.message);
+    } finally {
       setLoadingEntries(false);
     }
   };
 
-  const handleAddEntry = async (e) => {
-    e.preventDefault();
-    // קבלת ה-appId מהמשתנה הגלובלי __app_id
-    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-
-    if (!user || user.isAnonymous) {
-      alert('יש להתחבר כדי להוסיף רשומות ליומן.');
+  const handleAddEntry = async (event) => {
+    event.preventDefault();
+    if (newEntryTitle.trim() === '' || newEntryContent.trim() === '') {
+      openModal('כותרת ותוכן הרשומה לא יכולים להיות ריקים.', 'alert');
       return;
     }
-    if (newEntryTitle.trim() === '' || newEntryContent.trim() === '') {
-      alert('כותרת ותוכן הרשומה לא יכולים להיות ריקים.');
+
+    if (!user || !userId) {
+      openModal('שגיאה: משתמש לא מאומת. לא ניתן להוסיף רשומה.', 'alert');
       return;
     }
 
     try {
-      // הנתיב תוקן בהתאם לכללי האבטחה
-      const journalCollectionRef = collection(db, `artifacts/${appId}/users/${user.uid}/pokerJournal`);
+      const journalCollectionRef = collection(db, `artifacts/${appId}/users/${userId}/pokerJournal`);
       await addDoc(journalCollectionRef, {
         title: newEntryTitle.trim(),
         content: newEntryContent.trim(),
-        createdAt: new Date(), // שמור תאריך יצירה
+        createdAt: new Date(),
       });
       setNewEntryTitle('');
       setNewEntryContent('');
-      fetchJournalEntries(user.uid, appId); // רענן את הרשימה, העבר appId
-      alert('רשומה נוספה בהצלחה!');
+      openModal('רשומה נוספה בהצלחה!', 'alert');
+      fetchJournalEntries(userId); // רענן את הרשימה
     } catch (error) {
-      console.error('שגיאה בהוספת רשומה:', error);
-      alert('שגיאה בהוספת רשומה ליומן.');
+      console.error("שגיאה בהוספת רשומה:", error);
+      openModal("שגיאה בהוספת רשומה: " + error.message, 'alert');
     }
   };
 
-  const handleDeleteEntry = async (entryId) => {
-    // קבלת ה-appId מהמשתנה הגלובלי __app_id
-    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-
-    if (!user || user.isAnonymous) {
-      alert('יש להתחבר כדי למחוק רשומות מהיומן.');
-      return;
-    }
-
-    // שימוש במודל CustomModal במקום window.confirm
-    // הערה: CustomModal לא מוגדר בקובץ זה, יש לוודא שהוא מיובא או מוגדר.
-    // לצורך הדוגמה, נשאר עם alert זמני, אך מומלץ להשתמש במודל מותאם אישית.
-    const confirmed = window.confirm('האם אתה בטוח שברצונך למחוק רשומה זו?');
-    if (!confirmed) return;
-
-    try {
-      // הנתיב תוקן בהתאם לכללי האבטחה
-      const entryDocRef = doc(db, `artifacts/${appId}/users/${user.uid}/pokerJournal`, entryId);
-      await deleteDoc(entryDocRef);
-      fetchJournalEntries(user.uid, appId); // רענן את הרשימה, העבר appId
-      alert('רשומה נמחקה בהצלחה!');
-    } catch (error) {
-      console.error('שגיאה במחיקת רשומה:', error);
-      alert('שגיאה במחיקת רשומה מהיומן.');
-    }
+  const handleDeleteEntry = (entryId) => {
+    openModal('האם אתה בטוח שברצונך למחוק רשומה זו לצמיתות?', 'confirm', async () => {
+      if (!user || !userId) {
+        openModal('שגיאה: משתמש לא מאומת. לא ניתן למחוק רשומה.', 'alert');
+        closeModal();
+        return;
+      }
+      try {
+        const entryDocRef = doc(db, `artifacts/${appId}/users/${userId}/pokerJournal`, entryId);
+        await deleteDoc(entryDocRef);
+        openModal('רשומה נמחקה בהצלחה!', 'alert');
+        fetchJournalEntries(userId); // רענן את הרשימה
+      } catch (error) {
+        console.error("שגיאה במחיקת רשומה:", error);
+        openModal("שגיאה במחיקת רשומה: " + error.message, 'alert');
+      } finally {
+        closeModal();
+      }
+    });
   };
 
   if (loadingAuth) {
     return (
-      <div className="page-container poker-journal-container">
-        <p style={{ textAlign: 'center', color: 'var(--text-color)' }}>טוען...</p>
+      <div className="poker-journal-container">
+        <h2>טוען אימות...</h2>
       </div>
     );
   }
 
-  if (!user) {
+  if (!user || user.isAnonymous) {
     return (
-      <div className="page-container poker-journal-container">
-        <p style={{ textAlign: 'center', color: 'var(--text-color)' }}>מפנה לדף הכניסה...</p>
+      <div className="poker-journal-container">
+        <p className="error-message text-center">
+          <FontAwesomeIcon icon={faBook} /> כדי לנהל יומן פוקר, עליך להתחבר או להירשם.
+        </p>
       </div>
     );
   }
 
   return (
-    <div className="page-container poker-journal-container">
-      {/* אם יש לך CustomModal כללי, ודא שהוא מיובא ומוגדר כאן */}
-      {/* <CustomModal ... /> */}
+    <div className="poker-journal-container">
+      <CustomModal
+        message={modalMessage}
+        onConfirm={modalAction}
+        onCancel={closeModal}
+        type={modalType}
+      />
 
       <h2><FontAwesomeIcon icon={faBook} /> יומן פוקר</h2>
+      <p className="text-center text-gray-600 mb-8">
+        תעד ונתח את הידיים והסשנים שלך כדי לשפר את המשחק.
+      </p>
 
       <div className="section add-entry-section">
         <h3><FontAwesomeIcon icon={faPlus} /> הוסף רשומה חדשה</h3>
@@ -169,15 +217,15 @@ function PokerJournal() {
         </form>
       </div>
 
-      <div className="section journal-entries-list">
-        <h3><FontAwesomeIcon icon={faBook} /> רשומות יומן קיימות</h3>
-        {loadingEntries ? (
-          <p style={{ textAlign: 'center' }}>טוען רשומות יומן...</p>
-        ) : errorEntries ? (
-          <p className="error-message">{errorEntries}</p>
-        ) : journalEntries.length === 0 ? (
-          <p style={{ textAlign: 'center' }}>אין רשומות יומן להצגה. הוסף רשומה כדי להתחיל!</p>
-        ) : (
+      {loadingEntries ? (
+        <p style={{ textAlign: 'center' }}>טוען רשומות יומן...</p>
+      ) : errorEntries ? (
+        <p className="error-message">{errorEntries}</p>
+      ) : journalEntries.length === 0 ? (
+        <p style={{ textAlign: 'center' }}>אין רשומות יומן להצגה. הוסף רשומה כדי להתחיל!</p>
+      ) : (
+        <div className="section journal-entries-list">
+          <h3><FontAwesomeIcon icon={faBook} /> רשומות יומן קיימות</h3>
           <div className="entries-grid">
             {journalEntries.map(entry => (
               <div key={entry.id} className="journal-entry-card">
@@ -192,8 +240,8 @@ function PokerJournal() {
               </div>
             ))}
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

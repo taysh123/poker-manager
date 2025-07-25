@@ -9,6 +9,7 @@ import './PlayerStats.css';
 
 function PlayerStats() {
   const [user, setUser] = useState(null);
+  const [userId, setUserId] = useState(null); // מצב לשמירת ה-userId
   const [loadingAuth, setLoadingAuth] = useState(true);
   const navigate = useNavigate();
 
@@ -16,18 +17,20 @@ function PlayerStats() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // קבלת ה-appId מהמשתנה הגלובלי __app_id
+  const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+
   useEffect(() => {
     const auth = getAuth();
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       if (currentUser) {
         setUser(currentUser);
-        setLoadingAuth(false);
-        // טען סטטיסטיקות רק אם המשתמש אינו אנונימי
+        setUserId(currentUser.uid); // שמור את ה-UID
         if (!currentUser.isAnonymous) {
           fetchPlayerStats(currentUser.uid);
         } else {
           setLoading(false);
-          setError('יש להתחבר כדי לצפות בסטטיסטיקות שחקנים.');
+          setError('סטטיסטיקות שחקנים אינן זמינות במצב אורח. אנא התחבר כדי לצפות בהן.');
         }
       } else {
         navigate('/');
@@ -38,20 +41,22 @@ function PlayerStats() {
     return () => unsubscribe();
   }, [navigate]);
 
-  const fetchPlayerStats = async (userId) => {
+  const fetchPlayerStats = async (currentUserId) => {
+    if (!currentUserId) {
+      console.warn("אין User ID, לא ניתן לטעון סטטיסטיקות.");
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     setError(null);
-    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
     try {
-      // נתיב לטבלת המשחקים ב-Firestore
-      const cashGamesColRef = collection(db, `artifacts/${appId}/users/${userId}/cashGames`);
-      const querySnapshot = await getDocs(cashGamesColRef);
+      const sessionsCollectionRef = collection(db, `artifacts/${appId}/users/${currentUserId}/sessions`);
+      const querySnapshot = await getDocs(sessionsCollectionRef);
 
       const statsMap = new Map();
 
       querySnapshot.forEach((doc) => {
         const gameData = doc.data();
-        // ודא ש-gameData.players הוא מערך וקיים
         if (Array.isArray(gameData.players)) {
           gameData.players.forEach(player => {
             const playerName = player.name;
@@ -65,7 +70,6 @@ function PlayerStats() {
               avgCashOut: 0,
             };
 
-            // ודא ש-buyIn ו-cashOut הם מספרים
             const buyIn = parseFloat(player.buyIn) || 0;
             const cashOut = parseFloat(player.cashOut) || 0;
 
@@ -79,7 +83,6 @@ function PlayerStats() {
         }
       });
 
-      // חשב ממוצעים לאחר סיום הלולאה
       const calculatedStats = Array.from(statsMap.values()).map(stats => ({
         ...stats,
         avgBuyIn: stats.gamesPlayed > 0 ? stats.totalBuyIn / stats.gamesPlayed : 0,
@@ -90,7 +93,7 @@ function PlayerStats() {
 
     } catch (err) {
       console.error("שגיאה בטעינת סטטיסטיקות שחקנים:", err);
-      setError("שגיאה בטעינת סטטיסטיקות שחקנים. אנא נסה שוב מאוחר יותר.");
+      setError("שגיאה בטעינת סטטיסטיקות שחקנים: " + err.message);
     } finally {
       setLoading(false);
     }
@@ -98,23 +101,26 @@ function PlayerStats() {
 
   if (loadingAuth) {
     return (
-      <div className="page-container player-stats-container">
-        <p style={{ textAlign: 'center', color: 'var(--text-color)' }}>טוען אימות משתמש...</p>
+      <div className="player-stats-container">
+        <h2>טוען אימות משתמש...</h2>
       </div>
     );
   }
 
-  if (!user) {
+  if (!user || user.isAnonymous) {
     return (
-      <div className="page-container player-stats-container">
-        <p style={{ textAlign: 'center', color: 'var(--text-color)' }}>מפנה לדף הכניסה...</p>
+      <div className="player-stats-container">
+        <p className="error-message text-center">
+          <FontAwesomeIcon icon={faChartLine} /> כדי לצפות בסטטיסטיקות שחקנים, עליך להתחבר או להירשם.
+        </p>
       </div>
     );
   }
 
   if (loading) {
     return (
-      <div className="page-container player-stats-container">
+      <div className="player-stats-container">
+        <h2><FontAwesomeIcon icon={faChartLine} /> סטטיסטיקות שחקנים</h2>
         <p style={{ textAlign: 'center', color: 'var(--text-color)' }}>טוען סטטיסטיקות שחקנים...</p>
       </div>
     );
@@ -122,14 +128,14 @@ function PlayerStats() {
 
   if (error) {
     return (
-      <div className="page-container player-stats-container">
+      <div className="player-stats-container">
         <p className="error-message" style={{ textAlign: 'center', color: 'var(--danger-color)' }}>{error}</p>
       </div>
     );
   }
 
   return (
-    <div className="page-container player-stats-container">
+    <div className="player-stats-container">
       <h2><FontAwesomeIcon icon={faChartLine} /> סטטיסטיקות שחקנים</h2>
 
       {playerStats.length === 0 ? (
@@ -146,14 +152,12 @@ function PlayerStats() {
                 <th><FontAwesomeIcon icon={faHandshake} /> משחקים שוחקו</th>
                 <th>ממוצע כניסה (₪)</th>
                 <th>ממוצע יציאה (₪)</th>
-                {/* <th>קצב שעתי (₪/שעה)</th> */}
               </tr>
             </thead>
             <tbody>
               {playerStats.map((stats, index) => (
                 <tr key={index}>
                   <td>{stats.name}</td>
-                  {/* ודא שהערכים הם מספרים לפני toFixed */}
                   <td>{isNaN(stats.totalBuyIn) ? '0.00' : stats.totalBuyIn.toFixed(2)}</td>
                   <td>{isNaN(stats.totalCashOut) ? '0.00' : stats.totalCashOut.toFixed(2)}</td>
                   <td style={{ color: stats.netProfit >= 0 ? 'var(--primary-color)' : 'var(--danger-color)' }}>
@@ -162,7 +166,6 @@ function PlayerStats() {
                   <td>{stats.gamesPlayed}</td>
                   <td>{isNaN(stats.avgBuyIn) ? '0.00' : stats.avgBuyIn.toFixed(2)}</td>
                   <td>{isNaN(stats.avgCashOut) ? '0.00' : stats.avgCashOut.toFixed(2)}</td>
-                  {/* <td>{stats.hourlyRate.toFixed(2)}</td> */}
                 </tr>
               ))}
             </tbody>

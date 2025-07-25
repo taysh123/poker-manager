@@ -47,6 +47,9 @@ function PlayerManagement() {
   const [modalType, setModalType] = useState('alert');
   const [modalAction, setModalAction] = useState(null);
 
+  // קבלת ה-appId מהמשתנה הגלובלי __app_id
+  const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+
   // useEffect לאימות משתמש וטעינת שחקנים
   useEffect(() => {
     const auth = getAuth();
@@ -92,7 +95,6 @@ function PlayerManagement() {
     setLoadingPlayers(true);
     setErrorPlayers(null);
     try {
-      const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
       const playersCollectionRef = collection(db, `artifacts/${appId}/users/${currentUserId}/players`);
       const playerSnapshot = await getDocs(playersCollectionRef);
       const fetchedPlayers = playerSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -122,7 +124,6 @@ function PlayerManagement() {
     }
 
     try {
-      const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
       const playersCollectionRef = collection(db, `artifacts/${appId}/users/${userId}/players`);
       const docRef = await addDoc(playersCollectionRef, {
         name: newPlayerName.trim(),
@@ -145,7 +146,6 @@ function PlayerManagement() {
         return;
       }
       try {
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
         const playerDocRef = doc(db, `artifacts/${appId}/users/${userId}/players`, playerId);
         await deleteDoc(playerDocRef);
         setPlayers(players.filter(p => p.id !== playerId));

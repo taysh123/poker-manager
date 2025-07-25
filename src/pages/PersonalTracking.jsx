@@ -4,27 +4,36 @@ import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import { db } from '../firebase'; // ודא שהנתיב ל-firebase.js נכון
 import { useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faChartLine, faUserCircle } from '@fortawesome/free-solid-svg-icons';
+import { faChartLine, faUserCircle, faCoins, faMoneyBillWave, faDollarSign, faHandshake, faCalendarAlt, faInfoCircle } from '@fortawesome/free-solid-svg-icons';
 import './PersonalTracking.css'; // ייבוא קובץ ה-CSS החדש
 
 function PersonalTracking() {
   const [user, setUser] = useState(null);
+  const [userId, setUserId] = useState(null); // מצב לשמירת ה-userId
   const [loadingAuth, setLoadingAuth] = useState(true);
   const [games, setGames] = useState([]);
   const [loadingGames, setLoadingGames] = useState(true);
   const [playerNames, setPlayerNames] = useState([]);
   const [selectedPlayerName, setSelectedPlayerName] = useState('');
   const [totalProfitLoss, setTotalProfitLoss] = useState(0);
-  const [error, setError] = useState(null); // <--- הוספה: הגדרת מצב שגיאה
+  const [error, setError] = useState(null); // הגדרת מצב שגיאה
   const navigate = useNavigate();
+
+  // קבלת ה-appId מהמשתנה הגלובלי __app_id
+  const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
   useEffect(() => {
     const auth = getAuth();
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       if (currentUser) {
         setUser(currentUser);
-        // אם המשתמש מחובר, טען את שמות השחקנים
-        fetchPlayerNames(currentUser.uid);
+        setUserId(currentUser.uid); // שמור את ה-UID
+        if (!currentUser.isAnonymous) {
+          fetchPlayerNames(currentUser.uid);
+        } else {
+          setLoadingGames(false);
+          setError('מעקב אישי אינו זמין במצב אורח. אנא התחבר כדי לצפות בו.');
+        }
       } else {
         navigate('/');
       }
@@ -35,25 +44,30 @@ function PersonalTracking() {
   }, [navigate]);
 
   useEffect(() => {
-    if (user && selectedPlayerName) {
-      fetchGamesForPlayer(user.uid, selectedPlayerName);
-    } else if (user && !selectedPlayerName && playerNames.length > 0) {
+    // טען משחקים רק אם המשתמש מאומת ויש שחקן נבחר
+    if (user && userId && selectedPlayerName) {
+      fetchGamesForPlayer(userId, selectedPlayerName);
+    } else if (user && userId && playerNames.length > 0 && !selectedPlayerName) {
       // אם יש משתמש אבל לא נבחר שחקן, בחר את הראשון כברירת מחדל
       setSelectedPlayerName(playerNames[0]);
     }
-  }, [user, selectedPlayerName, playerNames]); // תלויות: user, selectedPlayerName, playerNames
+  }, [user, userId, selectedPlayerName, playerNames]);
 
-  const fetchPlayerNames = async (userId) => {
+  const fetchPlayerNames = async (currentUserId) => {
+    if (!currentUserId) {
+      console.warn("אין User ID, לא ניתן לטעון שמות שחקנים.");
+      setLoadingGames(false);
+      return;
+    }
     setLoadingGames(true);
-    setError(null); // איפוס שגיאות
+    setError(null);
     try {
-      const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-      const playersCollectionRef = collection(db, `artifacts/${appId}/users/${userId}/players`);
+      const playersCollectionRef = collection(db, `artifacts/${appId}/users/${currentUserId}/players`);
       const playerSnapshot = await getDocs(playersCollectionRef);
       const names = playerSnapshot.docs.map(doc => doc.data().name);
       setPlayerNames(names);
       if (names.length > 0 && !selectedPlayerName) {
-        setSelectedPlayerName(names[0]); // בחר את השחקן הראשון כברירת מחדל
+        setSelectedPlayerName(names[0]);
       }
     } catch (err) {
       console.error("שגיאה בטעינת שמות שחקנים:", err);
@@ -63,13 +77,17 @@ function PersonalTracking() {
     }
   };
 
-  const fetchGamesForPlayer = async (userId, playerName) => {
+  const fetchGamesForPlayer = async (currentUserId, playerName) => {
+    if (!currentUserId || !playerName) {
+      console.warn("אין User ID או שם שחקן, לא ניתן לטעון משחקים.");
+      setLoadingGames(false);
+      return;
+    }
     setLoadingGames(true);
-    setError(null); // איפוס שגיאות
+    setError(null);
     try {
-      const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-      const gamesCollectionRef = collection(db, `artifacts/${appId}/users/${userId}/sessions`); // נתיב לקולקציית המשחקים
-      const q = query(gamesCollectionRef); // אין צורך ב-where אם נסנן ב-JS
+      const gamesCollectionRef = collection(db, `artifacts/${appId}/users/${currentUserId}/sessions`); // נתיב לקולקציית המשחקים
+      const q = query(gamesCollectionRef);
       const querySnapshot = await getDocs(q);
 
       let playerGames = [];
@@ -77,7 +95,6 @@ function PersonalTracking() {
 
       querySnapshot.forEach((doc) => {
         const gameData = doc.data();
-        // ודא ש-gameData.players קיים ושהוא מערך
         if (gameData.players && Array.isArray(gameData.players)) {
           const playerInGame = gameData.players.find(p => p.name === playerName);
           if (playerInGame) {
@@ -108,8 +125,32 @@ function PersonalTracking() {
     );
   }
 
-  if (!user) {
-    return null; // או הפניה לדף כניסה
+  if (!user || user.isAnonymous) {
+    return (
+      <div className="personal-tracking-container">
+        <h2 style={{ textAlign: 'center', color: 'var(--secondary-color)' }}>גישה מוגבלת</h2>
+        <p style={{ textAlign: 'center', color: 'var(--text-color)' }}>
+          מעקב אישי זמין רק למשתמשים רשומים. אנא התחבר כדי לצפות בו.
+        </p>
+      </div>
+    );
+  }
+
+  if (loadingGames) {
+    return (
+      <div className="personal-tracking-container">
+        <p style={{ textAlign: 'center', color: 'var(--text-color)' }}>טוען נתונים...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="personal-tracking-container">
+        <h2 style={{ textAlign: 'center', color: 'var(--danger-color)' }}><FontAwesomeIcon icon={faInfoCircle} /> שגיאה</h2>
+        <p style={{ textAlign: 'center', color: 'var(--text-color)' }}>{error}</p>
+      </div>
+    );
   }
 
   return (
@@ -124,7 +165,7 @@ function PersonalTracking() {
         {loadingGames ? (
           <p>טוען שחקנים...</p>
         ) : error ? (
-          <p className="error-message">{error}</p> // הצגת הודעת שגיאה
+          <p className="error-message">{error}</p>
         ) : playerNames.length === 0 ? (
           <p>אין שחקנים זמינים. אנא הוסף שחקנים דרך "ניהול שחקנים" תחילה.</p>
         ) : (
@@ -156,32 +197,33 @@ function PersonalTracking() {
         {loadingGames ? (
           <p>טוען משחקים...</p>
         ) : error ? (
-          <p className="error-message">{error}</p> // הצגת הודעת שגיאה
+          <p className="error-message">{error}</p>
         ) : games.length > 0 ? (
           <ul className="games-list">
             {games
                 .sort((a, b) => {
-                  // ודא ש-date קיים ושהוא אובייקט Timestamp של Firebase
                   const dateA = a.date && a.date.seconds ? new Date(a.date.seconds * 1000) : new Date(0);
                   const dateB = b.date && b.date.seconds ? new Date(b.date.seconds * 1000) : new Date(0);
-                  return dateB - dateA; // מיון מהחדש לישן
+                  return dateB - dateA;
                 })
                 .map(game => {
                   const playerInGame = game.players.find(p => p.name === selectedPlayerName);
-                  if (!playerInGame) return null; // לוודא שהשחקן קיים במשחק הזה
+                  if (!playerInGame) return null;
 
-                  const gameProfitLoss = playerInGame.cashOut - playerInGame.buyIn;
+                  const buyIn = parseFloat(playerInGame.buyIn) || 0;
+                  const cashOut = parseFloat(playerInGame.cashOut) || 0;
+                  const gameProfitLoss = cashOut - buyIn;
                   const gameDate = game.date ? new Date(game.date.seconds * 1000).toLocaleDateString('he-IL') : 'תאריך לא ידוע';
 
                   return (
                     <li key={game.id} className="game-item">
                       <div className="game-info">
                         <span>תאריך: {gameDate}</span>
-                        <span>יחס צ'יפים: {game.chipsPerShekel}</span>
+                        <span>יחס צ'יפים: {game.chipsPerShekel || 'לא ידוע'}</span>
                       </div>
                       <div className="player-stats">
-                        <span>השקעה: {playerInGame.buyIn.toFixed(2)} ₪</span>
-                        <span>יציאה: {playerInGame.cashOut.toFixed(2)} ₪</span>
+                        <span>השקעה: {buyIn.toFixed(2)} ₪</span>
+                        <span>יציאה: {cashOut.toFixed(2)} ₪</span>
                         <span className={`profit-loss ${gameProfitLoss >= 0 ? 'positive' : 'negative'}`}>
                           רווח/הפסד: {gameProfitLoss.toFixed(2)} ₪
                         </span>
@@ -189,10 +231,10 @@ function PersonalTracking() {
                     </li>
                   );
                 })}
-          </ul>
-        ) : (
-          <p>לא נמצאו משחקים עבור שם השחקן שנבחר.</p>
-        )}
+            </ul>
+          ) : (
+            <p>לא נמצאו משחקים עבור שם השחקן שנבחר.</p>
+          )}
       </div>
     </div>
   );
