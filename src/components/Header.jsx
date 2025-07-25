@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { useNavigate, Link } from 'react-router-dom';
 import { getAuth, signOut } from 'firebase/auth';
 import './Header.css'; // ודא שקובץ ה-CSS מיובא כראוי
 
