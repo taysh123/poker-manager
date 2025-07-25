@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { collection, addDoc, getDocs, deleteDoc, doc } from 'firebase/firestore';
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
-import { db } from '../firebase.js';
+import { db } from '../firebase.js'; // ודא ש-db מיובא כראוי - הוספתי סיומת .js
 import { useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faUserPlus, faUserMinus, faUsers, faSave, faTimes, faTrashAlt } from '@fortawesome/free-solid-svg-icons';
+import { faUserPlus, faUserMinus, faUsers, faSave, faTimes } from '@fortawesome/free-solid-svg-icons';
 import './PlayerManagement.css';
 
 // רכיב Modal פשוט להודעות אישור ושגיאה
@@ -42,43 +42,18 @@ function PlayerManagement() {
   const [loadingPlayers, setLoadingPlayers] = useState(true);
   const [errorPlayers, setErrorPlayers] = useState(null);
 
-  // מצבי Modal
   const [showModal, setShowModal] = useState(false);
   const [modalMessage, setModalMessage] = useState('');
-  const [modalType, setModalType] = useState('alert'); // 'alert' or 'confirm'
-  const [modalAction, setModalAction] = useState(null); // פונקציה שתופעל באישור המודאל
-
-  // פונקציה להצגת מודאל
-  const openModal = (message, type = 'alert', action = null) => {
-    setModalMessage(message);
-    setModalType(type);
-    setModalAction(() => action);
-    setShowModal(true);
-  };
-
-  // פונקציה לטיפול באישור מודאל
-  const handleModalConfirm = () => {
-    if (modalAction) {
-      modalAction();
-    }
-    setShowModal(false);
-    setModalAction(null);
-    setModalMessage('');
-  };
-
-  // פונקציה לטיפול בביטול מודאל
-  const handleModalCancel = () => {
-    setShowModal(false);
-    setModalAction(null);
-    setModalMessage('');
-  };
+  const [modalType, setModalType] = useState('alert');
+  const [modalAction, setModalAction] = useState(null);
+  const [playerIdToDelete, setPlayerIdToDelete] = useState(null); // לשמירת ה-ID של השחקן למחיקה
 
   // קבלת ה-appId מהמשתנה הגלובלי __app_id
   const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
   useEffect(() => {
     const auth = getAuth();
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (currentUser) {
         setUser(currentUser);
         setUserId(currentUser.uid);
@@ -86,99 +61,132 @@ function PlayerManagement() {
         if (!currentUser.isAnonymous) {
           fetchPlayers(currentUser.uid);
         } else {
-          setErrorPlayers('כדי לנהל שחקנים, עליך להיות משתמש רשום.');
           setLoadingPlayers(false);
+          setErrorPlayers("התחבר כאורח אינו מאפשר ניהול שחקנים קבועים. אנא התחבר עם חשבון.");
         }
       } else {
-        navigate('/');
+        navigate('/'); // חזור לדף הבית אם המשתמש לא מחובר
       }
     });
-    return () => unsubscribe();
-  }, [navigate, userId]); // הוספת userId כתלות
 
+    return () => unsubscribe();
+  }, [navigate, appId]);
+
+  // פונקציה להצגת מודאל מותאם אישית
+  const showCustomModal = (message, type, action = null) => {
+    setModalMessage(message);
+    setModalType(type);
+    setModalAction(() => action); // שמור את הפעולה כפונקציה
+    setShowModal(true);
+  };
+
+  // פונקציה לסגירת המודאל
+  const closeModal = () => {
+    setShowModal(false);
+    setModalMessage('');
+    setModalType('alert');
+    setModalAction(null);
+    setPlayerIdToDelete(null); // איפוס ה-ID של השחקן למחיקה
+  };
+
+  // פונקציה לטעינת שחקנים מ-Firestore
   const fetchPlayers = async (currentUserId) => {
     setLoadingPlayers(true);
     setErrorPlayers(null);
     try {
       const playersColRef = collection(db, `artifacts/${appId}/users/${currentUserId}/players`);
       const playerSnapshot = await getDocs(playersColRef);
-      const playersList = playerSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setPlayers(playersList);
-    } catch (e) {
-      console.error("שגיאה בטעינת שחקנים: ", e);
-      setErrorPlayers('שגיאה בטעינת שחקנים. אנא נסה שוב מאוחר יותר.');
+      const fetchedPlayers = playerSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setPlayers(fetchedPlayers);
+    } catch (error) {
+      console.error("שגיאה בטעינת שחקנים קבועים:", error);
+      setErrorPlayers("שגיאה בטעינת שחקנים. אנא נסה שוב.");
     } finally {
       setLoadingPlayers(false);
     }
   };
 
+  // טיפול בהוספת שחקן חדש
   const handleAddPlayer = async (e) => {
     e.preventDefault();
     if (!user || user.isAnonymous) {
-      openModal('כדי להוסיף שחקנים, עליך להיות משתמש רשום.', 'alert');
+      showCustomModal("אינך מורשה להוסיף שחקנים כאורח. אנא התחבר עם חשבון.", 'alert');
       return;
     }
-    const name = newPlayerName.trim();
-    if (!name) {
-      openModal('יש להזין שם שחקן.', 'alert');
+
+    const playerName = newPlayerName.trim();
+    if (!playerName) {
+      showCustomModal('יש להזין שם שחקן.', 'alert');
       return;
     }
-    if (players.some(player => player.name === name)) {
-      openModal('שם השחקן כבר קיים.', 'alert');
+
+    if (players.some(p => p.name === playerName)) {
+      showCustomModal('שם שחקן זה כבר קיים ברשימה.', 'alert');
       return;
     }
 
     try {
-      await addDoc(collection(db, `artifacts/${appId}/users/${userId}/players`), { name });
+      const playersColRef = collection(db, `artifacts/${appId}/users/${userId}/players`);
+      await addDoc(playersColRef, { name: playerName });
       setNewPlayerName('');
-      openModal('שחקן נוסף בהצלחה!', 'alert', () => fetchPlayers(userId)); // רענן את הרשימה
-    } catch (e) {
-      console.error("שגיאה בהוספת שחקן: ", e);
-      openModal(`שגיאה בהוספת שחקן: ${e.message}`, 'alert');
+      showCustomModal('שחקן נוסף בהצלחה!', 'alert');
+      fetchPlayers(userId); // רענן את רשימת השחקנים
+    } catch (error) {
+      console.error("שגיאה בהוספת שחקן:", error);
+      showCustomModal(`שגיאה בהוספת שחקן: ${error.message}`, 'alert');
     }
   };
 
-  const handleDeletePlayer = (playerId) => {
+  // טיפול במחיקת שחקן
+  const handleDeletePlayer = (id) => {
     if (!user || user.isAnonymous) {
-      openModal('כדי למחוק שחקנים, עליך להיות משתמש רשום.', 'alert');
+      showCustomModal("אינך מורשה למחוק שחקנים כאורח. אנא התחבר עם חשבון.", 'alert');
       return;
     }
-    openModal(
-      'האם אתה בטוח שברצונך למחוק שחקן זה? פעולה זו בלתי הפיכה.',
-      'confirm',
-      async () => {
-        try {
-          await deleteDoc(doc(db, `artifacts/${appId}/users/${userId}/players`, playerId));
-          openModal('שחקן נמחק בהצלחה!', 'alert', () => fetchPlayers(userId)); // רענן את הרשימה
-        } catch (e) {
-          console.error("שגיאה במחיקת שחקן: ", e);
-          openModal(`שגיאה במחיקת שחקן: ${e.message}`, 'alert');
-        }
+
+    setPlayerIdToDelete(id); // שמור את ה-ID של השחקן למחיקה
+    showCustomModal('האם אתה בטוח שברצונך למחוק שחקן זה לצמיתות?', 'confirm', async () => {
+      try {
+        const playerDocRef = doc(db, `artifacts/${appId}/users/${userId}/players`, playerIdToDelete);
+        await deleteDoc(playerDocRef);
+        showCustomModal('שחקן נמחק בהצלחה!', 'alert');
+        fetchPlayers(userId); // רענן את רשימת השחקנים
+      } catch (error) {
+        console.error("שגיאה במחיקת שחקן:", error);
+        showCustomModal(`שגיאה במחיקת שחקן: ${error.message}`, 'alert');
+      } finally {
+        closeModal();
       }
-    );
+    });
   };
 
   if (loadingAuth) {
     return (
       <div className="player-management-container">
-        <p style={{ textAlign: 'center' }}>טוען נתוני משתמש...</p>
+        <p style={{ textAlign: 'center' }}>טוען...</p>
       </div>
     );
   }
 
   return (
     <div className="player-management-container">
-      <h2><FontAwesomeIcon icon={faUsers} /> ניהול שחקנים קבועים</h2>
-      <p>הוסף ומחק שחקנים קבועים שיופיעו אוטומטית במשחקים שלך.</p>
+      <CustomModal
+        message={modalMessage}
+        onConfirm={modalAction}
+        onCancel={closeModal}
+        type={modalType}
+      />
+
+      <h2><FontAwesomeIcon icon={faUsers} /> ניהול שחקנים</h2>
 
       <div className="section add-player-section">
         <h3><FontAwesomeIcon icon={faUserPlus} /> הוסף שחקן חדש</h3>
         <form onSubmit={handleAddPlayer} className="add-player-form">
           <input
             type="text"
+            placeholder="שם שחקן"
             value={newPlayerName}
             onChange={(e) => setNewPlayerName(e.target.value)}
-            placeholder="שם שחקן חדש"
             required
           />
           <button type="submit">
@@ -220,14 +228,6 @@ function PlayerManagement() {
           </div>
         </div>
       )}
-
-      {/* רכיב המודאל */}
-      <CustomModal
-        message={modalMessage}
-        onConfirm={handleModalConfirm}
-        onCancel={handleModalCancel}
-        type={modalType}
-      />
     </div>
   );
 }
