@@ -33,6 +33,7 @@ const CustomModal = ({ message, onConfirm, onCancel, type }) => {
 
 function PlayerManagement() {
   const [user, setUser] = useState(null);
+  const [userId, setUserId] = useState(null); // מצב לשמירת ה-userId
   const [loadingAuth, setLoadingAuth] = useState(true);
   const navigate = useNavigate();
 
@@ -41,192 +42,154 @@ function PlayerManagement() {
   const [loadingPlayers, setLoadingPlayers] = useState(true);
   const [errorPlayers, setErrorPlayers] = useState(null);
 
-  // מצב עבור המודל
-  const [modal, setModal] = useState({
-    isOpen: false,
-    message: '',
-    type: 'alert', // 'alert' or 'confirm'
-    onConfirm: null,
-    onCancel: null,
-  });
+  const [showModal, setShowModal] = useState(false);
+  const [modalMessage, setModalMessage] = useState('');
+  const [modalType, setModalType] = useState('alert');
+  const [modalAction, setModalAction] = useState(null);
 
-  // פתיחת מודל התראה
-  const showAlert = (message) => {
-    setModal({
-      isOpen: true,
-      message,
-      type: 'alert',
-      onConfirm: null, // לא רלוונטי לאלרט
-      onCancel: () => setModal({ ...modal, isOpen: false }),
-    });
-  };
-
-  // פתיחת מודל אישור
-  const showConfirm = (message, onConfirmCallback) => {
-    setModal({
-      isOpen: true,
-      message,
-      type: 'confirm',
-      onConfirm: () => {
-        onConfirmCallback();
-        setModal({ ...modal, isOpen: false });
-      },
-      onCancel: () => setModal({ ...modal, isOpen: false }),
-    });
-  };
-
+  // useEffect לאימות משתמש וטעינת שחקנים
   useEffect(() => {
     const auth = getAuth();
-    // קבלת ה-appId מהמשתנה הגלובלי __app_id
-    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       if (currentUser) {
         setUser(currentUser);
-        setLoadingAuth(false);
-        // טען שחקנים רק אם המשתמש אינו אנונימי
+        setUserId(currentUser.uid); // שמור את ה-UID
         if (!currentUser.isAnonymous) {
-          fetchPlayers(currentUser.uid, appId); // העבר appId לפונקציה
+          fetchPlayers(currentUser.uid);
         } else {
           setLoadingPlayers(false);
-          setErrorPlayers('ניהול שחקנים קבועים אינו זמין במצב אורח. אנא התחבר כדי לנהל שחקנים.');
+          setErrorPlayers('משתמש אנונימי אינו יכול לנהל שחקנים קבועים. אנא התחבר/הירשם.');
         }
       } else {
-        // אם אין משתמש מחובר, נווט לדף הכניסה הראשי
         navigate('/');
       }
+      setLoadingAuth(false);
     });
 
     return () => unsubscribe();
   }, [navigate]);
 
-  const fetchPlayers = async (userId, appId) => { // קבל appId כארגומנט
+  const openModal = (message, type, action = null) => {
+    setModalMessage(message);
+    setModalType(type);
+    setModalAction(() => action); // שמור את הפעולה כפונקציה
+    setShowModal(true);
+  };
+
+  const closeModal = () => {
+    setShowModal(false);
+    setModalMessage('');
+    setModalType('alert');
+    setModalAction(null);
+  };
+
+  const fetchPlayers = async (currentUserId) => {
+    if (!currentUserId) {
+      console.warn("אין User ID, לא ניתן לטעון שחקנים.");
+      setLoadingPlayers(false);
+      return;
+    }
     setLoadingPlayers(true);
     setErrorPlayers(null);
     try {
-      // הנתיב תוקן בהתאם לכללי האבטחה
-      const playersCollection = collection(db, `artifacts/${appId}/users/${userId}/players`);
-      const querySnapshot = await getDocs(playersCollection);
-      const playersList = querySnapshot.docs.map(doc => ({ id: doc.id, name: doc.data().name }));
-      setPlayers(playersList);
-      setLoadingPlayers(false);
+      const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+      const playersCollectionRef = collection(db, `artifacts/${appId}/users/${currentUserId}/players`);
+      const playerSnapshot = await getDocs(playersCollectionRef);
+      const fetchedPlayers = playerSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setPlayers(fetchedPlayers);
     } catch (err) {
-      console.error('שגיאה בשליפת שחקנים:', err);
-      setErrorPlayers('שגיאה בטעינת השחקנים. נסה שוב מאוחר יותר.');
+      console.error("שגיאה בטעינת שחקנים:", err);
+      setErrorPlayers("שגיאה בטעינת שחקנים: " + err.message);
+    } finally {
       setLoadingPlayers(false);
     }
   };
 
-  const handleAddPlayer = async (e) => {
-    e.preventDefault();
-    // קבלת ה-appId מהמשתנה הגלובלי __app_id
-    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-
-    if (!user) {
-      showAlert('שגיאת אימות. אנא רענן את הדף.');
-      return;
-    }
-    if (user.isAnonymous) {
-      showAlert('במצב אורח, לא ניתן לשמור שחקנים קבועים. אנא התחבר.');
-      return;
-    }
-
+  const handleAddPlayer = async (event) => {
+    event.preventDefault();
     if (newPlayerName.trim() === '') {
-      showAlert('שם השחקן לא יכול להיות ריק.');
+      openModal('שם שחקן לא יכול להיות ריק.', 'alert');
       return;
     }
     if (players.some(p => p.name === newPlayerName.trim())) {
-      showAlert('שחקן בשם זה כבר קיים.');
+      openModal('שחקן בשם זה כבר קיים ברשימה.', 'alert');
+      return;
+    }
+
+    if (!user || !userId) {
+      openModal('שגיאה: משתמש לא מאומת. לא ניתן להוסיף שחקן.', 'alert');
       return;
     }
 
     try {
-      // הנתיב תוקן בהתאם לכללי האבטחה
-      const playersCollection = collection(db, `artifacts/${appId}/users/${user.uid}/players`);
-      const docRef = await addDoc(playersCollection, { name: newPlayerName.trim() });
+      const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+      const playersCollectionRef = collection(db, `artifacts/${appId}/users/${userId}/players`);
+      const docRef = await addDoc(playersCollectionRef, {
+        name: newPlayerName.trim(),
+        createdAt: new Date()
+      });
       setPlayers([...players, { id: docRef.id, name: newPlayerName.trim() }]);
       setNewPlayerName('');
-      showAlert('שחקן נוסף בהצלחה!');
+      openModal('שחקן נוסף בהצלחה!', 'alert');
     } catch (error) {
-      console.error('שגיאה בהוספת שחקן:', error);
-      showAlert(`שגיאה בהוספת שחקן: ${error.message || error}`);
+      console.error("שגיאה בהוספת שחקן:", error);
+      openModal("שגיאה בהוספת שחקן: " + error.message, 'alert');
     }
   };
 
-  const handleDeletePlayer = async (playerId) => {
-    // קבלת ה-appId מהמשתנה הגלובלי __app_id
-    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-
-    if (!user) {
-      showAlert('שגיאת אימות. אנא רענן את הדף.');
-      return;
-    }
-    if (user.isAnonymous) {
-      showAlert('במצב אורח, לא ניתן למחוק שחקנים קבועים. אנא התחבר.');
-      return;
-    }
-
-    showConfirm('האם אתה בטוח שברצונך למחוק שחקן זה?', async () => {
+  const handleDeletePlayer = (playerId) => {
+    openModal('האם אתה בטוח שברצונך למחוק שחקן זה לצמיתות?', 'confirm', async () => {
+      if (!user || !userId) {
+        openModal('שגיאה: משתמש לא מאומת. לא ניתן למחוק שחקן.', 'alert');
+        closeModal();
+        return;
+      }
       try {
-        // הנתיב תוקן בהתאם לכללי האבטחה
-        const playerDocRef = doc(db, `artifacts/${appId}/users/${user.uid}/players`, playerId);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const playerDocRef = doc(db, `artifacts/${appId}/users/${userId}/players`, playerId);
         await deleteDoc(playerDocRef);
-        setPlayers(players.filter(player => player.id !== playerId));
-        showAlert('שחקן נמחק בהצלחה!');
+        setPlayers(players.filter(p => p.id !== playerId));
+        openModal('שחקן נמחק בהצלחה!', 'alert');
       } catch (error) {
-        console.error('שגיאה במחיקת שחקן:', error);
-        showAlert(`שגיאה במחיקת שחקן: ${error.message || error}`);
+        console.error("שגיאה במחיקת שחקן:", error);
+        openModal("שגיאה במחיקת שחקן: " + error.message, 'alert');
+      } finally {
+        closeModal();
       }
     });
   };
 
   if (loadingAuth) {
     return (
-      <div className="page-container player-management-container">
-        <p style={{ textAlign: 'center', color: 'var(--text-color)' }}>טוען...</p>
+      <div className="player-management-container">
+        <h2>טוען אימות...</h2>
       </div>
     );
   }
 
-  if (!user) {
-    // אם אין משתמש, ה-useEffect כבר יפנה לדף הכניסה.
-    // למען הבטיחות, נציג הודעת טעינה או נחכה לניתוב.
+  if (!user || user.isAnonymous) {
     return (
-      <div className="page-container player-management-container">
-        <p style={{ textAlign: 'center', color: 'var(--text-color)' }}>מפנה לדף הכניסה...</p>
-      </div>
-    );
-  }
-
-  if (loadingPlayers) {
-    return (
-      <div className="page-container player-management-container">
-        <h2><FontAwesomeIcon icon={faUsers} /> ניהול שחקנים</h2>
-        <p style={{ textAlign: 'center', color: 'var(--text-color)' }}>טוען שחקנים...</p>
-      </div>
-    );
-  }
-
-  if (errorPlayers) {
-    return (
-      <div className="page-container player-management-container">
-        <h2><FontAwesomeIcon icon={faUsers} /> ניהול שחקנים</h2>
-        <p style={{ textAlign: 'center', color: 'var(--danger-color)' }}>{errorPlayers}</p>
+      <div className="player-management-container">
+        <p className="error-message text-center">
+          <FontAwesomeIcon icon={faUsers} /> כדי לנהל שחקנים קבועים, עליך להתחבר או להירשם.
+        </p>
       </div>
     );
   }
 
   return (
-    <div className="page-container player-management-container">
+    <div className="player-management-container">
       <CustomModal
-        isOpen={modal.isOpen}
-        message={modal.message}
-        type={modal.type}
-        onConfirm={modal.onConfirm}
-        onCancel={modal.onCancel}
+        message={modalMessage}
+        onConfirm={modalAction}
+        onCancel={closeModal}
+        type={modalType}
       />
 
-      <h2><FontAwesomeIcon icon={faUsers} /> ניהול שחקנים</h2>
+      <h2><FontAwesomeIcon icon={faUsers} /> ניהול שחקנים קבועים</h2>
+      <p className="text-center text-gray-600 mb-8">
+        הוסף, ערוך ומחק שחקנים קבועים שיופיעו אוטומטית במשחקים.
+      </p>
 
       <div className="section add-player-section">
         <h3><FontAwesomeIcon icon={faUserPlus} /> הוסף שחקן חדש</h3>
@@ -236,6 +199,7 @@ function PlayerManagement() {
             value={newPlayerName}
             onChange={(e) => setNewPlayerName(e.target.value)}
             placeholder="שם שחקן"
+            required
           />
           <button type="submit">
             <FontAwesomeIcon icon={faSave} /> הוסף שחקן
@@ -243,7 +207,11 @@ function PlayerManagement() {
         </form>
       </div>
 
-      {players.length === 0 ? (
+      {loadingPlayers ? (
+        <p style={{ textAlign: 'center' }}>טוען שחקנים קבועים...</p>
+      ) : errorPlayers ? (
+        <p className="error-message">{errorPlayers}</p>
+      ) : players.length === 0 ? (
         <p style={{ textAlign: 'center' }}>אין שחקנים קבועים להצגה. הוסף שחקנים כדי להתחיל!</p>
       ) : (
         <div className="section players-list-section">
