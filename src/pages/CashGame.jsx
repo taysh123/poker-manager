@@ -4,7 +4,7 @@ import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import { db } from '../firebase';
 import { useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCoins, faUsers, faPlus, faTimes, faHandshake, faExchangeAlt, faPercentage, faWallet, faCamera, faUpload, faUser } from '@fortawesome/free-solid-svg-icons'; // נוסף faUser
+import { faCoins, faUsers, faPlus, faTimes, faHandshake, faExchangeAlt, faPercentage, faWallet, faCamera, faUpload, faUser, faMoneyBillWave, faDice } from '@fortawesome/free-solid-svg-icons';
 
 import './CashGame.css';
 
@@ -40,8 +40,10 @@ function CashGame() {
 
   const [players, setPlayers] = useState([]);
   const [newPlayerName, setNewPlayerName] = useState('');
-  const [newPlayerBuyIn, setNewPlayerBuyIn] = useState(''); // סכום כניסה בשקלים
+  const [newPlayerBuyInShekels, setNewPlayerBuyInShekels] = useState(''); // סכום כניסה בשקלים עבור שחקן חדש
   const [chipRatio, setChipRatio] = useState(1); // יחס שקל לצ'יפ
+  const [defaultBuyInShekels, setDefaultBuyInShekels] = useState(0); // סכום כניסה סטנדרטי בשקלים
+  const [defaultBuyInChips, setDefaultBuyInChips] = useState(0); // סכום כניסה סטנדרטי בצ'יפים
   const [debts, setDebts] = useState([]);
   const [gameImages, setGameImages] = useState([]); // מצב לתמונות המשחק
   const fileInputRef = useRef(null);
@@ -54,6 +56,11 @@ function CashGame() {
   const [savedPlayers, setSavedPlayers] = useState([]); // רשימת שחקנים קבועים מ-Firestore
   const [loadingSavedPlayers, setLoadingSavedPlayers] = useState(true);
   const [selectedSavedPlayer, setSelectedSavedPlayer] = useState('');
+
+  const [showAddManualBuyInModal, setShowAddManualBuyInModal] = useState(false);
+  const [playerToAddToBuyIn, setPlayerToAddToBuyIn] = useState(null);
+  const [manualBuyInShekels, setManualBuyInShekels] = useState('');
+  const [manualBuyInChips, setManualBuyInChips] = useState('');
 
   // קבלת ה-appId מהמשתנה הגלובלי __app_id
   const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
@@ -75,7 +82,6 @@ function CashGame() {
             setSavedPlayers(fetchedPlayers);
           } catch (error) {
             console.error("שגיאה בטעינת שחקנים קבועים:", error);
-            // הצג הודעת שגיאה למשתמש
             showCustomModal("שגיאה בטעינת שחקנים קבועים.", 'alert');
           } finally {
             setLoadingSavedPlayers(false);
@@ -107,13 +113,49 @@ function CashGame() {
     setModalAction(null);
   };
 
-  // הוספת שחקן חדש למשחק
-  const addPlayer = () => {
-    const name = newPlayerName.trim();
-    const buyIn = parseFloat(newPlayerBuyIn);
+  // טיפול בשינוי יחס צ'יפים לשקל
+  const handleChipRatioChange = (value) => {
+    const ratio = parseFloat(value) || 1;
+    setChipRatio(ratio);
+    // עדכן את סכומי הכניסה הסטנדרטיים בהתאם ליחס החדש
+    setDefaultBuyInChips(defaultBuyInShekels * ratio);
+  };
 
-    if (!name || isNaN(buyIn) || buyIn <= 0) {
-      showCustomModal('יש להזין שם וכניסה תקינה (בשקלים).', 'alert');
+  // טיפול בשינוי כניסה סטנדרטית בשקלים
+  const handleDefaultBuyInShekelsChange = (value) => {
+    const shekels = parseFloat(value) || 0;
+    setDefaultBuyInShekels(shekels);
+    setDefaultBuyInChips(shekels * chipRatio);
+  };
+
+  // טיפול בשינוי כניסה סטנדרטית בצ'יפים
+  const handleDefaultBuyInChipsChange = (value) => {
+    const chips = parseFloat(value) || 0;
+    setDefaultBuyInChips(chips);
+    setDefaultBuyInShekels(chips / chipRatio);
+  };
+
+  // הוספת שחקן חדש למשחק
+  const addPlayer = (useDefaultBuyIn = false) => {
+    const name = newPlayerName.trim();
+    let buyIn = 0;
+
+    if (useDefaultBuyIn) {
+      buyIn = defaultBuyInShekels;
+      if (isNaN(buyIn) || buyIn <= 0) {
+        showCustomModal('יש להגדיר סכום כניסה סטנדרטי תקין (בשקלים) לפני השימוש באפשרות זו.', 'alert');
+        return;
+      }
+    } else {
+      buyIn = parseFloat(newPlayerBuyInShekels);
+      if (isNaN(buyIn) || buyIn <= 0) {
+        showCustomModal('יש להזין שם וכניסה תקינה (בשקלים).', 'alert');
+        return;
+      }
+    }
+
+    if (!name) {
+      showCustomModal('יש להזין שם שחקן.', 'alert');
       return;
     }
     if (players.some(p => p.name === name)) {
@@ -123,7 +165,7 @@ function CashGame() {
 
     setPlayers([...players, { name, buyIn, cashOut: 0 }]); // buyIn נשמר בשקלים
     setNewPlayerName('');
-    setNewPlayerBuyIn('');
+    setNewPlayerBuyInShekels('');
     setSelectedSavedPlayer(''); // איפוס בחירת שחקן קבוע
   };
 
@@ -156,6 +198,55 @@ function CashGame() {
       setPlayers(players.filter((_, index) => index !== indexToRemove));
       closeModal();
     });
+  };
+
+  // פתיחת מודאל הוספת כניסה ידנית
+  const openAddManualBuyInModal = (player) => {
+    setPlayerToAddToBuyIn(player);
+    setManualBuyInShekels('');
+    setManualBuyInChips('');
+    setShowAddManualBuyInModal(true);
+  };
+
+  // סגירת מודאל הוספת כניסה ידנית
+  const closeAddManualBuyInModal = () => {
+    setShowAddManualBuyInModal(false);
+    setPlayerToAddToBuyIn(null);
+    setManualBuyInShekels('');
+    setManualBuyInChips('');
+  };
+
+  // טיפול בהוספת כניסה ידנית לשחקן
+  const handleManualBuyInChangeShekels = (value) => {
+    const shekels = parseFloat(value) || 0;
+    setManualBuyInShekels(shekels);
+    setManualBuyInChips(shekels * chipRatio);
+  };
+
+  const handleManualBuyInChangeChips = (value) => {
+    const chips = parseFloat(value) || 0;
+    setManualBuyInChips(chips);
+    setManualBuyInShekels(chips / chipRatio);
+  };
+
+  const addManualBuyInToPlayer = () => {
+    if (!playerToAddToBuyIn) return;
+
+    const shekelsToAdd = parseFloat(manualBuyInShekels);
+
+    if (isNaN(shekelsToAdd) || shekelsToAdd <= 0) {
+      showCustomModal('יש להזין סכום כניסה תקין.', 'alert');
+      return;
+    }
+
+    const updatedPlayers = players.map(p =>
+      p.name === playerToAddToBuyIn.name
+        ? { ...p, buyIn: p.buyIn + shekelsToAdd }
+        : p
+    );
+    setPlayers(updatedPlayers);
+    closeAddManualBuyInModal();
+    showCustomModal(`נוספו ${shekelsToAdd.toFixed(2)} ₪ ל- ${playerToAddToBuyIn.name}`, 'alert');
   };
 
   // חישוב חובות
@@ -289,6 +380,39 @@ function CashGame() {
         type={modalType}
       />
 
+      {/* מודאל להוספת כניסה ידנית */}
+      {showAddManualBuyInModal && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <h3>הוסף כניסה ל- {playerToAddToBuyIn?.name}</h3>
+            <div className="input-group">
+              <label>כניסה בשקלים (₪):</label>
+              <input
+                type="number"
+                value={manualBuyInShekels}
+                onChange={(e) => handleManualBuyInChangeShekels(e.target.value)}
+                min="0"
+                step="0.01"
+              />
+            </div>
+            <div className="input-group">
+              <label>כניסה בצ'יפים:</label>
+              <input
+                type="number"
+                value={manualBuyInChips}
+                onChange={(e) => handleManualBuyInChangeChips(e.target.value)}
+                min="0"
+                step="0.01"
+              />
+            </div>
+            <div className="modal-actions">
+              <button onClick={addManualBuyInToPlayer} className="modal-button confirm-button">הוסף</button>
+              <button onClick={closeAddManualBuyInModal} className="modal-button cancel-button">ביטול</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <h2><FontAwesomeIcon icon={faCoins} /> משחק קאש חדש</h2>
 
       <div className="section chip-ratio-section">
@@ -299,10 +423,34 @@ function CashGame() {
             type="number"
             id="chipRatio"
             value={chipRatio}
-            onChange={(e) => setChipRatio(parseFloat(e.target.value) || 1)}
+            onChange={(e) => handleChipRatioChange(e.target.value)}
             min="0.01"
             step="0.01"
             placeholder="לדוגמה: 10 (10 צ'יפים לשקל)"
+          />
+        </div>
+        <div className="input-group">
+          <label htmlFor="defaultBuyInShekels">כניסה סטנדרטית (₪):</label>
+          <input
+            type="number"
+            id="defaultBuyInShekels"
+            value={defaultBuyInShekels}
+            onChange={(e) => handleDefaultBuyInShekelsChange(e.target.value)}
+            min="0"
+            step="0.01"
+            placeholder="סכום בשקלים"
+          />
+        </div>
+        <div className="input-group">
+          <label htmlFor="defaultBuyInChips">כניסה סטנדרטית (צ'יפים):</label>
+          <input
+            type="number"
+            id="defaultBuyInChips"
+            value={defaultBuyInChips}
+            onChange={(e) => handleDefaultBuyInChipsChange(e.target.value)}
+            min="0"
+            step="0.01"
+            placeholder="סכום בצ'יפים"
           />
         </div>
       </div>
@@ -320,13 +468,16 @@ function CashGame() {
             />
             <input
               type="number"
-              placeholder="כניסה (₪)"
-              value={newPlayerBuyIn}
-              onChange={(e) => setNewPlayerBuyIn(e.target.value)}
+              placeholder="כניסה ידנית (₪)"
+              value={newPlayerBuyInShekels}
+              onChange={(e) => setNewPlayerBuyInShekels(e.target.value)}
               min="0"
             />
-            <button onClick={addPlayer} className="add-player-btn">
+            <button onClick={() => addPlayer(false)} className="add-player-btn">
               <FontAwesomeIcon icon={faPlus} /> הוסף שחקן
+            </button>
+            <button onClick={() => addPlayer(true)} className="add-player-btn secondary-btn">
+              <FontAwesomeIcon icon={faMoneyBillWave} /> הוסף כניסה סטנדרטית
             </button>
           </div>
 
@@ -377,7 +528,10 @@ function CashGame() {
                         placeholder="צ'יפים"
                       />
                     </td>
-                    <td>
+                    <td className="player-actions">
+                      <button onClick={() => openAddManualBuyInModal(player)} className="add-buyin-btn">
+                        <FontAwesomeIcon icon={faPlus} /> כניסה נוספת
+                      </button>
                       <button onClick={() => removePlayer(index)} className="remove-btn">
                         <FontAwesomeIcon icon={faTimes} /> הסר
                       </button>
