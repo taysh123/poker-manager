@@ -4,7 +4,7 @@ import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import { db } from '../firebase';
 import { useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faHistory, faCalendarAlt, faCoins, faUsers, faCamera, faPlus, faTimes, faTrashAlt } from '@fortawesome/free-solid-svg-icons';
+import { faHistory, faCalendarAlt, faCoins, faUsers, faCamera, faPlus, faTimes, faTrashAlt, faChartBar, faUser, faMoneyBillWave, faArrowRightArrowLeft } from '@fortawesome/free-solid-svg-icons';
 import './Sessions.css';
 
 // רכיב Modal פשוט להודעות אישור ושגיאה
@@ -48,6 +48,8 @@ function Sessions() {
   const [modalType, setModalType] = useState('alert');
   const [confirmDeleteGameId, setConfirmDeleteGameId] = useState(null);
 
+  const [playerStats, setPlayerStats] = useState({}); // מצב חדש לסטטיסטיקות שחקנים
+
   const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
   useEffect(() => {
@@ -75,19 +77,59 @@ function Sessions() {
     setLoadingGames(true);
     setErrorGames(null);
     try {
-      // נתוני משחקי קאש הם פרטיים למשתמש
       const gamesCollectionRef = collection(db, `artifacts/${appId}/users/${currentUserId}/cashGames`);
       // הערה: orderBy עלול לדרוש אינדקסים ב-Firestore. אם יש שגיאות, ניתן להסיר את ה-orderBy ולמיין ב-JS.
       const q = query(gamesCollectionRef, orderBy('date', 'desc'));
       const querySnapshot = await getDocs(q);
       const gamesList = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setCashGames(gamesList);
+      calculatePlayerStatistics(gamesList); // קריאה לפונקציית חישוב הסטטיסטיקות
     } catch (error) {
       console.error("שגיאה בטעינת משחקי קאש:", error);
       setErrorGames('שגיאה בטעינת משחקים שמורים. נסה לרענן את הדף.');
     } finally {
       setLoadingGames(false);
     }
+  };
+
+  // פונקציה לחישוב סטטיסטיקות שחקנים מצטברות
+  const calculatePlayerStatistics = (fetchedSessions) => {
+    const stats = {};
+
+    fetchedSessions.forEach(session => {
+      session.players.forEach(player => {
+        if (!stats[player.name]) {
+          stats[player.name] = {
+            totalBuyInShekels: 0,
+            totalCashOutChips: 0, // סך יציאות בצ'יפים (נתון גולמי)
+            totalCashOutShekels: 0, // סך יציאות בשקלים (לאחר המרה)
+            netProfitShekels: 0, // רווח נקי בשקלים
+            gamesPlayed: 0,
+            chipRatioSum: 0, // לסכום יחסי הצ'יפים לחישוב ממוצע
+          };
+        }
+
+        const chipRatio = session.chipsPerShekel || 1; // ודא שיחס הצ'יפים קיים, אחרת השתמש ב-1
+        const cashOutInShekels = player.cashOut / chipRatio; // המר יציאה מצ'יפים לשקלים
+
+        stats[player.name].totalBuyInShekels += player.buyIn;
+        stats[player.name].totalCashOutChips += player.cashOut;
+        stats[player.name].totalCashOutShekels += cashOutInShekels;
+        stats[player.name].netProfitShekels += (cashOutInShekels - player.buyIn);
+        stats[player.name].gamesPlayed += 1;
+        stats[player.name].chipRatioSum += chipRatio;
+      });
+    });
+
+    // חישוב ממוצעים וסיום הסטטיסטיקות
+    for (const playerName in stats) {
+      const playerStat = stats[playerName];
+      playerStat.averageBuyInShekels = playerStat.totalBuyInShekels / playerStat.gamesPlayed;
+      playerStat.averageCashOutShekels = playerStat.totalCashOutShekels / playerStat.gamesPlayed;
+      playerStat.averageChipRatio = playerStat.chipRatioSum / playerStat.gamesPlayed;
+    }
+
+    setPlayerStats(stats);
   };
 
   const handleAddImageClick = (gameId) => {
@@ -126,9 +168,9 @@ function Sessions() {
     reader.onloadend = async () => {
       try {
         const gameRef = doc(db, `artifacts/${appId}/users/${userId}/cashGames`, selectedGameId);
-        const currentImages = cashGames.find(game => game.id === selectedGameId)?.gameImages || [];
+        const currentImages = cashGames.find(game => game.id === selectedGameId)?.images || []; // שימוש ב-`images` כפי שנשמר ב-CashGame.jsx
         await updateDoc(gameRef, {
-          gameImages: [...currentImages, reader.result]
+          images: [...currentImages, reader.result] // שמירה כ-`images`
         });
         setModalMessage('התמונה הועלתה בהצלחה!');
         setModalType('alert');
@@ -151,7 +193,7 @@ function Sessions() {
     };
   };
 
-  const handleRemoveImage = async (gameId, imageIndex) => {
+  const handleRemoveImage = (gameId, imageIndex) => {
     if (!user || user.isAnonymous) {
       setModalMessage('כניסת אורח אינה תומכת במחיקת תמונות. אנא התחבר/הרשם.');
       setModalType('alert');
@@ -170,8 +212,8 @@ function Sessions() {
       const gameRef = doc(db, `artifacts/${appId}/users/${userId}/cashGames`, gameId);
       const gameToUpdate = cashGames.find(game => game.id === gameId);
       if (gameToUpdate) {
-        const updatedImages = gameToUpdate.gameImages.filter((_, index) => index !== imageIndex);
-        await updateDoc(gameRef, { gameImages: updatedImages });
+        const updatedImages = gameToUpdate.images.filter((_, index) => index !== imageIndex); // שימוש ב-`images`
+        await updateDoc(gameRef, { images: updatedImages });
         setModalMessage('התמונה נמחקה בהצלחה!');
         setModalType('alert');
         fetchCashGames(userId); // רענן את רשימת המשחקים
@@ -215,15 +257,15 @@ function Sessions() {
       setModalType('alert');
     } finally {
       setConfirmDeleteGameId(null);
-    }
+    } 
   };
 
   const cancelDeleteGame = () => {
     setConfirmDeleteGameId(null);
     setModalMessage(null);
-  };
+  };   
 
-  const closeModal = () => {
+  const closeModal = () => {  
     setModalMessage(null);
     setModalType('alert');
   };
@@ -255,19 +297,28 @@ function Sessions() {
             <div key={game.id} className="game-card">
               <h4><FontAwesomeIcon icon={faCalendarAlt} /> תאריך: {game.date ? new Date(game.date.seconds * 1000).toLocaleDateString('he-IL') : 'לא ידוע'}</h4>
               <p><FontAwesomeIcon icon={faCoins} /> יחס צ'יפים: {game.chipsPerShekel}</p>
+              <p className={game.totalProfitLoss >= 0 ? 'profit' : 'loss'}>
+                <FontAwesomeIcon icon={faMoneyBillWave} /> רווח/הפסד כולל: {game.totalProfitLoss ? game.totalProfitLoss.toFixed(2) : '0.00'} ₪
+              </p>
               <h5><FontAwesomeIcon icon={faUsers} /> שחקנים:</h5>
               <ul className="player-list">
                 {game.players.map((player, pIndex) => (
                   <li key={pIndex}>
-                    {player.name}: כניסה {player.buyIn} ₪, יציאה {player.cashOut} צ'יפים
+                    {player.name}: כניסה {player.buyIn.toFixed(2)} ₪, יציאה {player.cashOut.toFixed(2)} צ'יפים
+                    {/* חישוב רווח/הפסד לשחקן ספציפי במשחק זה */}
+                    {player.profitLoss !== undefined && (
+                      <span className={player.profitLoss >= 0 ? 'profit' : 'loss'}>
+                        ({player.profitLoss.toFixed(2)} ₪)
+                      </span>
+                    )}
                   </li>
                 ))}
               </ul>
-              {game.debts && game.debts.length > 0 && (
+              {game.settlements && game.settlements.length > 0 && (
                 <>
-                  <h5><FontAwesomeIcon icon={faHistory} /> חובות:</h5>
+                  <h5><FontAwesomeIcon icon={faArrowRightArrowLeft} /> חובות:</h5>
                   <ul className="debt-list">
-                    {game.debts.map((debt, dIndex) => (
+                    {game.settlements.map((debt, dIndex) => (
                       <li key={dIndex}>
                         {debt.debtor} חייב ל-{debt.creditor}: {debt.amount.toFixed(2)} ₪
                       </li>
@@ -276,11 +327,11 @@ function Sessions() {
                 </>
               )}
 
-              {game.gameImages && game.gameImages.length > 0 && (
+              {game.images && game.images.length > 0 && (
                 <div className="game-images-section">
                   <h5><FontAwesomeIcon icon={faCamera} /> תמונות מהמשחק:</h5>
                   <div className="game-images-grid">
-                    {game.gameImages.map((image, index) => (
+                    {game.images.map((image, index) => (
                       <div key={index} className="game-image-item">
                         <img src={image} alt={`Game Image ${index + 1}`} />
                         <button onClick={() => handleRemoveImage(game.id, index)} className="remove-image-button">
@@ -305,6 +356,43 @@ function Sessions() {
               )}
             </div>
           ))}
+        </div>
+      )}
+
+      {/* טבלת סטטיסטיקות שחקנים מצטברות */}
+      {Object.keys(playerStats).length > 0 && (
+        <div className="section player-statistics-section">
+          <h3><FontAwesomeIcon icon={faChartBar} /> סטטיסטיקות שחקנים</h3>
+          <div className="player-stats-table-container">
+            <table className="player-stats-table">
+              <thead>
+                <tr>
+                  <th>שם שחקן</th>
+                  <th>משחקים שוחקו</th>
+                  <th>סך כניסות (₪)</th>
+                  <th>סך יציאות (₪)</th>
+                  <th>רווח נקי (₪)</th>
+                  <th>ממוצע כניסה (₪)</th>
+                  <th>ממוצע יציאה (₪)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {Object.entries(playerStats).map(([name, stats]) => (
+                  <tr key={name}>
+                    <td><FontAwesomeIcon icon={faUser} /> {name}</td>
+                    <td>{stats.gamesPlayed}</td>
+                    <td>{stats.totalBuyInShekels.toFixed(2)} ₪</td>
+                    <td>{stats.totalCashOutShekels.toFixed(2)} ₪</td>
+                    <td className={stats.netProfitShekels >= 0 ? 'profit' : 'loss'}>
+                      {stats.netProfitShekels.toFixed(2)} ₪
+                    </td>
+                    <td>{stats.averageBuyInShekels.toFixed(2)} ₪</td>
+                    <td>{stats.averageCashOutShekels.toFixed(2)} ₪</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
