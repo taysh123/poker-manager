@@ -4,8 +4,31 @@ import { db } from '../firebase';
 import { collection, addDoc, serverTimestamp, doc, setDoc, getDocs, query, where } from 'firebase/firestore';
 import { getAuth, onAuthStateChanged, signInAnonymously } from 'firebase/auth';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faPlus, faMinus, faSave, faTimes, faEdit, faTrashAlt, faCoins, faUsers, faMoneyBillWave, faHandshake, faCheckCircle, faUpload, faCamera } from '@fortawesome/free-solid-svg-icons';
+import { faPlus, faMinus, faSave, faTimes, faEdit, faTrashAlt, faCoins, faUsers, faMoneyBillWave, faHandshake, faCheckCircle, faUpload, faCamera, faArrowRightArrowLeft, faChartBar } from '@fortawesome/free-solid-svg-icons';
 import './CashGame.css';
+
+// רכיב Modal פשוט להודעות אישור ושגיאה
+const CustomModal = ({ message, onConfirm, onCancel, type }) => {
+  if (!message) return null;
+  return (
+    <div className="modal-overlay">
+      <div className="modal-content bg-gray-800 text-gray-100 rounded-xl p-6 shadow-2xl max-w-sm w-full mx-4">
+        <p className="text-center text-lg">{message}</p>
+        <div className="modal-actions mt-6 flex justify-around space-x-4">
+          {type === 'confirm' && (
+            <>
+              <button onClick={onConfirm} className="modal-button confirm-button bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-full transition-colors duration-200">אישור</button>
+              <button onClick={onCancel} className="modal-button cancel-button bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-full transition-colors duration-200">ביטול</button>
+            </>
+          )}
+          {type === 'alert' && (
+            <button onClick={onCancel} className="modal-button confirm-button bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-full transition-colors duration-200 w-full">הבנתי</button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
 
 // פונקציית עזר למציאת פתרון חובות אופטימלי
 const calculateSettlements = (players) => {
@@ -50,29 +73,6 @@ const calculateSettlements = (players) => {
   return settlements;
 };
 
-// רכיב Modal פשוט להודעות אישור ושגיאה
-const CustomModal = ({ message, onConfirm, onCancel, type }) => {
-  if (!message) return null;
-  return (
-    <div className="modal-overlay">
-      <div className="modal-content bg-gray-800 text-gray-100 rounded-lg p-6 shadow-2xl max-w-sm w-full mx-4">
-        <p className="text-center text-lg">{message}</p>
-        <div className="modal-actions mt-6 flex justify-around space-x-4">
-          {type === 'confirm' && (
-            <>
-              <button onClick={onConfirm} className="modal-button confirm-button bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-full transition-colors duration-200">אישור</button>
-              <button onClick={onCancel} className="modal-button cancel-button bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-full transition-colors duration-200">ביטול</button>
-            </>
-          )}
-          {type === 'alert' && (
-            <button onClick={onCancel} className="modal-button confirm-button bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-full transition-colors duration-200 w-full">הבנתי</button>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-};
-
 const CashGame = () => {
   const [user, setUser] = useState(null);
   const [userId, setUserId] = useState(null);
@@ -96,8 +96,10 @@ const CashGame = () => {
   const [images, setImages] = useState([]);
   const [newImageFile, setNewImageFile] = useState(null);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [modalAction, setModalAction] = useState(null);
 
   const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+  const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
 
   useEffect(() => {
     const auth = getAuth();
@@ -119,7 +121,7 @@ const CashGame = () => {
   useEffect(() => {
     // עדכן את כמות הצ'יפים הסטנדרטית כאשר סכום הכניסה הסטנדרטי או יחס הצ'יפים משתנה
     if (standardBuyIn && chipsPerShekel) {
-      setStandardChips(standardBuyIn * chipsPerShekel);
+      setStandardChips(Number(standardBuyIn) * Number(chipsPerShekel));
     } else {
       setStandardChips('');
     }
@@ -153,8 +155,6 @@ const CashGame = () => {
     setModalAction(null);
   };
   
-  const [modalAction, setModalAction] = useState(null);
-
   const handleInputChange = (setter) => (e) => {
     let value = e.target.value;
     // הסר אפסים מובילים אם הערך אינו "0" עצמו
@@ -162,7 +162,7 @@ const CashGame = () => {
       value = value.substring(1);
     }
     // ודא שהקלט הוא מספר או ריק
-    if (value === '' || /^\d+$/.test(value)) {
+    if (value === '' || /^\d+(\.\d*)?$/.test(value)) {
       setter(value);
     }
   };
@@ -239,7 +239,7 @@ const CashGame = () => {
       value = value.substring(1);
     }
     // ודא שהקלט הוא מספר
-    if (value === '' || /^\d+$/.test(value)) {
+    if (value === '' || /^\d+(\.\d*)?$/.test(value)) {
       newPlayers[index][field] = value;
       setPlayers(newPlayers);
     }
@@ -268,7 +268,7 @@ const CashGame = () => {
 
     const calculatedPlayers = players.map(p => ({
       ...p,
-      profitLoss: (p.cashOut / Number(chipsPerShekel)) - p.buyIn
+      profitLoss: (Number(p.cashOut) / Number(chipsPerShekel)) - Number(p.buyIn)
     }));
     setPlayers(calculatedPlayers);
     setSettlements(calculateSettlements(calculatedPlayers));
@@ -335,7 +335,7 @@ const CashGame = () => {
           name: p.name,
           buyIn: p.buyIn,
           cashOut: Number(p.cashOut),
-          profitLoss: (p.cashOut / Number(chipsPerShekel)) - p.buyIn
+          profitLoss: (Number(p.cashOut) / Number(chipsPerShekel)) - Number(p.buyIn)
         })),
         settlements,
         totalProfitLoss,
@@ -539,7 +539,7 @@ const CashGame = () => {
               onClick={toggleCalculations}
               className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-full transition-colors duration-200 text-lg shadow-lg"
             >
-              <FontAwesomeIcon icon={faSave} className="mr-2" />
+              <FontAwesomeIcon icon={faChartBar} className="mr-2" />
               בצע חישובים
             </button>
           </div>
@@ -572,7 +572,7 @@ const CashGame = () => {
             {settlements.length > 0 && (
               <div>
                 <h4 className="text-xl font-bold mb-2 text-yellow-300">
-                  <FontAwesomeIcon icon={faHandshake} className="mr-2" />
+                  <FontAwesomeIcon icon={faArrowRightArrowLeft} className="mr-2" />
                   הסדר חובות
                 </h4>
                 <ul className="grid grid-cols-1 md:grid-cols-2 gap-2">

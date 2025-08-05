@@ -4,7 +4,7 @@ import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import { db } from '../firebase';
 import { useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faHistory, faCalendarAlt, faCoins, faUsers, faCamera, faTimes, faTrashAlt, faChartBar, faUser, faMoneyBillWave, faArrowRightArrowLeft } from '@fortawesome/free-solid-svg-icons';
+import { faHistory, faCalendarAlt, faCoins, faUsers, faCamera, faTimes, faTrashAlt, faChartBar, faUser, faMoneyBillWave, faArrowRightArrowLeft, faEuroSign, faShekelSign } from '@fortawesome/free-solid-svg-icons';
 import './Sessions.css';
 
 // רכיב Modal פשוט להודעות אישור ושגיאה
@@ -46,6 +46,7 @@ function Sessions() {
   const [playerStats, setPlayerStats] = useState({});
 
   const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+  const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
 
   useEffect(() => {
     const auth = getAuth();
@@ -73,11 +74,13 @@ function Sessions() {
     setErrorGames(null);
     try {
       const gamesCollectionRef = collection(db, `artifacts/${appId}/users/${currentUserId}/cashGames`);
-      const q = query(gamesCollectionRef, orderBy('date', 'desc'));
+      const q = query(gamesCollectionRef);
       const querySnapshot = await getDocs(q);
       const gamesList = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setCashGames(gamesList);
-      calculatePlayerStatistics(gamesList);
+      // נבצע את המיון בזיכרון במקום ב-Firestore כדי למנוע צורך באינדקסים
+      const sortedGames = gamesList.sort((a, b) => b.date.seconds - a.date.seconds);
+      setCashGames(sortedGames);
+      calculatePlayerStatistics(sortedGames);
     } catch (error) {
       console.error("שגיאה בטעינת משחקי קאש:", error);
       setErrorGames('שגיאה בטעינת משחקים שמורים. נסה לרענן את הדף.');
@@ -102,15 +105,17 @@ function Sessions() {
             totalCashOutShekels: 0,
             netProfitShekels: 0,
             gamesPlayed: 0,
+            totalExits: 0, // חדש: סך הכל יציאות כדי לחשב ממוצע יציאה
           };
         }
-
+        
         const cashOutInShekels = player.cashOut / chipsPerShekel;
 
         stats[player.name].totalBuyInShekels += player.buyIn;
         stats[player.name].totalCashOutShekels += cashOutInShekels;
         stats[player.name].netProfitShekels += (cashOutInShekels - player.buyIn);
         stats[player.name].gamesPlayed += 1;
+        stats[player.name].totalExits += player.cashOut; // חדש: סוכם את כמות היציאות (צ'יפים)
       });
     });
 
@@ -118,6 +123,7 @@ function Sessions() {
       const playerStat = stats[playerName];
       playerStat.averageBuyInShekels = playerStat.totalBuyInShekels / playerStat.gamesPlayed;
       playerStat.averageCashOutShekels = playerStat.totalCashOutShekels / playerStat.gamesPlayed;
+      playerStat.averageExitChips = playerStat.totalExits / playerStat.gamesPlayed; // חדש: ממוצע יציאה בצ'יפים
     }
 
     setPlayerStats(stats);
@@ -232,10 +238,7 @@ function Sessions() {
           <FontAwesomeIcon icon={faHistory} className="mr-3" />
           משחקים שמורים
         </h2>
-        <p className="text-center text-gray-400 mb-8">
-          צפה ונהל את כל משחקי הקאש שנשמרו בעבר.
-        </p>
-
+        
         {cashGames.length === 0 ? (
           <p className="text-center text-xl text-gray-400">אין משחקים שמורים להצגה.</p>
         ) : (
@@ -261,7 +264,7 @@ function Sessions() {
                 </div>
                 
                 <p className={`text-lg font-bold ${game.totalProfitLoss >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                  <FontAwesomeIcon icon={faMoneyBillWave} className="mr-2" />
+                  <FontAwesomeIcon icon={faShekelSign} className="mr-2" />
                   רווח/הפסד כולל: {game.totalProfitLoss ? game.totalProfitLoss.toFixed(2) : '0.00'} ₪
                 </p>
                 
@@ -275,7 +278,7 @@ function Sessions() {
                       <li key={pIndex} className="bg-gray-700 rounded-lg p-3">
                         <span className="font-semibold">{player.name}:</span>
                         <span className="ml-2 text-gray-300">
-                          כניסה {player.buyIn.toFixed(2)} ₪, יציאה {player.cashOut.toFixed(2)} צ'יפים
+                          כניסה {player.buyIn.toFixed(2)} ₪, יציאה {player.cashOut} צ'יפים
                         </span>
                         {player.profitLoss !== undefined && (
                           <span className={`ml-2 font-bold ${player.profitLoss >= 0 ? 'text-green-400' : 'text-red-400'}`}>
@@ -342,10 +345,10 @@ function Sessions() {
                     <th className="py-3 px-6 text-left">שם שחקן</th>
                     <th className="py-3 px-6 text-left">משחקים</th>
                     <th className="py-3 px-6 text-left">סך כניסות (₪)</th>
-                    <th className="py-3 px-6 text-left">סך יציאות (₪)</th>
+                    <th className="py-3 px-6 text-left">סך יציאות (צ'יפים)</th>
                     <th className="py-3 px-6 text-left">רווח נקי (₪)</th>
                     <th className="py-3 px-6 text-left">ממוצע כניסה (₪)</th>
-                    <th className="py-3 px-6 text-left">ממוצע יציאה (₪)</th>
+                    <th className="py-3 px-6 text-left">ממוצע יציאה (צ'יפים)</th>
                   </tr>
                 </thead>
                 <tbody className="text-gray-300 text-sm font-light">
@@ -357,12 +360,12 @@ function Sessions() {
                       </td>
                       <td className="py-3 px-6 text-left">{stats.gamesPlayed}</td>
                       <td className="py-3 px-6 text-left">{stats.totalBuyInShekels.toFixed(2)} ₪</td>
-                      <td className="py-3 px-6 text-left">{stats.totalCashOutShekels.toFixed(2)} ₪</td>
+                      <td className="py-3 px-6 text-left">{stats.totalExits.toFixed(2)} צ'יפים</td>
                       <td className={`py-3 px-6 text-left font-bold ${stats.netProfitShekels >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                         {stats.netProfitShekels.toFixed(2)} ₪
                       </td>
                       <td className="py-3 px-6 text-left">{stats.averageBuyInShekels.toFixed(2)} ₪</td>
-                      <td className="py-3 px-6 text-left">{stats.averageCashOutShekels.toFixed(2)} ₪</td>
+                      <td className="py-3 px-6 text-left">{stats.averageExitChips.toFixed(2)} צ'יפים</td>
                     </tr>
                   ))}
                 </tbody>
