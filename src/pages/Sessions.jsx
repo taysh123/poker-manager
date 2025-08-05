@@ -4,26 +4,25 @@ import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import { db } from '../firebase';
 import { useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faHistory, faCalendarAlt, faCoins, faUsers, faCamera, faPlus, faTimes, faTrashAlt, faChartBar, faUser, faMoneyBillWave, faArrowRightArrowLeft } from '@fortawesome/free-solid-svg-icons';
+import { faHistory, faCalendarAlt, faCoins, faUsers, faCamera, faTimes, faTrashAlt, faChartBar, faUser, faMoneyBillWave, faArrowRightArrowLeft } from '@fortawesome/free-solid-svg-icons';
 import './Sessions.css';
 
 // רכיב Modal פשוט להודעות אישור ושגיאה
 const CustomModal = ({ message, onConfirm, onCancel, type }) => {
   if (!message) return null;
-
   return (
     <div className="modal-overlay">
-      <div className="modal-content">
-        <p>{message}</p>
-        <div className="modal-actions">
+      <div className="modal-content bg-gray-800 text-gray-100 rounded-xl p-6 shadow-2xl max-w-sm w-full mx-4">
+        <p className="text-center text-lg">{message}</p>
+        <div className="modal-actions mt-6 flex justify-around space-x-4">
           {type === 'confirm' && (
             <>
-              <button onClick={onConfirm} className="modal-button confirm-button">אישור</button>
-              <button onClick={onCancel} className="modal-button cancel-button">ביטול</button>
+              <button onClick={onConfirm} className="modal-button confirm-button bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-full transition-colors duration-200">אישור</button>
+              <button onClick={onCancel} className="modal-button cancel-button bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-full transition-colors duration-200">ביטול</button>
             </>
           )}
           {type === 'alert' && (
-            <button onClick={onCancel} className="modal-button confirm-button">הבנתי</button>
+            <button onClick={onCancel} className="modal-button confirm-button bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-full transition-colors duration-200 w-full">הבנתי</button>
           )}
         </div>
       </div>
@@ -40,15 +39,11 @@ function Sessions() {
   const [cashGames, setCashGames] = useState([]);
   const [loadingGames, setLoadingGames] = useState(true);
   const [errorGames, setErrorGames] = useState(null);
-  const [showImageModal, setShowImageModal] = useState(false);
-  const [selectedGameId, setSelectedGameId] = useState(null);
-  const [newImageFile, setNewImageFile] = useState(null);
-  const [uploadingImage, setUploadingImage] = useState(false);
   const [modalMessage, setModalMessage] = useState(null);
   const [modalType, setModalType] = useState('alert');
   const [confirmDeleteGameId, setConfirmDeleteGameId] = useState(null);
 
-  const [playerStats, setPlayerStats] = useState({}); // מצב חדש לסטטיסטיקות שחקנים
+  const [playerStats, setPlayerStats] = useState({});
 
   const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
@@ -78,12 +73,11 @@ function Sessions() {
     setErrorGames(null);
     try {
       const gamesCollectionRef = collection(db, `artifacts/${appId}/users/${currentUserId}/cashGames`);
-      // הערה: orderBy עלול לדרוש אינדקסים ב-Firestore. אם יש שגיאות, ניתן להסיר את ה-orderBy ולמיין ב-JS.
       const q = query(gamesCollectionRef, orderBy('date', 'desc'));
       const querySnapshot = await getDocs(q);
       const gamesList = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setCashGames(gamesList);
-      calculatePlayerStatistics(gamesList); // קריאה לפונקציית חישוב הסטטיסטיקות
+      calculatePlayerStatistics(gamesList);
     } catch (error) {
       console.error("שגיאה בטעינת משחקי קאש:", error);
       setErrorGames('שגיאה בטעינת משחקים שמורים. נסה לרענן את הדף.');
@@ -92,111 +86,46 @@ function Sessions() {
     }
   };
 
-  // פונקציה לחישוב סטטיסטיקות שחקנים מצטברות
   const calculatePlayerStatistics = (fetchedSessions) => {
     const stats = {};
+    if (!fetchedSessions || fetchedSessions.length === 0) {
+      setPlayerStats({});
+      return;
+    }
 
     fetchedSessions.forEach(session => {
+      const chipsPerShekel = session.chipsPerShekel || 1;
       session.players.forEach(player => {
         if (!stats[player.name]) {
           stats[player.name] = {
             totalBuyInShekels: 0,
-            totalCashOutChips: 0, // סך יציאות בצ'יפים (נתון גולמי)
-            totalCashOutShekels: 0, // סך יציאות בשקלים (לאחר המרה)
-            netProfitShekels: 0, // רווח נקי בשקלים
+            totalCashOutShekels: 0,
+            netProfitShekels: 0,
             gamesPlayed: 0,
-            chipRatioSum: 0, // לסכום יחסי הצ'יפים לחישוב ממוצע
           };
         }
 
-        const chipRatio = session.chipsPerShekel || 1; // ודא שיחס הצ'יפים קיים, אחרת השתמש ב-1
-        const cashOutInShekels = player.cashOut / chipRatio; // המר יציאה מצ'יפים לשקלים
+        const cashOutInShekels = player.cashOut / chipsPerShekel;
 
         stats[player.name].totalBuyInShekels += player.buyIn;
-        stats[player.name].totalCashOutChips += player.cashOut;
         stats[player.name].totalCashOutShekels += cashOutInShekels;
         stats[player.name].netProfitShekels += (cashOutInShekels - player.buyIn);
         stats[player.name].gamesPlayed += 1;
-        stats[player.name].chipRatioSum += chipRatio;
       });
     });
 
-    // חישוב ממוצעים וסיום הסטטיסטיקות
     for (const playerName in stats) {
       const playerStat = stats[playerName];
       playerStat.averageBuyInShekels = playerStat.totalBuyInShekels / playerStat.gamesPlayed;
       playerStat.averageCashOutShekels = playerStat.totalCashOutShekels / playerStat.gamesPlayed;
-      playerStat.averageChipRatio = playerStat.chipRatioSum / playerStat.gamesPlayed;
     }
 
     setPlayerStats(stats);
   };
 
-  const handleAddImageClick = (gameId) => {
-    if (user && user.isAnonymous) {
-      setModalMessage('כניסת אורח אינה תומכת בהוספת תמונות. אנא התחבר/הרשם.');
-      setModalType('alert');
-      return;
-    }
-    setSelectedGameId(gameId);
-    setShowImageModal(true);
-  };
-
-  const handleImageFileChange = (event) => {
-    const file = event.target.files[0];
-    if (file) {
-      if (file.size > 1024 * 1024) { // 1MB limit
-        setModalMessage(`הקובץ ${file.name} גדול מדי (מעל 1MB).`);
-        setModalType('alert');
-        setNewImageFile(null);
-        return;
-      }
-      setNewImageFile(file);
-    }
-  };
-
-  const handleUploadImageToGame = async () => {
-    if (!newImageFile || !selectedGameId || !user || user.isAnonymous) {
-      setModalMessage('בחר קובץ תמונה וודא שאתה מחובר.');
-      setModalType('alert');
-      return;
-    }
-
-    setUploadingImage(true);
-    const reader = new FileReader();
-    reader.readAsDataURL(newImageFile);
-    reader.onloadend = async () => {
-      try {
-        const gameRef = doc(db, `artifacts/${appId}/users/${userId}/cashGames`, selectedGameId);
-        const currentImages = cashGames.find(game => game.id === selectedGameId)?.images || []; // שימוש ב-`images` כפי שנשמר ב-CashGame.jsx
-        await updateDoc(gameRef, {
-          images: [...currentImages, reader.result] // שמירה כ-`images`
-        });
-        setModalMessage('התמונה הועלתה בהצלחה!');
-        setModalType('alert');
-        setShowImageModal(false);
-        setNewImageFile(null);
-        fetchCashGames(userId); // רענן את רשימת המשחקים
-      } catch (error) {
-        console.error("שגיאה בהעלאת תמונה:", error);
-        setModalMessage('שגיאה בהעלאת תמונה. נסה שוב.');
-        setModalType('alert');
-      } finally {
-        setUploadingImage(false);
-      }
-    };
-    reader.onerror = (error) => {
-      console.error("Error reading file:", error);
-      setModalMessage('שגיאה בקריאת קובץ התמונה.');
-      setModalType('alert');
-      setUploadingImage(false);
-    };
-  };
-
   const handleRemoveImage = (gameId, imageIndex) => {
     if (!user || user.isAnonymous) {
-      setModalMessage('כניסת אורח אינה תומכת במחיקת תמונות. אנא התחבר/הרשם.');
-      setModalType('alert');
+      showCustomModal('כניסת אורח אינה תומכת במחיקת תמונות. אנא התחבר/הרשם.', 'alert');
       return;
     }
     setConfirmDeleteGameId({ gameId, imageIndex });
@@ -212,11 +141,11 @@ function Sessions() {
       const gameRef = doc(db, `artifacts/${appId}/users/${userId}/cashGames`, gameId);
       const gameToUpdate = cashGames.find(game => game.id === gameId);
       if (gameToUpdate) {
-        const updatedImages = gameToUpdate.images.filter((_, index) => index !== imageIndex); // שימוש ב-`images`
+        const updatedImages = gameToUpdate.images.filter((_, index) => index !== imageIndex);
         await updateDoc(gameRef, { images: updatedImages });
         setModalMessage('התמונה נמחקה בהצלחה!');
         setModalType('alert');
-        fetchCashGames(userId); // רענן את רשימת המשחקים
+        fetchCashGames(userId);
       }
     } catch (error) {
       console.error("שגיאה במחיקת תמונה:", error);
@@ -234,11 +163,10 @@ function Sessions() {
 
   const handleDeleteGame = (gameId) => {
     if (user && user.isAnonymous) {
-      setModalMessage('כניסת אורח אינה תומכת במחיקת משחקים. אנא התחבר/הרשם.');
-      setModalType('alert');
+      showCustomModal('כניסת אורח אינה תומכת במחיקת משחקים. אנא התחבר/הרשם.', 'alert');
       return;
     }
-    setConfirmDeleteGameId(gameId); // שימוש חוזר באותו סטייט, אך עם ID של משחק
+    setConfirmDeleteGameId(gameId);
     setModalMessage('האם אתה בטוח שברצונך למחוק משחק זה? פעולה זו בלתי הפיכה.');
     setModalType('confirm');
   };
@@ -250,178 +178,43 @@ function Sessions() {
       await deleteDoc(doc(db, `artifacts/${appId}/users/${userId}/cashGames`, confirmDeleteGameId));
       setModalMessage('המשחק נמחק בהצלחה!');
       setModalType('alert');
-      fetchCashGames(userId); // רענן את רשימת המשחקים
+      fetchCashGames(userId);
     } catch (error) {
       console.error("שגיאה במחיקת משחק:", error);
       setModalMessage('שגיאה במחיקת משחק. נסה שוב.');
       setModalType('alert');
     } finally {
       setConfirmDeleteGameId(null);
-    } 
+    }
   };
 
   const cancelDeleteGame = () => {
     setConfirmDeleteGameId(null);
     setModalMessage(null);
-  };   
+  };
 
-  const closeModal = () => {  
+  const closeModal = () => {
     setModalMessage(null);
     setModalType('alert');
   };
 
-  if (loadingAuth) {
+  if (loadingAuth || loadingGames) {
     return (
-      <div className="sessions-container">
+      <div className="flex justify-center items-center h-screen bg-gray-900 text-white">
         <h2>טוען...</h2>
       </div>
     );
   }
 
   return (
-    <div className="sessions-container">
-      <h2><FontAwesomeIcon icon={faHistory} /> משחקים שמורים</h2>
-      <p className="text-center text-gray-600 mb-8">
-        צפה ונהל את כל משחקי הקאש שנשמרו בעבר.
-      </p>
-
-      {loadingGames ? (
-        <p style={{ textAlign: 'center' }}>טוען משחקים שמורים...</p>
-      ) : errorGames ? (
-        <p className="error-message">{errorGames}</p>
-      ) : cashGames.length === 0 ? (
-        <p style={{ textAlign: 'center' }}>אין משחקים שמורים להצגה. צור משחק קאש ושמור אותו כדי לראות אותו כאן!</p>
-      ) : (
-        <div className="games-grid">
-          {cashGames.map(game => (
-            <div key={game.id} className="game-card">
-              <h4><FontAwesomeIcon icon={faCalendarAlt} /> תאריך: {game.date ? new Date(game.date.seconds * 1000).toLocaleDateString('he-IL') : 'לא ידוע'}</h4>
-              <p><FontAwesomeIcon icon={faCoins} /> יחס צ'יפים: {game.chipsPerShekel}</p>
-              <p className={game.totalProfitLoss >= 0 ? 'profit' : 'loss'}>
-                <FontAwesomeIcon icon={faMoneyBillWave} /> רווח/הפסד כולל: {game.totalProfitLoss ? game.totalProfitLoss.toFixed(2) : '0.00'} ₪
-              </p>
-              <h5><FontAwesomeIcon icon={faUsers} /> שחקנים:</h5>
-              <ul className="player-list">
-                {game.players.map((player, pIndex) => (
-                  <li key={pIndex}>
-                    {player.name}: כניסה {player.buyIn.toFixed(2)} ₪, יציאה {player.cashOut.toFixed(2)} צ'יפים
-                    {/* חישוב רווח/הפסד לשחקן ספציפי במשחק זה */}
-                    {player.profitLoss !== undefined && (
-                      <span className={player.profitLoss >= 0 ? 'profit' : 'loss'}>
-                        ({player.profitLoss.toFixed(2)} ₪)
-                      </span>
-                    )}
-                  </li>
-                ))}
-              </ul>
-              {game.settlements && game.settlements.length > 0 && (
-                <>
-                  <h5><FontAwesomeIcon icon={faArrowRightArrowLeft} /> חובות:</h5>
-                  <ul className="debt-list">
-                    {game.settlements.map((debt, dIndex) => (
-                      <li key={dIndex}>
-                        {debt.debtor} חייב ל-{debt.creditor}: {debt.amount.toFixed(2)} ₪
-                      </li>
-                    ))}
-                  </ul>
-                </>
-              )}
-
-              {game.images && game.images.length > 0 && (
-                <div className="game-images-section">
-                  <h5><FontAwesomeIcon icon={faCamera} /> תמונות מהמשחק:</h5>
-                  <div className="game-images-grid">
-                    {game.images.map((image, index) => (
-                      <div key={index} className="game-image-item">
-                        <img src={image} alt={`Game Image ${index + 1}`} />
-                        <button onClick={() => handleRemoveImage(game.id, index)} className="remove-image-button">
-                          <FontAwesomeIcon icon={faTimes} />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {!user.isAnonymous && (
-                <button onClick={() => handleAddImageClick(game.id)} className="add-image-to-game-button">
-                  <FontAwesomeIcon icon={faCamera} /> הוסף תמונה למשחק זה
-                </button>
-              )}
-              
-              {!user.isAnonymous && (
-                <button onClick={() => handleDeleteGame(game.id)} className="delete-game-button">
-                  <FontAwesomeIcon icon={faTrashAlt} /> מחק משחק
-                </button>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* טבלת סטטיסטיקות שחקנים מצטברות */}
-      {Object.keys(playerStats).length > 0 && (
-        <div className="section player-statistics-section">
-          <h3><FontAwesomeIcon icon={faChartBar} /> סטטיסטיקות שחקנים</h3>
-          <div className="player-stats-table-container">
-            <table className="player-stats-table">
-              <thead>
-                <tr>
-                  <th>שם שחקן</th>
-                  <th>משחקים שוחקו</th>
-                  <th>סך כניסות (₪)</th>
-                  <th>סך יציאות (₪)</th>
-                  <th>רווח נקי (₪)</th>
-                  <th>ממוצע כניסה (₪)</th>
-                  <th>ממוצע יציאה (₪)</th>
-                </tr>
-              </thead>
-              <tbody>
-                {Object.entries(playerStats).map(([name, stats]) => (
-                  <tr key={name}>
-                    <td><FontAwesomeIcon icon={faUser} /> {name}</td>
-                    <td>{stats.gamesPlayed}</td>
-                    <td>{stats.totalBuyInShekels.toFixed(2)} ₪</td>
-                    <td>{stats.totalCashOutShekels.toFixed(2)} ₪</td>
-                    <td className={stats.netProfitShekels >= 0 ? 'profit' : 'loss'}>
-                      {stats.netProfitShekels.toFixed(2)} ₪
-                    </td>
-                    <td>{stats.averageBuyInShekels.toFixed(2)} ₪</td>
-                    <td>{stats.averageCashOutShekels.toFixed(2)} ₪</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
-      {showImageModal && (
-        <div className="image-upload-modal-overlay">
-          <div className="image-upload-modal">
-            <h3>הוסף תמונה למשחק</h3>
-            <input type="file" accept="image/*" onChange={handleImageFileChange} />
-            <div className="modal-buttons">
-              <button onClick={handleUploadImageToGame} disabled={!newImageFile || uploadingImage}>
-                {uploadingImage ? 'מעלה...' : 'העלה תמונה'}
-              </button>
-              <button onClick={() => { setShowImageModal(false); setNewImageFile(null); }} className="cancel-button">
-                ביטול
-              </button>
-            </div>
-            <p className="image-note-modal">
-              הערה: גודל תמונה מומלץ עד 1MB. תמונות גדולות עלולות להיכשל בשמירה.
-            </p>
-          </div>
-        </div>
-      )}
+    <div className="flex flex-col min-h-screen bg-gray-900 text-gray-100">
       <CustomModal
         message={modalMessage}
         onConfirm={
           modalType === 'confirm' && typeof confirmDeleteGameId === 'string'
-            ? confirmDeleteGame // Confirming game deletion
+            ? confirmDeleteGame
             : modalType === 'confirm' && typeof confirmDeleteGameId === 'object'
-              ? confirmRemoveImage // Confirming image deletion
+              ? confirmRemoveImage
               : closeModal
         }
         onCancel={
@@ -433,6 +226,151 @@ function Sessions() {
         }
         type={modalType}
       />
+      
+      <div className="container mx-auto p-4 md:p-8 flex-grow">
+        <h2 className="text-4xl md:text-5xl font-bold text-center mb-8 text-yellow-500">
+          <FontAwesomeIcon icon={faHistory} className="mr-3" />
+          משחקים שמורים
+        </h2>
+        <p className="text-center text-gray-400 mb-8">
+          צפה ונהל את כל משחקי הקאש שנשמרו בעבר.
+        </p>
+
+        {cashGames.length === 0 ? (
+          <p className="text-center text-xl text-gray-400">אין משחקים שמורים להצגה.</p>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {cashGames.map(game => (
+              <div key={game.id} className="game-card bg-gray-800 rounded-xl p-6 shadow-lg transition-all duration-300 hover:scale-105">
+                <div className="flex justify-between items-start mb-4">
+                  <div>
+                    <h4 className="text-xl font-bold text-yellow-400 flex items-center">
+                      <FontAwesomeIcon icon={faCalendarAlt} className="mr-2" />
+                      תאריך: {game.date ? new Date(game.date.seconds * 1000).toLocaleDateString('he-IL') : 'לא ידוע'}
+                    </h4>
+                    <p className="text-gray-400 text-sm mt-1">
+                      <FontAwesomeIcon icon={faCoins} className="mr-1" />
+                      יחס צ'יפים: {game.chipsPerShekel}
+                    </p>
+                  </div>
+                  {!user.isAnonymous && (
+                    <button onClick={() => handleDeleteGame(game.id)} className="text-red-500 hover:text-red-600 transition-colors duration-200">
+                      <FontAwesomeIcon icon={faTrashAlt} size="lg" />
+                    </button>
+                  )}
+                </div>
+                
+                <p className={`text-lg font-bold ${game.totalProfitLoss >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                  <FontAwesomeIcon icon={faMoneyBillWave} className="mr-2" />
+                  רווח/הפסד כולל: {game.totalProfitLoss ? game.totalProfitLoss.toFixed(2) : '0.00'} ₪
+                </p>
+                
+                <div className="mt-4">
+                  <h5 className="text-lg font-bold text-yellow-300 mb-2 flex items-center">
+                    <FontAwesomeIcon icon={faUsers} className="mr-2" />
+                    שחקנים
+                  </h5>
+                  <ul className="space-y-2">
+                    {game.players.map((player, pIndex) => (
+                      <li key={pIndex} className="bg-gray-700 rounded-lg p-3">
+                        <span className="font-semibold">{player.name}:</span>
+                        <span className="ml-2 text-gray-300">
+                          כניסה {player.buyIn.toFixed(2)} ₪, יציאה {player.cashOut.toFixed(2)} צ'יפים
+                        </span>
+                        {player.profitLoss !== undefined && (
+                          <span className={`ml-2 font-bold ${player.profitLoss >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                            ({player.profitLoss.toFixed(2)} ₪)
+                          </span>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                
+                {game.settlements && game.settlements.length > 0 && (
+                  <div className="mt-4">
+                    <h5 className="text-lg font-bold text-yellow-300 mb-2 flex items-center">
+                      <FontAwesomeIcon icon={faArrowRightArrowLeft} className="mr-2" />
+                      הסדר חובות
+                    </h5>
+                    <ul className="space-y-2">
+                      {game.settlements.map((debt, dIndex) => (
+                        <li key={dIndex} className="bg-gray-700 rounded-lg p-3">
+                          <span className="font-semibold text-gray-300">{debt.debtor}</span> משלם ל-
+                          <span className="font-semibold text-gray-300">{debt.creditor}</span>:
+                          <span className="ml-2 text-lg text-green-400">{debt.amount.toFixed(2)} ₪</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {game.images && game.images.length > 0 && (
+                  <div className="mt-4">
+                    <h5 className="text-lg font-bold text-yellow-300 mb-2 flex items-center">
+                      <FontAwesomeIcon icon={faCamera} className="mr-2" />
+                      תמונות מהמשחק
+                    </h5>
+                    <div className="grid grid-cols-2 gap-2 mt-2">
+                      {game.images.map((image, index) => (
+                        <div key={index} className="relative group">
+                          <img src={image} alt={`Game Image ${index + 1}`} className="w-full h-auto rounded-lg shadow-md" />
+                          <button onClick={() => handleRemoveImage(game.id, index)} className="absolute top-1 right-1 bg-red-600 hover:bg-red-700 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                            <FontAwesomeIcon icon={faTimes} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* טבלת סטטיסטיקות שחקנים מצטברות */}
+        {Object.keys(playerStats).length > 0 && (
+          <div className="bg-gray-800 rounded-xl p-6 md:p-8 shadow-lg mt-8 transition-all duration-300">
+            <h3 className="text-2xl font-bold mb-4 text-center text-yellow-400">
+              <FontAwesomeIcon icon={faChartBar} className="mr-2" />
+              סטטיסטיקות שחקנים
+            </h3>
+            <div className="overflow-x-auto">
+              <table className="min-w-full bg-gray-700 rounded-lg shadow-inner">
+                <thead>
+                  <tr className="bg-gray-600 text-gray-200 uppercase text-sm leading-normal">
+                    <th className="py-3 px-6 text-left">שם שחקן</th>
+                    <th className="py-3 px-6 text-left">משחקים</th>
+                    <th className="py-3 px-6 text-left">סך כניסות (₪)</th>
+                    <th className="py-3 px-6 text-left">סך יציאות (₪)</th>
+                    <th className="py-3 px-6 text-left">רווח נקי (₪)</th>
+                    <th className="py-3 px-6 text-left">ממוצע כניסה (₪)</th>
+                    <th className="py-3 px-6 text-left">ממוצע יציאה (₪)</th>
+                  </tr>
+                </thead>
+                <tbody className="text-gray-300 text-sm font-light">
+                  {Object.entries(playerStats).map(([name, stats]) => (
+                    <tr key={name} className="border-b border-gray-600 hover:bg-gray-600">
+                      <td className="py-3 px-6 text-left whitespace-nowrap">
+                        <FontAwesomeIcon icon={faUser} className="mr-2" />
+                        {name}
+                      </td>
+                      <td className="py-3 px-6 text-left">{stats.gamesPlayed}</td>
+                      <td className="py-3 px-6 text-left">{stats.totalBuyInShekels.toFixed(2)} ₪</td>
+                      <td className="py-3 px-6 text-left">{stats.totalCashOutShekels.toFixed(2)} ₪</td>
+                      <td className={`py-3 px-6 text-left font-bold ${stats.netProfitShekels >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                        {stats.netProfitShekels.toFixed(2)} ₪
+                      </td>
+                      <td className="py-3 px-6 text-left">{stats.averageBuyInShekels.toFixed(2)} ₪</td>
+                      <td className="py-3 px-6 text-left">{stats.averageCashOutShekels.toFixed(2)} ₪</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
